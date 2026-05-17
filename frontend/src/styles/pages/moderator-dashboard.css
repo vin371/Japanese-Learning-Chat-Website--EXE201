@@ -2554,18 +2554,18 @@ html[data-theme='dark'] .mod-dash__learn-hint-body {
   overflow: hidden;
 }
 
-.mod-import__metric-bar > span {
+.mod-import__metric-bar>span {
   display: block;
   height: 100%;
   border-radius: 999px;
   transition: width 0.25s ease;
 }
 
-.mod-import__metric-bar--kanji > span {
+.mod-import__metric-bar--kanji>span {
   background: linear-gradient(90deg, #7c3aed, #a855f7);
 }
 
-.mod-import__metric-bar--complex > span {
+.mod-import__metric-bar--complex>span {
   background: linear-gradient(90deg, #3b82f6, #60a5fa);
 }
 
@@ -2770,9 +2770,11 @@ html[data-theme='dark'] .mod-import--studio {
     transform: translate3d(0, 0, 0) rotate(0deg);
     opacity: 0;
   }
+
   8% {
     opacity: 0.75;
   }
+
   100% {
     transform: translate3d(18px, 120vh, 0) rotate(220deg);
     opacity: 0;
@@ -2795,7 +2797,7 @@ html[data-theme='dark'] .mod-import--studio {
   align-items: stretch;
 }
 
-.mod-import-studio__topbar-cards > .mod-import-studio__glass {
+.mod-import-studio__topbar-cards>.mod-import-studio__glass {
   flex: 1 1 220px;
   min-width: 0;
 }
@@ -3188,10 +3190,12 @@ html[data-theme='dark'] .mod-dash__btn--danger:hover:not(:disabled) {
 }
 
 @keyframes mod-import-pill-pulse {
+
   0%,
   100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.55;
   }
@@ -4438,23 +4442,126 @@ html[data-theme='dark'] .mod-dash--kurenai {
 }
 
 .mod-dash__k-side {
-  width: min(268px, 100%);
+  width: 260px;
+  /* Cố định chiều rộng */
+  height: 100vh;
+  /* Cố định chiều cao full màn hình */
+  position: sticky;
+  top: 0;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  padding: 1.2rem 0.95rem 1rem;
+  padding: 1.2rem 1rem 1rem;
+  /* Padding trái phải cố định 1rem (16px) */
   background: linear-gradient(180deg, #221a1c 0%, var(--mod-sidebar) 48%, #120e0f 100%);
   color: #fef2f2;
   border-right: 1px solid rgba(142, 3, 29, 0.38);
-  min-height: 100%;
+  overflow-x: hidden;
+  /* Cắt phần chữ bị thừa mượt mà khi thu gọn */
+  transition: width 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  box-sizing: border-box;
+}
+
+html[data-theme='light'] .mod-dash__k-side {
+  background: linear-gradient(180deg, #ffffff 0%, #fff8fb 48%, #f3f4f6 100%);
+  color: #0f172a;
+  border-right-color: rgba(142, 3, 29, 0.15);
+}
+
+html[data-theme='light'] .mod-dash__k-brand-title {
+  color: #8e031d;
+}
+
+html[data-theme='light'] .mod-dash__k-brand-sub {
+  color: #64748b;
+}
+
+html[data-theme='light'] .mod-dash__k-link {
+  color: #475569;
+}
+
+html[data-theme='light'] .mod-dash__k-link:hover {
+  color: #8e031d;
+  background: rgba(142, 3, 29, 0.05);
+  border-color: transparent;
+}
+
+html[data-theme='light'] .mod-dash__k-link--active {
+  background: rgba(142, 3, 29, 0.1);
+  color: #8e031d;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+html[data-theme='light'] .mod-dash__k-user-name {
+  color: #1e293b;
+}
+
+html[data-theme='light'] .mod-dash__k-user-role {
+  color: #64748b;
+}
+
+html[data-theme='light'] .mod-dash__k-foot {
+  border-top-color: rgba(15, 23, 42, 0.1);
+}
+
+.mod-dash__k-side--collapsed {
+  width: 80px;
+}
+
+.mod-dash__k-side--collapsed .mod-dash__k-brand-text,
+.mod-dash__k-side--collapsed .mod-dash__k-link-label,
+.mod-dash__k-side--collapsed .mod-dash__k-user-info {
+  opacity: 0;
+  visibility: hidden;
+  position: absolute;
+  /* QUAN TRỌNG: Loại bỏ độ rộng ẩn của chữ */
+  pointer-events: none;
+}
+
+.mod-dash__k-side--collapsed .mod-dash__k-badge {
+  position: absolute;
+  top: 4px;
+  right: 1px;
+  left: auto;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  font-size: 9px;
+  font-weight: 800;
+  border-radius: 999px;
+  background: var(--mod-kurenai, #8e031d);
+  color: #ffffff !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  border: 1.5px solid #ffffff;
+  box-sizing: border-box;
+}
+
+html[data-theme='dark'] .mod-dash__k-side--collapsed .mod-dash__k-badge {
+  border-color: #0c0a0b;
 }
 
 .mod-dash__k-brand {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.15rem 0.35rem 0.5rem;
+  padding: 0;
+  margin-bottom: 0.5rem;
+  white-space: nowrap;
+}
+
+.mod-dash__k-brand-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  opacity: 1;
+  max-width: 200px;
+  overflow: hidden;
+  transition: max-width 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.2s ease;
 }
 
 .mod-dash__k-brand-mark {
@@ -4467,31 +4574,43 @@ html[data-theme='dark'] .mod-dash--kurenai {
   justify-content: center;
   font-size: 1.35rem;
   flex-shrink: 0;
+  /* Khóa cứng kích thước Logo */
+  margin-right: 12px;
   box-shadow: 0 8px 26px rgba(0, 0, 0, 0.35);
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  outline: none;
+  transition: transform 0.2s ease, margin 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.mod-dash__k-brand-mark:hover {
+  transform: scale(1.05);
+}
+
+.mod-dash__k-brand-mark:active {
+  transform: scale(0.95);
 }
 
 .mod-dash__k-brand-title {
-  display: block;
   font-size: 1.05rem;
   font-weight: 800;
-  letter-spacing: normal;
   color: #fff7f7;
 }
 
 .mod-dash__k-brand-sub {
-  display: block;
   margin-top: 0.1rem;
   font-size: 0.68rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
   text-transform: uppercase;
+  letter-spacing: 0.08em;
   color: var(--mod-sidebar-muted);
 }
 
 .mod-dash__k-nav {
   flex: 1;
-  min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
@@ -4499,11 +4618,11 @@ html[data-theme='dark'] .mod-dash--kurenai {
 
 .mod-dash__k-link {
   display: flex;
+  position: relative;
   align-items: center;
-  gap: 0.6rem;
   width: 100%;
-  text-align: left;
-  padding: 0.55rem 0.75rem;
+  padding: 0.65rem 12px;
+  /* Toán học: 12x2 + 24(icon) = 48px. Khớp chính xác với vùng hiển thị 48px khi thu gọn */
   border-radius: 12px;
   border: 1px solid transparent;
   background: transparent;
@@ -4511,10 +4630,10 @@ html[data-theme='dark'] .mod-dash--kurenai {
   font-size: 0.88rem;
   font-weight: 600;
   cursor: pointer;
-  transition:
-    background 0.18s,
-    color 0.18s,
-    border-color 0.18s;
+  white-space: nowrap;
+  /* Ép chữ trên 1 dòng */
+  box-sizing: border-box;
+  transition: background 0.18s, color 0.18s, border-color 0.18s;
 }
 
 .mod-dash__k-link:hover {
@@ -4531,18 +4650,28 @@ html[data-theme='dark'] .mod-dash--kurenai {
 }
 
 .mod-dash__k-link-ico {
-  width: 1.35rem;
-  text-align: center;
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
+  /* Khóa cứng kích thước Icon */
+  margin-right: 12px;
+  font-size: 1.1rem;
+  transition: margin 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .mod-dash__k-link-label {
   flex: 1;
-  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.35rem;
+  opacity: 1;
+  max-width: 200px;
+  overflow: hidden;
+  transition: max-width 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.2s ease;
 }
 
 .mod-dash__k-badge {
@@ -4558,6 +4687,8 @@ html[data-theme='dark'] .mod-dash--kurenai {
   justify-content: center;
   background: rgba(142, 3, 29, 0.12);
   color: var(--mod-kurenai);
+  transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  z-index: 2;
 }
 
 .mod-dash__k-link--active .mod-dash__k-badge {
@@ -4568,13 +4699,15 @@ html[data-theme='dark'] .mod-dash--kurenai {
 .mod-dash__k-foot {
   padding-top: 0.5rem;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
+  overflow: hidden;
 }
 
 .mod-dash__k-user {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
-  padding: 0.45rem 0.35rem;
+  padding: 0.45rem 4px;
+  /* Toán học: 4x2 + 40(avatar) = 48px */
+  white-space: nowrap;
 }
 
 .mod-dash__k-user-av {
@@ -4589,6 +4722,8 @@ html[data-theme='dark'] .mod-dash--kurenai {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  margin-right: 12px;
+  transition: margin 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .mod-dash__k-user-name {
@@ -4780,13 +4915,11 @@ html[data-theme='dark'] .mod-dash__k-stat-label {
   background-color: var(--mod-cream);
   background-image:
     radial-gradient(ellipse 120% 80% at 50% -20%, rgba(142, 3, 29, 0.06), transparent 55%),
-    repeating-linear-gradient(
-      0deg,
+    repeating-linear-gradient(0deg,
       transparent,
       transparent 2px,
       rgba(142, 3, 29, 0.02) 2px,
-      rgba(142, 3, 29, 0.02) 3px
-    ),
+      rgba(142, 3, 29, 0.02) 3px),
     linear-gradient(165deg, rgba(255, 255, 255, 0.5) 0%, transparent 42%);
 }
 
@@ -4887,4 +5020,13 @@ html[data-theme='dark'] .mod-dash--kurenai .mod-dash__panel {
   .mod-dash__k-foot {
     width: 100%;
   }
+}
+
+.mod-dash__k-user-info {
+  display: flex;
+  flex-direction: column;
+  opacity: 1;
+  max-width: 200px;
+  overflow: hidden;
+  transition: max-width 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.2s ease;
 }

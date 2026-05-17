@@ -1,24 +1,36 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
 import { ROUTES } from '../data/routes';
 import yumeLogo from '../assets/yume-logo.png';
 import { AnimatedThemeToggler } from '../ui/animated-theme-toggler';
+import UserProfileDropdown from '../ui/user-profile-dropdown';
+import { userIsPremium } from '../utils/userPremium';
+import { ENV } from '../api/client';
 
 const MARKETING_PATHS = [ROUTES.HOME, ROUTES.LOGIN, ROUTES.REGISTER];
 
-function marketingNavInitials(user, displayName) {
+function initialsFromUser(user, displayName) {
   const n = String(displayName || '').trim();
   if (n.length >= 2) return n.slice(0, 2).toUpperCase();
   const u = user?.username || user?.email || '';
   return String(u).slice(0, 1).toUpperCase() || 'U';
 }
 
+function buildAvatarSrc(user) {
+  const path = user?.avatarUrl ?? user?.AvatarUrl;
+  if (!path) return '';
+  if (/^https?:\/\//i.test(path)) return path;
+  const origin = ENV.API_URL || '';
+  return `${origin}${path}`;
+}
+
 export function Header() {
   const { isAuthenticated, logout, user } = useAuth();
   const { theme } = useTheme();
   const location = useLocation();
+  const navigate = useNavigate();
   const isMarketing = MARKETING_PATHS.includes(location.pathname);
   const [accountOpen, setAccountOpen] = useState(false);
   const accountWrapRef = useRef(null);
@@ -26,6 +38,11 @@ export function Header() {
   const roleNorm = String(user?.role ?? user?.Role ?? 'user').toLowerCase();
   const isAdminUser = roleNorm === 'admin';
   const isModeratorUser = roleNorm === 'moderator';
+  const initials = initialsFromUser(user, displayName);
+  const avatarSrc = isAuthenticated ? buildAvatarSrc(user) : '';
+  const xuBalance = Number(user?.xu ?? user?.Xu ?? 0) || 0;
+  const staffNav = isAdminUser || isModeratorUser;
+  const showPremiumBadge = !staffNav && userIsPremium(user);
 
   useEffect(() => {
     if (!accountOpen) return undefined;
@@ -80,85 +97,20 @@ export function Header() {
           />
           {isAuthenticated ? (
             <div className="layout-header__account-wrap" ref={accountWrapRef}>
-              <button
-                type="button"
-                className="layout-header__account-trigger"
-                aria-expanded={accountOpen}
-                aria-haspopup="menu"
-                aria-controls="layout-header-account-menu"
-                onClick={() => setAccountOpen((o) => !o)}
-              >
-                <span className="layout-header__account-avatar" aria-hidden>
-                  {marketingNavInitials(user, displayName)}
-                </span>
-                <span className="layout-header__account-label">{displayName}</span>
-                <span className="layout-header__account-chevron" aria-hidden>
-                  ▾
-                </span>
-              </button>
-              {accountOpen ? (
-                <div
-                  id="layout-header-account-menu"
-                  className="layout-header__account-menu"
-                  role="menu"
-                >
-                  {isAdminUser ? (
-                    <Link
-                      to={ROUTES.ADMIN}
-                      className="layout-header__account-item"
-                      role="menuitem"
-                      onClick={() => setAccountOpen(false)}
-                    >
-                      Quản trị
-                    </Link>
-                  ) : null}
-                  {isModeratorUser ? (
-                    <Link
-                      to={ROUTES.MODERATOR}
-                      className="layout-header__account-item"
-                      role="menuitem"
-                      onClick={() => setAccountOpen(false)}
-                    >
-                      Điều hành
-                    </Link>
-                  ) : null}
-                  <Link
-                    to={ROUTES.DASHBOARD}
-                    className="layout-header__account-item"
-                    role="menuitem"
-                    onClick={() => setAccountOpen(false)}
-                  >
-                    Bảng điều khiển
-                  </Link>
-                  <Link
-                    to={ROUTES.CHAT}
-                    className="layout-header__account-item"
-                    role="menuitem"
-                    onClick={() => setAccountOpen(false)}
-                  >
-                    Trò chuyện
-                  </Link>
-                  <Link
-                    to={ROUTES.ACCOUNT}
-                    className="layout-header__account-item"
-                    role="menuitem"
-                    onClick={() => setAccountOpen(false)}
-                  >
-                    Tài khoản
-                  </Link>
-                  <button
-                    type="button"
-                    className="layout-header__account-item layout-header__account-item--danger"
-                    role="menuitem"
-                    onClick={() => {
-                      setAccountOpen(false);
-                      logout();
-                    }}
-                  >
-                    Đăng xuất
-                  </button>
-                </div>
-              ) : null}
+              <UserProfileDropdown
+                user={user}
+                displayName={displayName}
+                avatarSrc={avatarSrc}
+                initials={initials}
+                showPremiumBadge={showPremiumBadge}
+                logout={() => {
+                  logout();
+                  navigate(ROUTES.LOGIN);
+                }}
+                ROUTES={ROUTES}
+                menuOpen={accountOpen}
+                setMenuOpen={setAccountOpen}
+              />
             </div>
           ) : (
             <>
@@ -182,21 +134,31 @@ export function Header() {
         <span className="layout-header__logo-title">YumeGo-ji</span>
       </Link>
       <nav className="layout-header__nav">
-        <AnimatedThemeToggler
-          className="layout-header__theme"
-          iconClassName="layout-header__theme-icon"
-          aria-label="Chuyển sáng/tối"
-          title="Chuyển sáng/tối"
-        />
+
         <Link to={ROUTES.HOME}>Trang chủ</Link>
         {isAuthenticated ? (
           <>
             <Link to={ROUTES.CHAT}>Trò chuyện</Link>
-            <Link to={ROUTES.DASHBOARD}>Bảng điều khiển</Link>
-            <Link to={ROUTES.ACCOUNT}>Tài khoản</Link>
-            <button type="button" onClick={logout} className="layout-header__btn">
-              Đăng xuất
-            </button>
+            <AnimatedThemeToggler
+              className="layout-header__theme"
+              iconClassName="layout-header__theme-icon"
+              aria-label="Chuyển sáng/tối"
+              title="Chuyển sáng/tối"
+            />
+            <UserProfileDropdown
+              user={user}
+              displayName={displayName}
+              avatarSrc={avatarSrc}
+              initials={initials}
+              showPremiumBadge={showPremiumBadge}
+              logout={() => {
+                logout();
+                navigate(ROUTES.LOGIN);
+              }}
+              ROUTES={ROUTES}
+              menuOpen={accountOpen}
+              setMenuOpen={setAccountOpen}
+            />
           </>
         ) : (
           <>

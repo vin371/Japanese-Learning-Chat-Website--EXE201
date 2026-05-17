@@ -9,6 +9,7 @@ import { ChatbotWidget } from '../../components/support/ChatbotWidget';
 import { PremiumBadge } from '../../components/profile/PremiumBadge';
 import { userIsPremium } from '../../utils/userPremium';
 import { SakuraRainLayer } from '../../components/effects/SakuraRainLayer';
+import { Play, Gamepad2, ChartColumn, Trophy } from 'lucide-react';
 
 /** Alias để ESLint nhận diện biến dùng qua JSX. */
 const Motion = motion;
@@ -194,10 +195,10 @@ export default function Dashboard() {
   const dailyGoalPct = Math.min(100, Math.max(8, rankInfo.barPct));
   const xpToNext = Math.max(0, 5000 - (Number(exp || 0) % 5000));
   const quickActions = [
-    { title: `Tiếp tục học tập ${levelCode}`, sub: 'Tiến tới bài học tiếp theo', to: ROUTES.LEARN, icon: '▶' },
-    { title: 'Chơi game', sub: 'Từ học bài & chơi game (API)', to: ROUTES.PLAY, icon: '🎮' },
-    { title: 'Bảng xếp hạng', sub: 'Theo dõi thứ hạng tuần', to: `${ROUTES.PLAY}/leaderboard`, icon: '📊' },
-    { title: 'Thành tích', sub: 'Hệ thống huy hiệu và EXP', to: `${ROUTES.PLAY}/achievements`, icon: '🏆' },
+    { title: `Tiếp tục học tập ${levelCode}`, sub: 'Tiến tới bài học tiếp theo', to: ROUTES.LEARN, icon: <Play size={20} /> },
+    { title: 'Chơi game', sub: 'Từ học bài & chơi game (API)', to: ROUTES.PLAY, icon: <Gamepad2 size={20} /> },
+    { title: 'Bảng xếp hạng', sub: 'Theo dõi thứ hạng tuần', to: `${ROUTES.PLAY}/leaderboard`, icon: <ChartColumn size={20} /> },
+    { title: 'Thành tích', sub: 'Hệ thống huy hiệu và EXP', to: `${ROUTES.PLAY}/achievements`, icon: <Trophy size={20} /> },
   ];
   const chatRooms = [
     { name: 'Chat chung', sub: 'Phòng công cộng cho mọi học viên' },

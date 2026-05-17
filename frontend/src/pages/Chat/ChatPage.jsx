@@ -9,6 +9,7 @@ import { mergeJoinedForAcl } from '../../utils/chatRoomAcl';
 import { useAuth } from '../../hooks/useAuth';
 import { ROUTES } from '../../data/routes';
 import { getJlptLevelCodeFromUser } from '../../utils/learnLevelCode';
+import { BookText, Warehouse, BotMessageSquare } from 'lucide-react';
 
 function safeArray(val) {
   return Array.isArray(val) ? val : [];
@@ -356,7 +357,7 @@ export default function ChatPage() {
               <Motion.section className="chat-lobby-features" aria-label="Lối vào nhanh" variants={lobbyMv.featureGrid}>
                 <Motion.article className="chat-lobby-card" variants={lobbyMv.card} whileHover={lobbyCardHover}>
                   <span className="chat-lobby-card__ico" aria-hidden>
-                    💬
+                    <BookText />
                   </span>
                   <h2 className="chat-lobby-card__title">Học ngôn ngữ</h2>
                   <p className="chat-lobby-card__desc">Trao đổi tự nhiên cùng bạn học trong phòng theo cấp.</p>
@@ -366,7 +367,7 @@ export default function ChatPage() {
                 </Motion.article>
                 <Motion.article className="chat-lobby-card" variants={lobbyMv.card} whileHover={lobbyCardHover}>
                   <span className="chat-lobby-card__ico" aria-hidden>
-                    👥
+                    <Warehouse />
                   </span>
                   <h2 className="chat-lobby-card__title">Phòng học ảo</h2>
                   <p className="chat-lobby-card__desc">Tham gia phòng công khai hoặc nhóm — thảo luận real-time.</p>
@@ -375,8 +376,8 @@ export default function ChatPage() {
                   </button>
                 </Motion.article>
                 <Motion.article className="chat-lobby-card" variants={lobbyMv.card} whileHover={lobbyCardHover}>
-                  <span className="chat-lobby-card__ico chat-lobby-card__ico--ai" aria-hidden>
-                    AI
+                  <span className="chat-lobby-card__ico" aria-hidden>
+                    <BotMessageSquare />
                   </span>
                   <h2 className="chat-lobby-card__title">Tư vấn AI</h2>
                   <p className="chat-lobby-card__desc">Gợi ý mở đầu hội thoại và ôn tập nhanh khi có phòng AI.</p>
@@ -430,185 +431,185 @@ export default function ChatPage() {
         <div className="chat-app-shell__body">
           {browseRoomsOpen ? (
             <>
-        <div className="chat-lobby-discover moji-chat__discover-search-row">
-          <label className="moji-chat__discover-search moji-chat__discover-search--pro">
-            <span className="visually-hidden">Tìm phòng</span>
-            <input
-              ref={discoverSearchRef}
-              type="search"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Tìm theo tên, mô tả…"
-              aria-label="Tìm phòng"
-            />
-          </label>
-        </div>
+              <div className="chat-lobby-discover moji-chat__discover-search-row">
+                <label className="moji-chat__discover-search moji-chat__discover-search--pro">
+                  <span className="visually-hidden">Tìm phòng</span>
+                  <input
+                    ref={discoverSearchRef}
+                    type="search"
+                    value={q}
+                    onChange={(e) => setQ(e.target.value)}
+                    placeholder="Tìm theo tên, mô tả…"
+                    aria-label="Tìm phòng"
+                  />
+                </label>
+              </div>
 
-        {error && (
-          <div className="moji-chat__banner-error" role="alert">
-            {error}
-          </div>
-        )}
+              {error && (
+                <div className="moji-chat__banner-error" role="alert">
+                  {error}
+                </div>
+              )}
 
-        {catalog.length > 0 && (
-          <section className="moji-chat__discover-section">
-            <h2 className="moji-chat__discover-section-title">Gợi ý theo đặc tả</h2>
-            <ul className="moji-chat__catalog-chips">
-              {catalog.map((c) => (
-                <li key={c.key || c.Key || c.suggestedSlug}>
-                  <span className="moji-chat__catalog-chip">
-                    {(c.name || c.Name) ?? c.key}
-                    {c.levelId != null || c.LevelId != null ? (
-                      <span className="moji-chat__catalog-meta"> · Level {c.levelId ?? c.LevelId}</span>
-                    ) : null}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
-
-        <section className="moji-chat__discover-section" aria-busy={loading && filtered.length > 0}>
-          <div className="moji-chat__discover-section-row">
-            <h2 className="moji-chat__discover-section-title">Phòng có thể tham gia</h2>
-            <button type="button" className="moji-chat__discover-refresh" onClick={loadDiscover} disabled={loading}>
-              {loading ? 'Đang tải…' : 'Làm mới'}
-            </button>
-          </div>
-
-          {loading && filtered.length === 0 ? (
-            <ul className="moji-chat__discover-skeleton-list" aria-hidden>
-              {[1, 2, 3].map((k) => (
-                <li key={k} className="moji-chat__discover-skeleton-card">
-                  <span className="moji-chat__discover-skeleton-av" />
-                  <span className="moji-chat__discover-skeleton-body">
-                    <span className="moji-chat__discover-skeleton-line moji-chat__discover-skeleton-line--title" />
-                    <span className="moji-chat__discover-skeleton-line moji-chat__discover-skeleton-line--desc" />
-                  </span>
-                </li>
-              ))}
-            </ul>
-          ) : !loading && filtered.length === 0 ? (
-            <p className="moji-chat__muted">
-              Chưa có phòng khớp. Kiểm tra backend đã seed phòng hoặc thử từ khóa khác.
-            </p>
-          ) : (
-            <ul className="moji-chat__discover-list moji-chat__discover-list--pro">
-              {filtered.map((r) => {
-                const id = r.id ?? r.Id;
-                const idNum = Number(id);
-                const name = r.name || r.Name || `Phòng #${id}`;
-                const desc = r.description || r.Description || '';
-                const typeRaw = r.type || r.Type || '';
-                const tm = typeMeta(typeRaw);
-                const joined = myById.get(idNum);
-                const isJoined = !!joined;
-                const mergedForAcl = mergeJoinedForAcl(r, joined);
-                const unread = Number(joined?.unreadCount ?? joined?.UnreadCount ?? r.unreadCount ?? r.UnreadCount ?? 0) || 0;
-                const busy = busyRoomId != null && Number(busyRoomId) === idNum;
-                const menuOpen = openMenuRoomId != null && Number(openMenuRoomId) === idNum;
-
-                const initial = String(name).trim().slice(0, 1).toUpperCase() || '?';
-
-                return (
-                  <li key={id}>
-                    <article className="moji-chat__discover-card moji-chat__discover-card--pro">
-                      <div className="moji-chat__discover-card-avatar" aria-hidden>
-                        {initial}
-                      </div>
-                      <div className="moji-chat__discover-card-body">
-                        <div className="moji-chat__discover-card-title-row">
-                          <h3 className="moji-chat__discover-card-name">{name}</h3>
-                          <span className={`moji-chat__discover-type moji-chat__discover-type--${tm.key}`}>{tm.label}</span>
-                          {isJoined ? (
-                            <span className="moji-chat__discover-joined-pill">Đã tham gia</span>
+              {catalog.length > 0 && (
+                <section className="moji-chat__discover-section">
+                  <h2 className="moji-chat__discover-section-title">Gợi ý theo đặc tả</h2>
+                  <ul className="moji-chat__catalog-chips">
+                    {catalog.map((c) => (
+                      <li key={c.key || c.Key || c.suggestedSlug}>
+                        <span className="moji-chat__catalog-chip">
+                          {(c.name || c.Name) ?? c.key}
+                          {c.levelId != null || c.LevelId != null ? (
+                            <span className="moji-chat__catalog-meta"> · Level {c.levelId ?? c.LevelId}</span>
                           ) : null}
-                          {unread > 0 ? (
-                            <span className="moji-chat__discover-unread-badge" title={`${unread} tin chưa đọc`}>
-                              {unread > 99 ? '99+' : unread}
-                            </span>
-                          ) : null}
-                        </div>
-                        {desc ? <p className="moji-chat__discover-card-desc">{desc}</p> : null}
-                      </div>
-                      <div className="moji-chat__discover-card-actions moji-chat__discover-card-actions--pro">
-                        {isJoined ? (
-                          <button
-                            type="button"
-                            className="moji-chat__discover-btn moji-chat__discover-btn--primary"
-                            disabled={busy}
-                            onClick={() => openRoom(id)}
-                          >
-                            Vào chat
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            className="moji-chat__discover-btn moji-chat__discover-btn--primary"
-                            disabled={busy}
-                            onClick={() => handleJoin(id)}
-                          >
-                            {busy ? '…' : 'Tham gia'}
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          className="moji-chat__discover-btn moji-chat__discover-btn--ghost"
-                          disabled={busy}
-                          onClick={() => openRoom(id)}
-                        >
-                          Xem trước
-                        </button>
-                        {isJoined ? (
-                          <div className="moji-chat__discover-card-menu">
-                            <button
-                              type="button"
-                              className={`moji-chat__discover-menu-trigger ${menuOpen ? 'moji-chat__discover-menu-trigger--open' : ''}`}
-                              aria-expanded={menuOpen}
-                              aria-haspopup="menu"
-                              aria-label={`Tùy chọn ${name}`}
-                              disabled={busy}
-                              onClick={() => setOpenMenuRoomId(menuOpen ? null : idNum)}
-                            >
-                              ⋮
-                            </button>
-                            {menuOpen ? (
-                              <div className="moji-chat__discover-menu-dropdown" role="menu">
-                                <button
-                                  type="button"
-                                  role="menuitem"
-                                  className="moji-chat__discover-menu-item"
-                                  onClick={() => void handleLeave(id, mergedForAcl ?? joined)}
-                                >
-                                  {String((mergedForAcl ?? joined)?.type ?? (mergedForAcl ?? joined)?.Type ?? '')
-                                    .toLowerCase() === 'private'
-                                    ? 'Rời cuộc trò chuyện'
-                                    : tm.key === 'group'
-                                      ? 'Rời nhóm'
-                                      : 'Rời phòng'}
-                                </button>
-                                {tm.key === 'group' ? (
-                                  <button
-                                    type="button"
-                                    role="menuitem"
-                                    className="moji-chat__discover-menu-item moji-chat__discover-menu-item--danger"
-                                    onClick={() => void handleDeleteGroup(id)}
-                                  >
-                                    Xóa nhóm
-                                  </button>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+
+              <section className="moji-chat__discover-section" aria-busy={loading && filtered.length > 0}>
+                <div className="moji-chat__discover-section-row">
+                  <h2 className="moji-chat__discover-section-title">Phòng có thể tham gia</h2>
+                  <button type="button" className="moji-chat__discover-refresh" onClick={loadDiscover} disabled={loading}>
+                    {loading ? 'Đang tải…' : 'Làm mới'}
+                  </button>
+                </div>
+
+                {loading && filtered.length === 0 ? (
+                  <ul className="moji-chat__discover-skeleton-list" aria-hidden>
+                    {[1, 2, 3].map((k) => (
+                      <li key={k} className="moji-chat__discover-skeleton-card">
+                        <span className="moji-chat__discover-skeleton-av" />
+                        <span className="moji-chat__discover-skeleton-body">
+                          <span className="moji-chat__discover-skeleton-line moji-chat__discover-skeleton-line--title" />
+                          <span className="moji-chat__discover-skeleton-line moji-chat__discover-skeleton-line--desc" />
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : !loading && filtered.length === 0 ? (
+                  <p className="moji-chat__muted">
+                    Chưa có phòng khớp. Kiểm tra backend đã seed phòng hoặc thử từ khóa khác.
+                  </p>
+                ) : (
+                  <ul className="moji-chat__discover-list moji-chat__discover-list--pro">
+                    {filtered.map((r) => {
+                      const id = r.id ?? r.Id;
+                      const idNum = Number(id);
+                      const name = r.name || r.Name || `Phòng #${id}`;
+                      const desc = r.description || r.Description || '';
+                      const typeRaw = r.type || r.Type || '';
+                      const tm = typeMeta(typeRaw);
+                      const joined = myById.get(idNum);
+                      const isJoined = !!joined;
+                      const mergedForAcl = mergeJoinedForAcl(r, joined);
+                      const unread = Number(joined?.unreadCount ?? joined?.UnreadCount ?? r.unreadCount ?? r.UnreadCount ?? 0) || 0;
+                      const busy = busyRoomId != null && Number(busyRoomId) === idNum;
+                      const menuOpen = openMenuRoomId != null && Number(openMenuRoomId) === idNum;
+
+                      const initial = String(name).trim().slice(0, 1).toUpperCase() || '?';
+
+                      return (
+                        <li key={id}>
+                          <article className="moji-chat__discover-card moji-chat__discover-card--pro">
+                            <div className="moji-chat__discover-card-avatar" aria-hidden>
+                              {initial}
+                            </div>
+                            <div className="moji-chat__discover-card-body">
+                              <div className="moji-chat__discover-card-title-row">
+                                <h3 className="moji-chat__discover-card-name">{name}</h3>
+                                <span className={`moji-chat__discover-type moji-chat__discover-type--${tm.key}`}>{tm.label}</span>
+                                {isJoined ? (
+                                  <span className="moji-chat__discover-joined-pill">Đã tham gia</span>
+                                ) : null}
+                                {unread > 0 ? (
+                                  <span className="moji-chat__discover-unread-badge" title={`${unread} tin chưa đọc`}>
+                                    {unread > 99 ? '99+' : unread}
+                                  </span>
                                 ) : null}
                               </div>
-                            ) : null}
-                          </div>
-                        ) : null}
-                      </div>
-                    </article>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </section>
+                              {desc ? <p className="moji-chat__discover-card-desc">{desc}</p> : null}
+                            </div>
+                            <div className="moji-chat__discover-card-actions moji-chat__discover-card-actions--pro">
+                              {isJoined ? (
+                                <button
+                                  type="button"
+                                  className="moji-chat__discover-btn moji-chat__discover-btn--primary"
+                                  disabled={busy}
+                                  onClick={() => openRoom(id)}
+                                >
+                                  Vào chat
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  className="moji-chat__discover-btn moji-chat__discover-btn--primary"
+                                  disabled={busy}
+                                  onClick={() => handleJoin(id)}
+                                >
+                                  {busy ? '…' : 'Tham gia'}
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                className="moji-chat__discover-btn moji-chat__discover-btn--ghost"
+                                disabled={busy}
+                                onClick={() => openRoom(id)}
+                              >
+                                Xem trước
+                              </button>
+                              {isJoined ? (
+                                <div className="moji-chat__discover-card-menu">
+                                  <button
+                                    type="button"
+                                    className={`moji-chat__discover-menu-trigger ${menuOpen ? 'moji-chat__discover-menu-trigger--open' : ''}`}
+                                    aria-expanded={menuOpen}
+                                    aria-haspopup="menu"
+                                    aria-label={`Tùy chọn ${name}`}
+                                    disabled={busy}
+                                    onClick={() => setOpenMenuRoomId(menuOpen ? null : idNum)}
+                                  >
+                                    ⋮
+                                  </button>
+                                  {menuOpen ? (
+                                    <div className="moji-chat__discover-menu-dropdown" role="menu">
+                                      <button
+                                        type="button"
+                                        role="menuitem"
+                                        className="moji-chat__discover-menu-item"
+                                        onClick={() => void handleLeave(id, mergedForAcl ?? joined)}
+                                      >
+                                        {String((mergedForAcl ?? joined)?.type ?? (mergedForAcl ?? joined)?.Type ?? '')
+                                          .toLowerCase() === 'private'
+                                          ? 'Rời cuộc trò chuyện'
+                                          : tm.key === 'group'
+                                            ? 'Rời nhóm'
+                                            : 'Rời phòng'}
+                                      </button>
+                                      {tm.key === 'group' ? (
+                                        <button
+                                          type="button"
+                                          role="menuitem"
+                                          className="moji-chat__discover-menu-item moji-chat__discover-menu-item--danger"
+                                          onClick={() => void handleDeleteGroup(id)}
+                                        >
+                                          Xóa nhóm
+                                        </button>
+                                      ) : null}
+                                    </div>
+                                  ) : null}
+                                </div>
+                              ) : null}
+                            </div>
+                          </article>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </section>
             </>
           ) : (
             <div className="moji-chat__empty chat-app-shell-empty" role="status">

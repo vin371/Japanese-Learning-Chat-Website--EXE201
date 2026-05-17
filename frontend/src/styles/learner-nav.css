@@ -429,16 +429,16 @@ html[data-theme='dark'] .learner-nav__user-role {
   align-items: center;
   gap: 0.75rem;
   padding: 0.5rem 1rem 0.5rem 0.5rem;
-  background-color: #27272a; /* Dark background matching image */
+  background-color: var(--color-surface-alt);
   border-radius: 12px;
-  border: none;
+  border: 1px solid var(--border);
   cursor: pointer;
-  transition: background-color 0.2s;
-  color: white;
+  transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+  color: var(--text-h);
 }
 
 .up-trigger:hover {
-  background-color: #3f3f46;
+  background-color: var(--color-surface-hover);
 }
 
 .up-trigger-avatar,
@@ -450,7 +450,8 @@ html[data-theme='dark'] .learner-nav__user-role {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #60a5fa, #c084fc); /* Avatar gradient */
+  background: linear-gradient(135deg, #60a5fa, #c084fc);
+  /* Avatar gradient */
   color: white;
   font-weight: bold;
   font-size: 14px;
@@ -485,7 +486,7 @@ html[data-theme='dark'] .learner-nav__user-role {
 
 .up-trigger-email {
   font-size: 12px;
-  color: #a1a1aa; /* Light gray text */
+  color: var(--color-text-muted);
   line-height: 1.2;
   margin-top: 2px;
 }
@@ -495,10 +496,10 @@ html[data-theme='dark'] .learner-nav__user-role {
   right: 0;
   top: calc(100% + 8px);
   width: 260px;
-  background-color: #18181b; /* Very dark background for menu */
+  background-color: var(--color-surface-alt);
   border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-  border: 1px solid #27272a;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
   z-index: 150;
   overflow: hidden;
   padding-bottom: 0.5rem;
@@ -509,7 +510,8 @@ html[data-theme='dark'] .learner-nav__user-role {
   align-items: center;
   gap: 0.75rem;
   padding: 1rem;
-  border-bottom: 1px solid #27272a;
+  border-bottom: 1px solid var(--border);
+  background-color: var(--color-surface-alt);
 }
 
 .up-header-text {
@@ -521,20 +523,20 @@ html[data-theme='dark'] .learner-nav__user-role {
 .up-header-name {
   font-size: 14px;
   font-weight: 600;
-  color: white;
+  color: var(--text-h);
   line-height: 1.2;
 }
 
 .up-header-email {
   font-size: 12px;
-  color: #a1a1aa;
+  color: var(--color-text-muted);
   line-height: 1.2;
   margin-top: 2px;
 }
 
 .up-header-pro {
   font-size: 11px;
-  color: #60a5fa; /* Blue text */
+  color: var(--color-primary);
   font-weight: 600;
   margin-top: 4px;
 }
@@ -547,9 +549,10 @@ html[data-theme='dark'] .learner-nav__user-role {
   display: flex;
   align-items: center;
   width: 100%;
+  box-sizing: border-box;
   padding: 0.6rem 0.75rem;
   font-size: 14px;
-  color: #d4d4d8;
+  color: var(--text);
   background: transparent;
   border: none;
   border-radius: 6px;
@@ -560,20 +563,20 @@ html[data-theme='dark'] .learner-nav__user-role {
 }
 
 .up-menu-item:hover {
-  background-color: #27272a;
-  color: white;
+  background-color: var(--color-surface-hover);
+  color: var(--text-h);
 }
 
 .up-menu-icon {
   margin-right: 0.75rem;
   width: 18px;
   height: 18px;
-  color: #a1a1aa;
+  color: var(--color-text-muted);
   opacity: 0.8;
 }
 
 .up-menu-separator {
   height: 1px;
-  background-color: #27272a;
+  background-color: var(--border);
   margin: 0.25rem 0;
 }

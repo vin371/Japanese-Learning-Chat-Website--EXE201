@@ -133,6 +133,7 @@ export const AnimatedThemeToggler = ({
     variant,
     fromCenter = false,
     iconClassName,
+    children,
     ...props
 }: AnimatedThemeTogglerProps) => {
     const shape = variant ?? "circle"
@@ -233,11 +234,11 @@ export const AnimatedThemeToggler = ({
             aria-label={props["aria-label"] || "Toggle theme"}
             {...props}
         >
-            {isDark ? (
+            {children ? children : (isDark ? (
                 <Sun className={iconClassName} color="currentColor" />
             ) : (
                 <Moon className={iconClassName} color="black" />
-            )}
+            ))}
         </button>
     )
 }
