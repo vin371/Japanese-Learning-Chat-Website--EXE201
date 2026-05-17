@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
 import { ROUTES } from '../data/routes';
 import yumeLogo from '../assets/yume-logo.png';
+import { AnimatedThemeToggler } from '../ui/animated-theme-toggler';
 
 const MARKETING_PATHS = [ROUTES.HOME, ROUTES.LOGIN, ROUTES.REGISTER];
 
@@ -16,7 +17,7 @@ function marketingNavInitials(user, displayName) {
 
 export function Header() {
   const { isAuthenticated, logout, user } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  const { theme } = useTheme();
   const location = useLocation();
   const isMarketing = MARKETING_PATHS.includes(location.pathname);
   const [accountOpen, setAccountOpen] = useState(false);
@@ -71,15 +72,12 @@ export function Header() {
         </nav>
 
         <div className="layout-header__actions">
-          <button
-            type="button"
+          <AnimatedThemeToggler
             className="layout-header__theme"
-            onClick={toggleTheme}
+            iconClassName="layout-header__theme-icon"
             aria-label="Chuyển sáng/tối"
             title="Chuyển sáng/tối"
-          >
-            {theme === 'dark' ? '🌙' : '☀️'}
-          </button>
+          />
           {isAuthenticated ? (
             <div className="layout-header__account-wrap" ref={accountWrapRef}>
               <button
@@ -184,15 +182,12 @@ export function Header() {
         <span className="layout-header__logo-title">YumeGo-ji</span>
       </Link>
       <nav className="layout-header__nav">
-        <button
-          type="button"
+        <AnimatedThemeToggler
           className="layout-header__theme"
-          onClick={toggleTheme}
+          iconClassName="layout-header__theme-icon"
           aria-label="Chuyển sáng/tối"
           title="Chuyển sáng/tối"
-        >
-          {theme === 'dark' ? '🌙' : '☀️'}
-        </button>
+        />
         <Link to={ROUTES.HOME}>Trang chủ</Link>
         {isAuthenticated ? (
           <>
