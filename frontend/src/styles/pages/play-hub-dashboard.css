@@ -256,7 +256,7 @@ html[data-theme='dark'] .phd-reward-card {
   font-weight: 800;
   font-size: 0.82rem;
   margin-bottom: 0.2rem;
-  color: var(--color-text-h, #0f172a);
+  color: var(--text-h);
 }
 
 .phd-reward-card__d {

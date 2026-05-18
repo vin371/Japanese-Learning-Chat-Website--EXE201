@@ -13,7 +13,7 @@ import {
   themeClass,
 } from './playHubCore';
 import '../../../styles/pages/play-hub-dashboard.css';
-import { ChartColumn, Gem, Gamepad, Gamepad2, Swords, ShoppingBag, Trophy, Package, PackageOpen } from "lucide-react";
+import { ArrowRight, ChartColumn, Gem, Gamepad, Gamepad2, Swords, ShoppingBag, Trophy, Package, PackageOpen, X, Check, Flame, Zap } from "lucide-react";
 
 /** Alias để ESLint (không có react/jsx-uses-vars) nhận diện biến được dùng qua JSX. */
 const Motion = motion;
@@ -274,36 +274,38 @@ export function PlayHubDashboard({
                   <span aria-hidden><Gem size={20} /></span> Phần thưởng
                 </h2>
               </div>
-              <PhdRewardsMarquee
-                items={REWARD_CARDS}
-                renderCard={(r, i) => (
-                  <Motion.div className="phd-reward-card" whileHover={hoverReward} whileTap={{ scale: 0.98 }}>
-                    <Motion.span
-                      className="phd-reward-card__ico"
-                      aria-hidden
-                      animate={
-                        reduceMotion
-                          ? undefined
-                          : { y: [0, -6, 0], rotate: [0, 4, -4, 0] }
-                      }
-                      transition={
-                        reduceMotion
-                          ? undefined
-                          : {
-                            duration: 2.6 + (i % 4) * 0.2,
-                            repeat: Infinity,
-                            ease: 'easeInOut',
-                            delay: i * 0.09,
-                          }
-                      }
-                    >
-                      {r.icon}
-                    </Motion.span>
-                    <div className="phd-reward-card__t">{r.title}</div>
-                    <div className="phd-reward-card__d">{r.desc}</div>
-                  </Motion.div>
-                )}
-              />
+              <PhdRewardsMarquee pauseOnHover={false} speed={50}>
+                {REWARD_CARDS.map((r, i) => {
+                  const Icon = r.icon;
+                  return (
+                    <Motion.div key={r.title} className="phd-reward-card" whileHover={hoverReward} whileTap={{ scale: 0.98 }} style={{ width: 'min(152px, 44vw)' }}>
+                      <Motion.span
+                        className="phd-reward-card__ico"
+                        aria-hidden
+                        animate={
+                          reduceMotion
+                            ? undefined
+                            : { y: [0, -6, 0], rotate: [0, 4, -4, 0] }
+                        }
+                        transition={
+                          reduceMotion
+                            ? undefined
+                            : {
+                              duration: 2.6 + (i % 4) * 0.2,
+                              repeat: Infinity,
+                              ease: 'easeInOut',
+                              delay: i * 0.09,
+                            }
+                        }
+                      >
+                        <Icon size={26} color='#be123c' />
+                      </Motion.span>
+                      <div className="phd-reward-card__t">{r.title}</div>
+                      <div className="phd-reward-card__d">{r.desc}</div>
+                    </Motion.div>
+                  );
+                })}
+              </PhdRewardsMarquee>
             </Motion.section>
 
             <Motion.section className="play-dash__panel" variants={vBlock} aria-labelledby="dash-powerups-main">
@@ -312,7 +314,7 @@ export function PlayHubDashboard({
                   <span aria-hidden><PackageOpen /></span> Vật phẩm (Power-ups)
                 </h2>
                 <Link className="play-dash__link-more" to={`${ROUTES.PLAY}/shop`}>
-                  Cửa hàng xu →
+                  Cửa hàng xu <ArrowRight size={10} />
                 </Link>
               </div>
               <p className="play-dash__hint">
@@ -353,12 +355,12 @@ export function PlayHubDashboard({
               <summary><ChartColumn size={20} /> Cơ chế điểm số</summary>
               <div className="play-dash__score-cols">
                 <ul className="play-dash__checklist">
-                  <li>✅ Trả lời đúng: +100 điểm cơ bản</li>
-                  <li>🔥 Combo: ×1.2 → ×1.5 → ×2.0</li>
+                  <li><Check size={20} color='lightgreen' /> Trả lời đúng: +100 điểm cơ bản</li>
+                  <li><Flame size={20} fill='orange' color='orange' /> Combo: ×1.2 → ×1.5 → ×2.0</li>
                 </ul>
                 <ul className="play-dash__checklist">
-                  <li>⚡ Trả lời nhanh: + điểm thưởng</li>
-                  <li>❌ Sai: mất 1 mạng, reset combo</li>
+                  <li><Zap size={20} fill='yellow' color='yellow' /> Trả lời nhanh: + điểm thưởng</li>
+                  <li><X size={20} color='red' /> Sai: mất 1 mạng, reset combo</li>
                 </ul>
               </div>
             </details>

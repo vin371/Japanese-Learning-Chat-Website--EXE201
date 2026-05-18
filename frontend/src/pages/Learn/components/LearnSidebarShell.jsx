@@ -2,6 +2,7 @@ import { Fragment } from 'react';
 import { NavLink, Link } from 'react-router-dom';
 import { ROUTES } from '../../../data/routes';
 import { getJlptLevelCodeFromUser, jlptRank } from '../../../utils/learnLevelCode';
+import { BookUp, SpellCheck, Languages, MessageSquareText, Layers } from 'lucide-react';
 
 function IconRoadmap({ className }) {
   return (
@@ -244,7 +245,7 @@ export function LearnSidebarShell({
               className={`learn-shell-cats__btn${sectionFilter === 'vocab' ? ' learn-shell-cats__btn--active' : ''}`}
               onClick={() => goFilter('vocab')}
             >
-              <IconChar className="learn-shell-cats__ico" />
+              <BookUp size={20} />
               Từ vựng
             </button>
             <button
@@ -252,7 +253,7 @@ export function LearnSidebarShell({
               className={`learn-shell-cats__btn${sectionFilter === 'grammar' ? ' learn-shell-cats__btn--active' : ''}`}
               onClick={() => goFilter('grammar')}
             >
-              <IconGrammar className="learn-shell-cats__ico" />
+              <SpellCheck size={20} />
               Ngữ pháp
             </button>
             <button
@@ -260,7 +261,7 @@ export function LearnSidebarShell({
               className={`learn-shell-cats__btn${sectionFilter === 'kanji' ? ' learn-shell-cats__btn--active' : ''}`}
               onClick={() => goFilter('kanji')}
             >
-              <IconKanji className="learn-shell-cats__ico" />
+              <Languages size={20} />
               Kanji
             </button>
             <button
@@ -268,7 +269,7 @@ export function LearnSidebarShell({
               className={`learn-shell-cats__btn${sectionFilter === 'dialogue' ? ' learn-shell-cats__btn--active' : ''}`}
               onClick={() => goFilter('dialogue')}
             >
-              <IconChat className="learn-shell-cats__ico" />
+              <MessageSquareText size={20} />
               Hội thoại
             </button>
           </nav>
@@ -277,7 +278,7 @@ export function LearnSidebarShell({
             end
             className={({ isActive }) => `learn-shell-roadmap${isActive ? ' learn-shell-roadmap--active' : ''}`}
           >
-            <IconRoadmap className="learn-shell-roadmap__ico" />
+            <Layers size={20} />
             Lộ trình tổng quan
           </NavLink>
         </ShellCard>
