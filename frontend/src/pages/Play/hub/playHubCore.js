@@ -21,6 +21,7 @@ import {
   artSentenceBuilder,
   artVocabSpeed,
 } from '../../../assets/play';
+import { Gem, Coins, Medal, Award, Palette, Crown, Image as ImageIcon } from 'lucide-react';
 
 export const STATIC_FALLBACK = [
   {
@@ -170,13 +171,13 @@ export const POWERUP_ROWS = [
 ];
 
 export const REWARD_CARDS = [
-  { icon: '💎', title: 'EXP points', desc: 'Lên level tài khoản' },
-  { icon: '🪙', title: 'Xu trong game', desc: 'Đổi vật phẩm, power-ups' },
-  { icon: '🏅', title: 'Huy hiệu', desc: 'Trang trí profile' },
-  { icon: '🎀', title: 'Danh hiệu', desc: 'Hiển thị bên cạnh tên' },
-  { icon: '🎨', title: 'Sticker độc quyền', desc: 'Dùng trong chat' },
-  { icon: '👑', title: 'Premium miễn phí', desc: 'Ngày dùng thử Premium' },
-  { icon: '🖼️', title: 'Khung avatar', desc: 'Khung avatar đặc biệt' },
+  { icon: Gem, style: { color: "#b37900" }, title: 'EXP points', desc: 'Lên level tài khoản' },
+  { icon: Coins, style: { color: "#b37900" }, title: 'Xu trong game', desc: 'Đổi vật phẩm, power-ups' },
+  { icon: Medal, style: { color: "#b37900" }, title: 'Huy hiệu', desc: 'Trang trí profile' },
+  { icon: Award, style: { color: "#b37900" }, title: 'Danh hiệu', desc: 'Hiển thị bên cạnh tên' },
+  { icon: Palette, style: { color: "#b37900" }, title: 'Sticker độc quyền', desc: 'Dùng trong chat' },
+  { icon: Crown, style: { color: "#b37900" }, title: 'Premium miễn phí', desc: 'Ngày dùng thử Premium' },
+  { icon: ImageIcon, style: { color: "#b37900" }, title: 'Khung avatar', desc: 'Khung avatar đặc biệt' },
 ];
 
 export function pick(obj, ...keys) {

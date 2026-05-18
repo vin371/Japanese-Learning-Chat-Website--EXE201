@@ -10,24 +10,26 @@ import { RevenueTab } from './tabs/RevenueTab';
 import { SuggestionsTab } from './tabs/SuggestionsTab';
 import { SystemAdminTab } from './tabs/SystemAdminTab';
 import { UsersTab } from './tabs/UsersTab';
+import { ChartColumn, GamepadDirectional, Banknote, ScrollText, UserRoundCog, Settings, ShieldCogCorner, Lightbulb } from 'lucide-react';
 
 /** Alias để ESLint nhận diện biến dùng qua JSX. */
 const Motion = motion;
 
 const TABS = [
-  { id: 'overview', label: 'Tổng quan', icon: '📊' },
-  { id: 'revenue', label: 'Doanh thu', icon: '💲' },
-  { id: 'payments', label: 'Thanh toán', icon: '🧾' },
-  { id: 'users', label: 'Người dùng', icon: '👥' },
-  { id: 'games', label: 'Trò chơi', icon: '🎮' },
-  { id: 'moderation', label: 'Kiểm duyệt', icon: '🛡️' },
-  { id: 'system', label: 'Hệ Thống', icon: '⚙️' },
-  { id: 'suggestions', label: 'Đề xuất', icon: '💡' },
+  { id: 'overview', label: 'Tổng quan', icon: <ChartColumn /> },
+  { id: 'revenue', label: 'Doanh thu', icon: <Banknote /> },
+  { id: 'payments', label: 'Thanh toán', icon: <ScrollText /> },
+  { id: 'users', label: 'Người dùng', icon: <UserRoundCog /> },
+  { id: 'games', label: 'Trò chơi', icon: <GamepadDirectional /> },
+  { id: 'moderation', label: 'Kiểm duyệt', icon: <ShieldCogCorner /> },
+  { id: 'system', label: 'Hệ Thống', icon: <Settings /> },
+  { id: 'suggestions', label: 'Đề xuất', icon: <Lightbulb /> },
 ];
 
 export default function AdminDashboard() {
   const { user } = useAuth();
   const [tab, setTab] = useState('overview');
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const reduceMotion = useReducedMotion();
 
   const displayName = useMemo(
@@ -46,8 +48,16 @@ export default function AdminDashboard() {
 
   return (
     <div className="admin-dash admin-dash--kurenai" lang="vi">
-      <aside className="admin-dash__sidebar" aria-label="Điều hướng quản trị">
+      <aside className={`admin-dash__sidebar ${isCollapsed ? 'admin-dash__sidebar--collapsed' : ''}`} aria-label="Điều hướng quản trị">
         <div className="admin-dash__sidebar-brand">
+          <button
+            type="button"
+            className="admin-dash__sidebar-brand-mark"
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            title={isCollapsed ? 'Mở rộng' : 'Thu gọn'}
+          >
+            🌸
+          </button>
           <span className="admin-dash__sidebar-brand-title">Admin</span>
         </div>
 

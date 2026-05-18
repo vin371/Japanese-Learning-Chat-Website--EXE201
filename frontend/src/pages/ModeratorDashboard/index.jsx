@@ -10,19 +10,21 @@ import { LogsTab } from './tabs/LogsTab';
 import { OverviewTab } from './tabs/OverviewTab';
 import { ReportsTab } from './tabs/ReportsTab';
 import { StudentsTab } from './tabs/StudentsTab';
+import { ChartColumn, Flag, GraduationCap, NotebookPen, MessageCircleMore, MessageSquareWarning, BookText, Pin, Check, ShieldUser } from 'lucide-react';
 
 const Motion = motion;
 
 const TAB_STATIC = [
-  { id: 'overview', label: 'Tổng quan', icon: '📊', badge: null },
-  { id: 'reports', label: 'Báo cáo và xử lý', icon: '🚩', badgeKey: 'pending' },
-  { id: 'chat', label: 'Giám sát chat', icon: '💬', badge: null },
-  { id: 'content', label: 'Bài học và nội dung', icon: '📚', badge: null },
+  { id: 'overview', label: 'Tổng quan', icon: <ChartColumn />, badge: null },
+  { id: 'reports', label: 'Báo cáo và xử lý', icon: <Flag />, badgeKey: 'pending' },
+  { id: 'chat', label: 'Giám sát chat', icon: <MessageCircleMore />, badge: null },
+  { id: 'content', label: 'Bài học và nội dung', icon: <BookText />, badge: null },
 ];
 
 export default function ModeratorDashboard() {
   const { user } = useAuth();
   const [tab, setTab] = useState('overview');
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const [overview, setOverview] = useState(null);
   const reduceMotion = useReducedMotion();
 
@@ -53,10 +55,10 @@ export default function ModeratorDashboard() {
       {
         id: 'students',
         label: 'Học viên',
-        icon: '🎓',
+        icon: <GraduationCap />,
         badge: learnerCount != null ? learnerCount : '—',
       },
-      { id: 'logs', label: 'Nhật ký và nội bộ', icon: '📋', badge: null },
+      { id: 'logs', label: 'Nhật ký và nội bộ', icon: <NotebookPen />, badge: null },
     ],
     [learnerCount],
   );
@@ -76,12 +78,17 @@ export default function ModeratorDashboard() {
 
   return (
     <div className="mod-dash mod-dash--kurenai" lang="vi">
-      <aside className="mod-dash__k-side" aria-label="Điều hướng điều hành">
+      <aside className={`mod-dash__k-side ${isCollapsed ? 'mod-dash__k-side--collapsed' : ''}`} aria-label="Điều hướng điều hành">
         <div className="mod-dash__k-brand">
-          <span className="mod-dash__k-brand-mark" aria-hidden>
+          <button
+            type="button"
+            className="mod-dash__k-brand-mark"
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            title={isCollapsed ? 'Mở rộng' : 'Thu gọn'}
+          >
             🌸
-          </span>
-          <div>
+          </button>
+          <div className="mod-dash__k-brand-text">
             <span className="mod-dash__k-brand-title">YumeGo-ji</span>
             <span className="mod-dash__k-brand-sub">Moderator Dojo</span>
           </div>
@@ -99,8 +106,8 @@ export default function ModeratorDashboard() {
               </span>
               <span className="mod-dash__k-link-label">
                 {t.label}
-                {tabBadge(t) != null ? <span className="mod-dash__k-badge">{tabBadge(t)}</span> : null}
               </span>
+              {tabBadge(t) != null ? <span className="mod-dash__k-badge">{tabBadge(t)}</span> : null}
             </button>
           ))}
         </nav>
@@ -109,7 +116,7 @@ export default function ModeratorDashboard() {
             <span className="mod-dash__k-user-av" aria-hidden>
               {initials}
             </span>
-            <div>
+            <div className="mod-dash__k-user-info">
               <div className="mod-dash__k-user-name">{displayName}</div>
               <div className="mod-dash__k-user-role">Điều hành viên</div>
             </div>
@@ -129,7 +136,7 @@ export default function ModeratorDashboard() {
         <div className="mod-dash__k-stats" role="list">
           <div className="mod-dash__k-stat mod-dash__k-stat--amber" role="listitem">
             <span className="mod-dash__k-stat-ico" aria-hidden>
-              ⚠
+              <MessageSquareWarning />
             </span>
             <div>
               <div className="mod-dash__k-stat-value">{hasOv ? Math.round(animPending) : '—'}</div>
@@ -138,7 +145,7 @@ export default function ModeratorDashboard() {
           </div>
           <div className="mod-dash__k-stat mod-dash__k-stat--green" role="listitem">
             <span className="mod-dash__k-stat-ico" aria-hidden>
-              ✓
+              <Check />
             </span>
             <div>
               <div className="mod-dash__k-stat-value">{hasOv ? Math.round(animResolved) : '—'}</div>
@@ -147,7 +154,7 @@ export default function ModeratorDashboard() {
           </div>
           <div className="mod-dash__k-stat mod-dash__k-stat--kurenai" role="listitem">
             <span className="mod-dash__k-stat-ico" aria-hidden>
-              📌
+              <Pin />
             </span>
             <div>
               <div className="mod-dash__k-stat-value">{hasOv ? Math.round(animNew) : '—'}</div>
@@ -156,7 +163,7 @@ export default function ModeratorDashboard() {
           </div>
           <div className="mod-dash__k-stat mod-dash__k-stat--deep" role="listitem">
             <span className="mod-dash__k-stat-ico" aria-hidden>
-              👥
+              <ShieldUser />
             </span>
             <div>
               <div className="mod-dash__k-stat-value">{hasOv ? Math.round(animLearners) : '—'}</div>
