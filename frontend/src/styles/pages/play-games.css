@@ -654,6 +654,7 @@ html[data-theme='dark'] .play-layout--session .play-expbar__rank-text {
   from {
     background-position: 0 0, 0 0;
   }
+
   to {
     background-position: 26px 420px, -18px 360px;
   }
@@ -773,62 +774,76 @@ html[data-theme='dark'] .play-layout--session .play-expbar__rank-text {
 }
 
 @keyframes play-kana-idle-breathe {
+
   0%,
   100% {
     transform: translateY(0) scale(1);
   }
+
   50% {
     transform: translateY(-4px) scale(1.02);
   }
 }
 
 @keyframes play-kana-ghost-hit-shake {
+
   0%,
   100% {
     transform: translateX(0) rotate(0);
   }
+
   20% {
     transform: translateX(-5px) rotate(-6deg);
   }
+
   40% {
     transform: translateX(6px) rotate(5deg);
   }
+
   60% {
     transform: translateX(-4px) rotate(-3deg);
   }
 }
 
 @keyframes play-kana-hit-white-flash {
+
   0%,
   100% {
     filter: drop-shadow(0 10px 18px rgba(91, 33, 182, 0.35));
   }
+
   35% {
     filter: drop-shadow(0 0 0 #fff) brightness(1.35) contrast(0.95);
   }
 }
 
 @keyframes play-kana-ninja-hit-shake {
+
   0%,
   100% {
     transform: translateX(0);
   }
+
   25% {
     transform: translateX(-6px) rotate(-3deg);
   }
+
   50% {
     transform: translateX(7px) rotate(3deg);
   }
+
   75% {
     transform: translateX(-4px) rotate(-2deg);
   }
 }
 
 @keyframes play-kana-hit-red-flash {
+
   0%,
   100% {
     filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.38));
   }
+
   40% {
     filter: drop-shadow(0 0 0 #fecaca) sepia(0.35) saturate(2) hue-rotate(-15deg);
   }
@@ -838,9 +853,11 @@ html[data-theme='dark'] .play-layout--session .play-expbar__rank-text {
   0% {
     transform: translateX(0) scale(1);
   }
+
   45% {
     transform: translateX(-42%) scale(1.06);
   }
+
   100% {
     transform: translateX(0) scale(1);
   }
@@ -851,10 +868,12 @@ html[data-theme='dark'] .play-layout--session .play-expbar__rank-text {
     opacity: 0;
     transform: scale(0.35);
   }
+
   35% {
     opacity: 1;
     transform: scale(1.05);
   }
+
   100% {
     opacity: 0;
     transform: scale(1.35);
@@ -869,13 +888,11 @@ html[data-theme='dark'] .play-layout--session .play-expbar__rank-text {
 
 .play-kana-battle--bamboo {
   background-image:
-    repeating-linear-gradient(
-      90deg,
+    repeating-linear-gradient(90deg,
       rgba(21, 128, 61, 0.14) 0,
       rgba(21, 128, 61, 0.14) 10px,
       transparent 10px,
-      transparent 22px
-    ),
+      transparent 22px),
     linear-gradient(180deg, #ecfccb 0%, #86efac 38%, #166534 100%);
 }
 
@@ -1025,16 +1042,14 @@ html[data-theme='dark'] .play-layout--session .play-expbar__rank-text {
   opacity: 0;
   transform-origin: 50% 50%;
   transform: rotate(-22deg) scaleX(0.06);
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(69, 10, 10, 0.2) 16%,
-    rgba(127, 29, 29, 0.95) 42%,
-    rgba(220, 38, 38, 0.98) 50%,
-    rgba(185, 28, 28, 0.75) 56%,
-    rgba(69, 10, 10, 0.15) 72%,
-    transparent 100%
-  );
+  background: linear-gradient(90deg,
+      transparent 0%,
+      rgba(69, 10, 10, 0.2) 16%,
+      rgba(127, 29, 29, 0.95) 42%,
+      rgba(220, 38, 38, 0.98) 50%,
+      rgba(185, 28, 28, 0.75) 56%,
+      rgba(69, 10, 10, 0.15) 72%,
+      transparent 100%);
   filter: blur(0.55px);
   box-shadow:
     0 0 18px rgba(220, 38, 38, 0.65),
@@ -1090,8 +1105,7 @@ html[data-theme='dark'] .play-layout--session .play-expbar__rank-text {
   border: 4px solid transparent;
   border-top-color: rgba(185, 28, 28, 0.98);
   filter:
-    drop-shadow(0 0 10px rgba(220, 38, 38, 0.95)) drop-shadow(0 0 22px rgba(127, 29, 29, 0.75))
-    drop-shadow(0 0 6px rgba(254, 202, 202, 0.5));
+    drop-shadow(0 0 10px rgba(220, 38, 38, 0.95)) drop-shadow(0 0 22px rgba(127, 29, 29, 0.75)) drop-shadow(0 0 6px rgba(254, 202, 202, 0.5));
   transform: rotate(-22deg) scale(0.55);
 }
 
@@ -1175,14 +1189,17 @@ html[data-theme='dark'] .play-layout--session .play-expbar__rank-text {
     opacity: 0;
     transform: rotate(-22deg) scaleX(0.04);
   }
+
   22% {
     opacity: 1;
     transform: rotate(-22deg) scaleX(0.72);
   }
+
   55% {
     opacity: 0.85;
     transform: rotate(-22deg) scaleX(1);
   }
+
   100% {
     opacity: 0;
     transform: rotate(-22deg) scaleX(1.02);
@@ -1196,9 +1213,11 @@ html[data-theme='dark'] .play-layout--session .play-expbar__rank-text {
     top: 50%;
     transform: rotate(-10deg) scale(0.45);
   }
+
   8% {
     opacity: 1;
   }
+
   100% {
     opacity: 0;
     left: 72%;
@@ -1212,9 +1231,11 @@ html[data-theme='dark'] .play-layout--session .play-expbar__rank-text {
     opacity: 0;
     transform: rotate(-32deg) scale(0.45);
   }
+
   28% {
     opacity: 1;
   }
+
   100% {
     opacity: 0;
     transform: rotate(12deg) scale(1.12);
@@ -1225,9 +1246,11 @@ html[data-theme='dark'] .play-layout--session .play-expbar__rank-text {
   0% {
     opacity: 0;
   }
+
   18% {
     opacity: 1;
   }
+
   100% {
     opacity: 0;
   }
@@ -1238,6 +1261,7 @@ html[data-theme='dark'] .play-layout--session .play-expbar__rank-text {
     opacity: 1;
     transform: translate(0, 0) scale(0.6);
   }
+
   100% {
     opacity: 0.85;
     transform: translate(-130%, 10%) scale(1.15);
@@ -1249,6 +1273,7 @@ html[data-theme='dark'] .play-layout--session .play-expbar__rank-text {
     opacity: 1;
     transform: translateY(0) scale(1);
   }
+
   100% {
     opacity: 0;
     transform: translateY(-2.2rem) scale(1.15);
@@ -1387,10 +1412,12 @@ html[data-theme='dark'] .play-layout--session .play-expbar__rank-text {
     opacity: 0;
     transform: scale(0.4);
   }
+
   40% {
     opacity: 1;
     transform: scale(1);
   }
+
   100% {
     opacity: 0;
     transform: scale(1.25);
@@ -1425,13 +1452,11 @@ html[data-theme='dark'] .play-layout--session .play-expbar__rank-text {
   right: 0.15rem;
   bottom: -0.15rem;
   height: 0.55rem;
-  background: repeating-linear-gradient(
-    90deg,
-    #c4b5fd 0,
-    #c4b5fd 5px,
-    transparent 5px,
-    transparent 9px
-  );
+  background: repeating-linear-gradient(90deg,
+      #c4b5fd 0,
+      #c4b5fd 5px,
+      transparent 5px,
+      transparent 9px);
   border-radius: 0 0 10px 10px;
   opacity: 0.55;
 }
@@ -1553,10 +1578,12 @@ html[data-theme='dark'] .play-layout--session .play-expbar__rank-text {
 }
 
 @keyframes play-kana-yurei-float {
+
   0%,
   100% {
     transform: translateY(0);
   }
+
   50% {
     transform: translateY(-5px);
   }
@@ -1568,9 +1595,11 @@ html[data-theme='dark'] .play-layout--session .play-expbar__rank-text {
   0% {
     transform: translateX(0) scale(1);
   }
+
   55% {
     transform: translateX(42%) scale(1.06);
   }
+
   100% {
     transform: translateX(0) scale(1);
   }
@@ -1580,19 +1609,23 @@ html[data-theme='dark'] .play-layout--session .play-expbar__rank-text {
   0% {
     transform: rotate(12deg);
   }
+
   45% {
     transform: rotate(-28deg) translateY(-2px);
   }
+
   100% {
     transform: rotate(12deg);
   }
 }
 
 @keyframes play-kana-yurei-hit {
+
   0%,
   100% {
     transform: translateX(0);
   }
+
   40% {
     transform: translateX(12%) rotate(-6deg);
     filter: brightness(0.92);
@@ -1603,26 +1636,32 @@ html[data-theme='dark'] .play-layout--session .play-expbar__rank-text {
   0% {
     transform: translateX(0);
   }
+
   45% {
     transform: translateX(-18%) scale(1.05);
     filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.65));
   }
+
   100% {
     transform: translateX(0);
   }
 }
 
 @keyframes play-kana-ninja-hurt {
+
   0%,
   100% {
     transform: translateX(0);
   }
+
   20% {
     transform: translateX(-6px) rotate(-4deg);
   }
+
   40% {
     transform: translateX(5px) rotate(3deg);
   }
+
   60% {
     transform: translateX(-4px) rotate(-2deg);
   }
@@ -3019,6 +3058,15 @@ html[data-theme='dark'] .play-layout--session .play-expbar__rank-text {
   font-weight: 800;
   color: #f8fafc;
   letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.play-dash__lb-title svg,
+.play-dash__h2 svg {
+  display: block;
+  flex-shrink: 0;
 }
 
 .play-dash__lb-all {
@@ -3548,11 +3596,7 @@ html[data-theme='dark'] .play-layout--session .play-expbar__rank-text {
   transform: rotateY(180deg);
 }
 
-.kanji-memory--play
-  .kanji-memory__card:not(.kanji-memory__card--open):not(.kanji-memory__card--matched):not(
-    .kanji-memory__card--disabled
-  ):hover
-  .kanji-memory__flip-inner {
+.kanji-memory--play .kanji-memory__card:not(.kanji-memory__card--open):not(.kanji-memory__card--matched):not(.kanji-memory__card--disabled):hover .kanji-memory__flip-inner {
   transform: rotateY(180deg);
 }
 
@@ -3560,11 +3604,7 @@ html[data-theme='dark'] .play-layout--session .play-expbar__rank-text {
   transition-duration: 0.2s;
 }
 
-.kanji-memory--play.kanji-memory--reduce-motion
-  .kanji-memory__card:not(.kanji-memory__card--open):not(.kanji-memory__card--matched):not(
-    .kanji-memory__card--disabled
-  ):hover
-  .kanji-memory__flip-inner {
+.kanji-memory--play.kanji-memory--reduce-motion .kanji-memory__card:not(.kanji-memory__card--open):not(.kanji-memory__card--matched):not(.kanji-memory__card--disabled):hover .kanji-memory__flip-inner {
   transform: rotateY(0deg);
 }
 
@@ -4510,14 +4550,14 @@ html[data-theme='dark'] .play-game--arcade.play-arcade-shell--light.play-game--s
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.play-arcade__meter-track--boss > div {
+.play-arcade__meter-track--boss>div {
   height: 100%;
   border-radius: 999px;
   background: linear-gradient(90deg, #f97316, #facc15);
   transition: width 0.35s ease;
 }
 
-.play-arcade__meter-track--player > div {
+.play-arcade__meter-track--player>div {
   height: 100%;
   border-radius: 999px;
   background: linear-gradient(90deg, #22c55e, #67e8f9);
@@ -4822,7 +4862,7 @@ html[data-theme='light'] .play-dash__exprow {
   font-weight: 800;
 }
 
-html[data-theme='light'] .play-dash__exprow > span:last-child {
+html[data-theme='light'] .play-dash__exprow>span:last-child {
   color: #475569;
   font-weight: 700;
 }
@@ -5049,6 +5089,18 @@ html[data-theme='light'] .play-power__icon {
 /* Cửa hàng xu (/play/shop) */
 .play-dash__shop-link {
   margin: 0 0 0.75rem;
+}
+
+.play-dash__shop-link a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  text-decoration: none;
+}
+
+.play-dash__shop-link a svg {
+  display: block;
+  flex-shrink: 0;
 }
 
 .play-shop__title {
@@ -5294,8 +5346,8 @@ html[data-theme='dark'] .play-setup-pro__config-title {
   opacity: 0.85;
 }
 
-.play-setup-pro__config-card .kanji-memory__field > span,
-.play-setup-pro__config-card .play-setup-pro__field > span,
+.play-setup-pro__config-card .kanji-memory__field>span,
+.play-setup-pro__config-card .play-setup-pro__field>span,
 .play-setup-pro__config-card .play-game__setup-field label {
   font-weight: 700;
   font-size: 0.78rem;

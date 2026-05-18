@@ -94,7 +94,7 @@ html[data-theme='dark'] .phd-hero {
   margin: 0 0 0.45rem;
   font-size: clamp(1.35rem, 2.8vw, 1.85rem);
   font-weight: 800;
-  color: var(--color-text-h, #0f172a);
+  color: var(--text-h);
 }
 
 .phd-hero__title strong {
@@ -191,7 +191,7 @@ html[data-theme='dark'] .phd-stat-chip__val {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  color: var(--color-text-h, #0f172a);
+  color: var(--text-h);
 }
 
 .phd-link-quiet {
@@ -405,10 +405,18 @@ html[data-theme='dark'] .phd-details {
 }
 
 .phd-details summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   cursor: pointer;
   font-weight: 800;
   padding: 0.45rem 0;
   list-style: none;
+}
+
+.phd-details summary svg {
+  display: block;
+  flex-shrink: 0;
 }
 
 .phd-details summary::-webkit-details-marker {
