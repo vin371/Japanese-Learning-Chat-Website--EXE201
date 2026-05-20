@@ -323,9 +323,6 @@ html[data-theme='dark'] .admin-dash__btn--dark {
 }
 
 .admin-dash__kpi-trend {
-  position: absolute;
-  top: 0.85rem;
-  right: 0.85rem;
   font-size: 0.78rem;
   font-weight: 700;
 }
@@ -357,9 +354,6 @@ html[data-theme='dark'] .admin-dash__btn--dark {
 }
 
 .admin-dash__kpi-ico {
-  position: absolute;
-  top: 0.85rem;
-  left: 1rem;
   width: 32px;
   height: 32px;
   border-radius: 10px;
@@ -1167,6 +1161,7 @@ html[data-theme='dark'] .admin-dash__chip--on {
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .admin-users__stat,
   .admin-users__stat:hover {
     transition: none;
@@ -1335,6 +1330,11 @@ html[data-theme='dark'] .admin-dash__chip--on {
   white-space: nowrap;
 }
 
+.admin-users__table th:not(:first-child):not(.admin-users__th-actions),
+.admin-users__table td:not(:first-child):not(:last-child) {
+  text-align: center;
+}
+
 .admin-users__table td {
   padding: 0.72rem 1rem;
   border-bottom: 1px solid var(--admin-border);
@@ -1376,6 +1376,15 @@ html[data-theme='dark'] .admin-dash__chip--on {
   justify-content: center;
   flex-shrink: 0;
   box-shadow: 0 4px 12px rgba(142, 3, 29, 0.25);
+  overflow: hidden;
+}
+
+.admin-users__avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
 }
 
 .admin-users__name {
@@ -1387,10 +1396,11 @@ html[data-theme='dark'] .admin-dash__chip--on {
   color: var(--admin-muted);
 }
 
-.admin-users__td-email {
+.admin-users__email {
+  font-size: 0.75rem;
   color: var(--admin-muted);
-  max-width: 220px;
-  word-break: break-word;
+  word-break: break-all;
+  margin-top: 0.1rem;
 }
 
 .admin-users__role {
@@ -1425,6 +1435,7 @@ html[data-theme='dark'] .admin-dash__chip--on {
   border-radius: 999px;
   font-size: 0.75rem;
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .admin-users__status--ok {
@@ -1438,6 +1449,7 @@ html[data-theme='dark'] .admin-dash__chip--on {
   height: 6px;
   border-radius: 999px;
   background: #22c55e;
+  flex-shrink: 0;
 }
 
 .admin-users__status--locked {
@@ -1471,6 +1483,10 @@ html[data-theme='dark'] .admin-dash__chip--on {
 }
 
 .admin-users__action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
   padding: 0.3rem 0.55rem;
   border-radius: 8px;
   border: 1px solid var(--admin-border);
@@ -1486,6 +1502,19 @@ html[data-theme='dark'] .admin-dash__chip--on {
     transform 0.18s ease,
     box-shadow 0.18s ease;
 }
+
+.admin-users__action span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-users__action svg {
+  width: 13px !important;
+  height: 13px !important;
+  stroke-width: 2.2;
+}
+
 
 .admin-users__action:hover:not(:disabled) {
   border-color: color-mix(in srgb, var(--admin-red) 42%, var(--admin-border));
@@ -1642,23 +1671,13 @@ html[data-theme='dark'] .admin-dash__sidebar {
 .admin-dash__sidebar--collapsed .admin-dash__status-pill {
   opacity: 0;
   visibility: hidden;
-  position: absolute;
   pointer-events: none;
+  position: static;
 }
 
 .admin-dash__sidebar--collapsed .admin-dash__sidebar-brand-mark,
 .admin-dash__sidebar--collapsed .admin-dash__sidebar-link-ico {
   margin-right: 0;
-}
-
-.admin-dash__sidebar--collapsed .admin-dash__sidebar-link {
-  padding-left: 0;
-  padding-right: 0;
-  justify-content: center;
-}
-
-.admin-dash__sidebar--collapsed .admin-dash__sidebar-brand {
-  justify-content: center;
 }
 
 .admin-dash__sidebar-brand {
@@ -1786,6 +1805,7 @@ html[data-theme='dark'] .admin-dash__sidebar-link--active {
   justify-content: center;
   flex-shrink: 0;
   margin-right: 12px;
+  margin-left: -3px;
   font-size: 1.1rem;
   transition: margin 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
@@ -1873,13 +1893,11 @@ html[data-theme='dark'] .admin-dash__status-pill--sidebar {
   background-color: var(--admin-cream);
   background-image:
     radial-gradient(ellipse 120% 80% at 50% -20%, rgba(142, 3, 29, 0.06), transparent 55%),
-    repeating-linear-gradient(
-      0deg,
+    repeating-linear-gradient(0deg,
       transparent,
       transparent 2px,
       rgba(142, 3, 29, 0.02) 2px,
-      rgba(142, 3, 29, 0.02) 3px
-    ),
+      rgba(142, 3, 29, 0.02) 3px),
     linear-gradient(165deg, rgba(255, 255, 255, 0.5) 0%, transparent 42%);
 }
 
@@ -2047,6 +2065,7 @@ html[data-theme='dark'] .admin-dash__kpi-value--hero {
     opacity: 0;
     transform: translateY(14px) rotateX(4deg);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) rotateX(0);
@@ -2054,6 +2073,7 @@ html[data-theme='dark'] .admin-dash__kpi-value--hero {
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .admin-dash__card--rise,
   .admin-dash__card--rise-delay {
     animation: none;

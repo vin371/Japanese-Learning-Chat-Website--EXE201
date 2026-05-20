@@ -14,6 +14,7 @@ import {
   Cell,
 } from 'recharts';
 import { adminService } from '../../../services/adminService';
+import { ShieldUser, MonitorCog, Star } from 'lucide-react';
 
 const Motion = motion;
 
@@ -130,14 +131,14 @@ export function OverviewTab() {
           >
             <Motion.div className="admin-dash__kpi-card admin-dash__kpi-card--kurenai admin-dash__kpi-card--hero" variants={itemRise}>
               <span className="admin-dash__kpi-ico-ring" aria-hidden>
-                👥
+                <ShieldUser />
               </span>
               <div className="admin-dash__kpi-value admin-dash__kpi-value--hero">{totalUsers}</div>
               <div className="admin-dash__kpi-label">Tài khoản học viên</div>
             </Motion.div>
             <Motion.div className="admin-dash__kpi-card admin-dash__kpi-card--kurenai admin-dash__kpi-card--hero" variants={itemRise}>
               <span className="admin-dash__kpi-ico-ring" aria-hidden>
-                ✓
+                <MonitorCog />
               </span>
               <div className="admin-dash__kpi-value admin-dash__kpi-value--hero">{activeUsers}</div>
               <div className="admin-dash__kpi-label">Đang hoạt động</div>
@@ -147,7 +148,7 @@ export function OverviewTab() {
             </Motion.div>
             <Motion.div className="admin-dash__kpi-card admin-dash__kpi-card--kurenai admin-dash__kpi-card--hero" variants={itemRise}>
               <span className="admin-dash__kpi-ico-ring" aria-hidden>
-                ★
+                <Star />
               </span>
               <div className="admin-dash__kpi-value admin-dash__kpi-value--hero">{premiumUsers}</div>
               <div className="admin-dash__kpi-label">Tài khoản Premium</div>

@@ -3,6 +3,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { authService } from '../../../services/authService';
 import { adminService } from '../../../services/adminService';
 import { moderationService } from '../../../services/moderationService';
+import { ShieldUser, MonitorCog, Star, StarOff, UserRoundPlus, Ellipsis, Info, Key, Trash, Shield, ShieldBan } from 'lucide-react';
 
 const Motion = motion;
 
@@ -49,7 +50,8 @@ function normalizeUser(row) {
   const isEmailVerified = Boolean(row.isEmailVerified ?? row.IsEmailVerified);
   const createdRaw = row.createdAt ?? row.CreatedAt;
   const createdAt = createdRaw ? new Date(createdRaw) : null;
-  return { id, username, email, role, isLocked, levelId, isPremium, exp, xu, isEmailVerified, createdAt };
+  const avatarUrl = row.avatarUrl ?? row.AvatarUrl ?? null;
+  return { id, username, email, role, isLocked, levelId, isPremium, exp, xu, isEmailVerified, createdAt, avatarUrl };
 }
 
 function RoleBadge({ role }) {
@@ -297,7 +299,7 @@ export function UsersTab() {
       <Motion.div className="admin-users__stats" variants={listReveal} initial="hidden" animate="visible">
         <Motion.div className="admin-users__stat" variants={statRise}>
           <span className="admin-users__stat-icon admin-users__stat-icon--blue" aria-hidden>
-            ◎
+            <ShieldUser />
           </span>
           <div>
             <div className="admin-users__stat-value">{academyUsers}</div>
@@ -306,7 +308,7 @@ export function UsersTab() {
         </Motion.div>
         <Motion.div className="admin-users__stat" variants={statRise}>
           <span className="admin-users__stat-icon admin-users__stat-icon--green" aria-hidden>
-            ✓
+            <MonitorCog />
           </span>
           <div>
             <div className="admin-users__stat-value">{activeCount}</div>
@@ -315,7 +317,7 @@ export function UsersTab() {
         </Motion.div>
         <Motion.div className="admin-users__stat" variants={statRise}>
           <span className="admin-users__stat-icon admin-users__stat-icon--purple" aria-hidden>
-            ★
+            <Star />
           </span>
           <div>
             <div className="admin-users__stat-value">{premiumCount}</div>
@@ -324,7 +326,7 @@ export function UsersTab() {
         </Motion.div>
         <Motion.div className="admin-users__stat" variants={statRise}>
           <span className="admin-users__stat-icon admin-users__stat-icon--blue" aria-hidden>
-            +
+            <UserRoundPlus />
           </span>
           <div>
             <div className="admin-users__stat-value">{newCount}</div>
@@ -333,7 +335,7 @@ export function UsersTab() {
         </Motion.div>
         <Motion.div className="admin-users__stat" variants={statRise}>
           <span className="admin-users__stat-icon admin-users__stat-icon--amber" aria-hidden>
-            !
+            <Ellipsis />
           </span>
           <div>
             <div className="admin-users__stat-value">{pendingReports ?? '—'}</div>
@@ -419,7 +421,6 @@ export function UsersTab() {
               <thead>
                 <tr>
                   <th>Người dùng</th>
-                  <th>Email</th>
                   <th>Vai trò</th>
                   <th>Trạng thái</th>
                   <th>Premium</th>
@@ -436,15 +437,15 @@ export function UsersTab() {
                       <td>
                         <div className="admin-users__person">
                           <span className="admin-users__avatar" aria-hidden>
-                            {String(u.username).slice(0, 1).toUpperCase()}
+                            {u.avatarUrl ? <img src={u.avatarUrl} alt="avatar" /> : String(u.username).slice(0, 1).toUpperCase()}
                           </span>
                           <div>
                             <div className="admin-users__name">{u.username}</div>
+                            <div className="admin-users__email">{u.email}</div>
                             <div className="admin-users__handle">ID {u.id}</div>
                           </div>
                         </div>
                       </td>
-                      <td className="admin-users__td-email">{u.email}</td>
                       <td>
                         <RoleBadge role={u.role} />
                       </td>
@@ -465,7 +466,7 @@ export function UsersTab() {
                         ) : (
                           <div className="admin-users__actions">
                             <button type="button" className="admin-users__action" disabled={busyId === u.id} onClick={() => void openDetail(u)}>
-                              Chi tiết
+                              <span><Info /></span> Chi tiết
                             </button>
                             <button
                               type="button"
@@ -477,16 +478,16 @@ export function UsersTab() {
                                 setRoleModal(u);
                               }}
                             >
-                              Vai trò
+                              <span><Key /></span>Vai trò
                             </button>
                             <button type="button" className="admin-users__action" disabled={busyId === u.id} onClick={() => void togglePremium(u)}>
-                              {u.isPremium ? 'Gỡ Premium' : 'Gán Premium'}
+                              <span>{u.isPremium ? <StarOff /> : <Star />}</span>{u.isPremium ? 'Hủy Premium' : 'Premium'}
                             </button>
                             <button type="button" className="admin-users__action" disabled={busyId === u.id} onClick={() => void toggleLock(u)}>
-                              {u.isLocked ? 'Mở khóa' : 'Khóa'}
+                              <span>{u.isLocked ? <Shield /> : <ShieldBan />}</span>{u.isLocked ? 'Mở khóa' : 'Khóa'}
                             </button>
                             <button type="button" className="admin-users__action admin-users__action--danger" disabled={busyId === u.id} onClick={() => void removeUser(u)}>
-                              Xóa
+                              <span><Trash /></span>Xóa
                             </button>
                           </div>
                         )}
