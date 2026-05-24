@@ -41,6 +41,5 @@ export default function ScrollReveal({ as = 'div', className = '', children, ...
     <Tag ref={ref} className={merged} {...rest}>
       {children}
     </Tag>
-    //
   );
 }
