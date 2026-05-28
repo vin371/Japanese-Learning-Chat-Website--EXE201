@@ -24,6 +24,7 @@ import {
 import { pickRandomKanaCombatSprites } from '../../assets/kanaCombatSprites';
 import { pickRandomKanaCombatBackdrop } from '../../assets/kanaCombatBackdrops';
 import { PlayKurenaiSummary } from './PlayKurenaiSummary';
+import { BookCheck, BookType, Calculator, CalendarDays, Gamepad, Puzzle, Settings, Star, Timer, Zap } from 'lucide-react';
 
 const Motion = motion;
 
@@ -90,12 +91,12 @@ function getSetupFeatureRows(apiGameSlug, kanaGame, isFlash) {
   if (kanaGame) {
     return [
       {
-        icon: '⏱',
+        icon: <Timer />,
         title: '10 giây mỗi câu',
         desc: 'Phải chọn romaji đúng trước khi đồng hồ về 0 — luyện phản xạ đọc bảng chữ.',
       },
       {
-        icon: '★',
+        icon: <Star />,
         title: 'Tính điểm linh hoạt',
         desc: 'Chơi qua API: theo cấu hình server; luyện offline: tối đa 100 điểm theo tỉ lệ đúng / tổng câu.',
       },
@@ -103,42 +104,42 @@ function getSetupFeatureRows(apiGameSlug, kanaGame, isFlash) {
   }
   if (apiGameSlug === 'vocabulary-speed-quiz') {
     return [
-      { icon: '⏱', title: '8 giây mỗi câu', desc: 'Đồng hồ client cố định 8s; điểm tốc độ theo thời gian trả lời.' },
+      { icon: <Timer />, title: '8 giây mỗi câu', desc: 'Đồng hồ client cố định 8s; điểm tốc độ theo thời gian trả lời.' },
       { icon: '📚', title: 'Từ vựng bài học', desc: 'Ưu tiên từ các bài bạn đã có tiến độ; thiếu thì bổ sung từ khoá học.' },
     ];
   }
   if (apiGameSlug === 'sentence-builder') {
     return [
-      { icon: '🧩', title: 'Kéo thả từ', desc: 'Mỗi câu ~75 giây — sắp xếp chip thành câu đúng thứ tự.' },
-      { icon: '✓', title: 'Theo bài học', desc: 'Câu hỏi gắn với nội dung đã xuất bản trên lộ trình.' },
+      { icon: <Puzzle />, title: 'Kéo thả từ', desc: 'Mỗi câu ~75 giây — sắp xếp chip thành câu đúng thứ tự.' },
+      { icon: <BookCheck />, title: 'Theo bài học', desc: 'Câu hỏi gắn với nội dung đã xuất bản trên lộ trình.' },
     ];
   }
   if (apiGameSlug === 'daily-challenge') {
     return [
-      { icon: '📅', title: 'Daily Challenge', desc: 'Tối thiểu 5 câu; bộ đề random từ kho server mỗi phiên.' },
+      { icon: <CalendarDays />, title: 'Daily Challenge', desc: 'Tối thiểu 5 câu; bộ đề random từ kho server mỗi phiên.' },
       { icon: '漢', title: 'Kanji & từ vựng', desc: 'Trắc nghiệm đọc hiểu ngắn, phù hợp ôn nhanh.' },
     ];
   }
   if (apiGameSlug === 'counter-quest') {
     return [
-      { icon: '🔢', title: 'Trợ từ đếm', desc: 'Quiz 4 đáp án — ưu tiên câu trong bài học của bạn.' },
-      { icon: '⚡', title: 'EXP & Xu', desc: 'Ghi nhận qua API khi hoàn thành phiên hợp lệ.' },
+      { icon: <Calculator />, title: 'Trợ từ đếm', desc: 'Quiz 4 đáp án — ưu tiên câu trong bài học của bạn.' },
+      { icon: <Zap />, title: 'EXP & Xu', desc: 'Ghi nhận qua API khi hoàn thành phiên hợp lệ.' },
     ];
   }
   if (apiGameSlug === 'boss-battle') {
     return [
       { icon: '👹', title: 'Boss HP', desc: 'HP chia theo số câu; trả lời đúng để gây sát thương.' },
-      { icon: '📖', title: 'Từ vựng & Kanji', desc: 'Ưu tiên bài học gần đây; thiếu dữ liệu thì dùng đề dự phòng server.' },
+      { icon: <BookType />, title: 'Từ vựng & Kanji', desc: 'Ưu tiên bài học gần đây; thiếu dữ liệu thì dùng đề dự phòng server.' },
     ];
   }
   if (isFlash) {
     return [
       { icon: '🃏', title: 'Flashcard Battle', desc: 'Bot mô phỏng đối thủ — câu hỏi từ từ vựng bài học.' },
-      { icon: '⚡', title: 'Tốc độ', desc: 'Giữ combo và độ chính xác để vượt điểm bot.' },
+      { icon: <Zap />, title: 'Tốc độ', desc: 'Giữ combo và độ chính xác để vượt điểm bot.' },
     ];
   }
   return [
-    { icon: '🎮', title: 'Mẹo', desc: 'Đọc phần chi tiết phía dưới rồi nhấn Bắt đầu khi đã sẵn sàng.' },
+    { icon: <Gamepad />, title: 'Mẹo', desc: 'Đọc phần chi tiết phía dưới rồi nhấn Bắt đầu khi đã sẵn sàng.' },
   ];
 }
 
@@ -216,9 +217,8 @@ function ArcadeDuelSceneBanner({
 }) {
   if (!backdropSrc || !ninjaSrc || !ghostSrc) return null;
   const bubble = bubbleChar || '？';
-  const fxClass = `${slashFx ? ' play-kana-battle--fx-slash' : ''}${orbFx ? ' play-kana-battle--fx-orb' : ''}${
-    screenTint ? ` play-kana-battle--tint-${screenTint}` : ''
-  }`;
+  const fxClass = `${slashFx ? ' play-kana-battle--fx-slash' : ''}${orbFx ? ' play-kana-battle--fx-orb' : ''}${screenTint ? ` play-kana-battle--tint-${screenTint}` : ''
+    }`;
   return (
     <section
       className={`play-kana-battle play-kana-battle--arcade play-kana-battle--sprites play-kana-battle--dynamic-temple play-kana-battle--has-photo-bg play-kana-battle--scene-banner${fxClass}`}
@@ -303,9 +303,8 @@ function KanaNinjaYureiArena({
   ghostSrc,
   backdropSrc,
 }) {
-  const fxClass = `${slashFx ? ' play-kana-battle--fx-slash' : ''}${orbFx ? ' play-kana-battle--fx-orb' : ''}${
-    screenTint ? ` play-kana-battle--tint-${screenTint}` : ''
-  }`;
+  const fxClass = `${slashFx ? ' play-kana-battle--fx-slash' : ''}${orbFx ? ' play-kana-battle--fx-orb' : ''}${screenTint ? ` play-kana-battle--tint-${screenTint}` : ''
+    }`;
   const photoBgClass = backdropSrc ? ' play-kana-battle--has-photo-bg' : '';
   return (
     <section
@@ -460,7 +459,9 @@ function normalizeApiQuestions(list) {
       q.optionsJSON ??
       q.options ??
       q.Options;
-    const options = parseOptions(raw);
+    const optionsRaw = parseOptions(raw);
+    const optionsWithIndex = optionsRaw.map((o, idx) => ({ ...o, originalIndex: idx }));
+    const options = shuffleArr(optionsWithIndex);
     return { id, questionText, options, correctIndex: null };
   });
 }
@@ -1000,7 +1001,7 @@ export default function KanaMatchGame() {
             sessionId,
             questionId: q.id,
             questionOrder: index + 1,
-            chosenIndex,
+            chosenIndex: chosenIndex !== null ? (q.options[chosenIndex]?.originalIndex ?? chosenIndex) : null,
             responseMs,
             powerUpUsed,
           });
@@ -1012,7 +1013,12 @@ export default function KanaMatchGame() {
           const hearts = res.heartsRemaining ?? res.HeartsRemaining ?? 0;
           const score = res.totalScoreSoFar ?? res.TotalScoreSoFar ?? 0;
           const cb = res.comboCount ?? res.ComboCount ?? 0;
-          const corrIdx = res.correctAnswerIndex ?? res.CorrectAnswerIndex;
+          const rawCorrIdx = res.correctAnswerIndex ?? res.CorrectAnswerIndex;
+          const corrIdx = rawCorrIdx != null
+            ? (q.options[0]?.originalIndex !== undefined
+              ? Math.max(0, q.options.findIndex((o) => o.originalIndex === rawCorrIdx))
+              : rawCorrIdx)
+            : null;
           setHeartsRemaining(hearts);
           setTotalScore(score);
           setCombo(cb);
@@ -1147,8 +1153,8 @@ export default function KanaMatchGame() {
         } catch (e) {
           setError(
             e?.response?.data?.message ||
-              (typeof e?.message === 'string' ? e.message : '') ||
-              'Lỗi gửi đáp án — chuyển sang luyện offline.',
+            (typeof e?.message === 'string' ? e.message : '') ||
+            'Lỗi gửi đáp án — chuyển sang luyện offline.',
           );
           busyRef.current = false;
           if (kanaGame) startLocal(questionCount);
@@ -1340,9 +1346,14 @@ export default function KanaMatchGame() {
         questionId: qid,
       });
       const raw = res?.hiddenOptionIndices ?? res?.HiddenOptionIndices ?? [];
-      const next = Array.isArray(raw)
+      const nextOriginal = Array.isArray(raw)
         ? raw.map((x) => Number(x)).filter((n) => Number.isFinite(n) && n >= 0)
         : [];
+      const next = nextOriginal.map((origIdx) =>
+        qcur.options[0]?.originalIndex !== undefined
+          ? qcur.options.findIndex((o) => o.originalIndex === origIdx)
+          : origIdx
+      ).filter((idx) => idx >= 0);
       setFiftyHiddenIndices((prev) => {
         const merged = new Set([...prev, ...next]);
         return [...merged];
@@ -1485,7 +1496,7 @@ export default function KanaMatchGame() {
               <section className="play-setup-pro__config-card">
                 <div className="play-setup-pro__config-title">
                   <span className="play-setup-pro__config-gear" aria-hidden>
-                    ⚙
+                    <Settings />
                   </span>
                   Cấu hình lượt chơi
                 </div>
