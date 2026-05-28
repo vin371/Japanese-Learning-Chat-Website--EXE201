@@ -4513,11 +4513,10 @@ html[data-theme='light'] .mod-dash__k-foot {
 .mod-dash__k-side--collapsed .mod-dash__k-brand-text,
 .mod-dash__k-side--collapsed .mod-dash__k-link-label,
 .mod-dash__k-side--collapsed .mod-dash__k-user-info {
-  opacity: 0;
-  visibility: hidden;
-  position: absolute;
-  /* QUAN TRỌNG: Loại bỏ độ rộng ẩn của chữ */
-  pointer-events: none;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  position: static !important;
 }
 
 .mod-dash__k-side--collapsed .mod-dash__k-badge {
@@ -4550,6 +4549,7 @@ html[data-theme='dark'] .mod-dash__k-side--collapsed .mod-dash__k-badge {
   display: flex;
   align-items: center;
   padding: 0;
+  gap: 12px;
   margin-bottom: 0.5rem;
   white-space: nowrap;
 }
@@ -4573,9 +4573,9 @@ html[data-theme='dark'] .mod-dash__k-side--collapsed .mod-dash__k-badge {
   align-items: center;
   justify-content: center;
   font-size: 1.35rem;
-  flex-shrink: 0;
+  flex-shrink: 0 !important;
   /* Khóa cứng kích thước Logo */
-  margin-right: 12px;
+  margin-right: 12px !important;
   box-shadow: 0 8px 26px rgba(0, 0, 0, 0.35);
   border: none;
   cursor: pointer;
@@ -4621,7 +4621,9 @@ html[data-theme='dark'] .mod-dash__k-side--collapsed .mod-dash__k-badge {
   position: relative;
   align-items: center;
   width: 100%;
-  padding: 0.65rem 12px;
+  height: 48px !important;
+  padding: 0 12px !important;
+  gap: 12px;
   /* Toán học: 12x2 + 24(icon) = 48px. Khớp chính xác với vùng hiển thị 48px khi thu gọn */
   border-radius: 12px;
   border: 1px solid transparent;
@@ -4655,9 +4657,8 @@ html[data-theme='dark'] .mod-dash__k-side--collapsed .mod-dash__k-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  /* Khóa cứng kích thước Icon */
-  margin-right: 12px;
+  flex-shrink: 0 !important;
+  margin-right: 12px !important;
   font-size: 1.1rem;
   transition: margin 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
@@ -4706,6 +4707,7 @@ html[data-theme='dark'] .mod-dash__k-side--collapsed .mod-dash__k-badge {
   display: flex;
   align-items: center;
   padding: 0.45rem 4px;
+  gap: 12px;
   /* Toán học: 4x2 + 40(avatar) = 48px */
   white-space: nowrap;
 }
@@ -4721,8 +4723,8 @@ html[data-theme='dark'] .mod-dash__k-side--collapsed .mod-dash__k-badge {
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  margin-right: 12px;
+  flex-shrink: 0 !important;
+  margin-right: 12px !important;
   transition: margin 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
@@ -4819,7 +4821,15 @@ html[data-theme='dark'] .mod-dash__k-stat {
   border-left-color: #fbbf24;
 }
 
+html[data-theme='dark'] .mod-dash__k-stat--amber {
+  border-left-color: #fbbf24;
+}
+
 .mod-dash__k-stat--green {
+  border-left-color: #34d399;
+}
+
+html[data-theme='dark'] .mod-dash__k-stat--green {
   border-left-color: #34d399;
 }
 
@@ -4827,7 +4837,15 @@ html[data-theme='dark'] .mod-dash__k-stat {
   border-left-color: var(--mod-kurenai);
 }
 
+html[data-theme='dark'] .mod-dash__k-stat--kurenai {
+  border-left-color: var(--mod-kurenai);
+}
+
 .mod-dash__k-stat--deep {
+  border-left-color: #4c0510;
+}
+
+html[data-theme='dark'] .mod-dash__k-stat--deep {
   border-left-color: #4c0510;
 }
 

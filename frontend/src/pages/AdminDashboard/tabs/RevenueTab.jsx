@@ -3,6 +3,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { adminService } from '../../../services/adminService';
 import { useAnimatedNumber } from '../../../hooks/useAnimatedNumber';
+import { CircleDollarSign, Wallet, Users, Percent } from 'lucide-react';
 
 const Motion = motion;
 
@@ -164,36 +165,36 @@ export function RevenueTab() {
       {err ? <div className="admin-users__alert">{err}</div> : null}
 
       <Motion.div className="admin-dash__kpi-grid admin-dash__kpi-grid--4" variants={listReveal} initial="hidden" animate="visible">
-        <Motion.div className="admin-dash__kpi-card admin-dash__kpi-card--icon admin-dash__kpi-card--revenue" variants={cardRise}>
+        <Motion.div className="admin-dash__kpi-card admin-dash__kpi-card--revenue" variants={cardRise}>
           <div className="admin-dash__kpi-card-head">
-            <span className="admin-dash__kpi-ico admin-dash__kpi-ico--green">$</span>
+            <span className="admin-dash__kpi-ico admin-dash__kpi-ico--green"><CircleDollarSign size={20} /></span>
             <span className="admin-dash__kpi-trend admin-dash__kpi-trend--muted">Theo ngày</span>
           </div>
           <div className="admin-dash__kpi-value admin-dash__kpi-value--lg">{formatVndFull(animToday)}</div>
           <div className="admin-dash__kpi-label">Doanh thu hôm nay (đã duyệt)</div>
           <span className="admin-dash__kpi-foot admin-dash__kpi-foot--ok">Giao dịch premium đã duyệt</span>
         </Motion.div>
-        <Motion.div className="admin-dash__kpi-card admin-dash__kpi-card--icon admin-dash__kpi-card--revenue" variants={cardRise}>
+        <Motion.div className="admin-dash__kpi-card admin-dash__kpi-card--revenue" variants={cardRise}>
           <div className="admin-dash__kpi-card-head">
-            <span className="admin-dash__kpi-ico admin-dash__kpi-ico--blue">⌁</span>
+            <span className="admin-dash__kpi-ico admin-dash__kpi-ico--blue"><Wallet size={20} /></span>
             <span className="admin-dash__kpi-trend admin-dash__kpi-trend--muted">Lũy kế</span>
           </div>
           <div className="admin-dash__kpi-value admin-dash__kpi-value--lg">{formatVndFull(animCumulative)}</div>
           <div className="admin-dash__kpi-label">Doanh thu tích lũy</div>
           <span className="admin-dash__kpi-foot">Tổng đã ghi nhận</span>
         </Motion.div>
-        <Motion.div className="admin-dash__kpi-card admin-dash__kpi-card--icon admin-dash__kpi-card--revenue" variants={cardRise}>
+        <Motion.div className="admin-dash__kpi-card admin-dash__kpi-card--revenue" variants={cardRise}>
           <div className="admin-dash__kpi-card-head">
-            <span className="admin-dash__kpi-ico admin-dash__kpi-ico--purple">★</span>
+            <span className="admin-dash__kpi-ico admin-dash__kpi-ico--purple"><Users size={20} /></span>
             <span className="admin-dash__kpi-trend admin-dash__kpi-trend--muted">Học viện</span>
           </div>
           <div className="admin-dash__kpi-value admin-dash__kpi-value--lg">{animAcademy.toLocaleString('vi-VN')}</div>
           <div className="admin-dash__kpi-label">Học viên</div>
           <span className="admin-dash__kpi-foot admin-dash__kpi-foot--ok">Chỉ role user</span>
         </Motion.div>
-        <Motion.div className="admin-dash__kpi-card admin-dash__kpi-card--icon admin-dash__kpi-card--revenue" variants={cardRise}>
+        <Motion.div className="admin-dash__kpi-card admin-dash__kpi-card--revenue" variants={cardRise}>
           <div className="admin-dash__kpi-card-head">
-            <span className="admin-dash__kpi-ico admin-dash__kpi-ico--orange">◎</span>
+            <span className="admin-dash__kpi-ico admin-dash__kpi-ico--orange"><Percent size={20} /></span>
             <span className="admin-dash__kpi-trend admin-dash__kpi-trend--kurenai">Free → Premium</span>
           </div>
           <div className="admin-dash__kpi-value admin-dash__kpi-value--lg">{animConv}%</div>

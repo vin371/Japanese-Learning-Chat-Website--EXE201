@@ -12,7 +12,7 @@ import { ChatShellProvider } from '../../context/ChatShellProvider';
 import { useChatShell } from '../../hooks/useChatShell';
 import { SakuraRainLayer } from '../effects/SakuraRainLayer';
 import { AnimatedThemeToggler } from '../../ui/animated-theme-toggler';
-import { User, LogOut, BellPlus, BookText, MessageCircle, Moon, Sun, Settings, NotepadText } from 'lucide-react';
+import { User, LogOut, BellPlus, BookText, MessageCircle, Moon, Sun, Settings, NotepadText, House, MessageSquare, Search } from 'lucide-react';
 import yumeLogo from '../../assets/yume-logo.png';
 
 
@@ -1069,7 +1069,7 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
                             onClick={goChatLobbyPreservePath}
                           >
                             <span className="moji-chat__primary-item-ico" aria-hidden>
-                              ◎
+                              <House />
                             </span>
                             <span className="moji-chat__primary-item-label">Sảnh chat</span>
                           </button>
@@ -1128,7 +1128,7 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
                             aria-busy={shortcutBusyKey === 'general'}
                           >
                             <span className="moji-chat__primary-item-ico" aria-hidden>
-                              💬
+                              <MessageSquare />
                             </span>
                             <span className="moji-chat__primary-item-label">Phòng chung</span>
                             {primaryUnreadPill(shortcutRooms.general)}
@@ -1152,7 +1152,7 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
                   <div className="moji-chat__list-search-wrap">
                     <div className="moji-chat__list-search-field">
                       <span className="moji-chat__list-search-icon" aria-hidden>
-                        🔍
+                        <Search />
                       </span>
                       <input
                         type="search"
