@@ -1,6 +1,6 @@
 {
   "Version": 1,
-  "Hash": "sKWmXCTOCMDChFYdF87NDDK0Lc88Z7a9EVYiwZtZKsQ=",
+  "Hash": "wS/GCMmw9jD7XAW9MnxJKLD6KWhMOzlzJW6MMYFwiek=",
   "Source": "backend",
   "BasePath": "_content/backend",
   "Mode": "Default",
@@ -10,17 +10,17 @@
     {
       "Name": "backend\\wwwroot",
       "Source": "backend",
-      "ContentRoot": "d:\\semester 8\\EXE2\\Yumegoji-EXE201\\backend\\wwwroot\\",
+      "ContentRoot": "C:\\Users\\Chi\\OneDrive\\Documents\\GitHub\\Yumegoji-EXE201\\backend\\wwwroot\\",
       "BasePath": "_content/backend",
       "Pattern": "**"
     }
   ],
   "Assets": [
     {
-      "Identity": "d:\\semester 8\\EXE2\\Yumegoji-EXE201\\backend\\wwwroot\\uploads\\06e125544aae49c28e94222059b6b6af.png",
+      "Identity": "C:\\Users\\Chi\\OneDrive\\Documents\\GitHub\\Yumegoji-EXE201\\backend\\wwwroot\\uploads\\06e125544aae49c28e94222059b6b6af.png",
       "SourceId": "backend",
       "SourceType": "Discovered",
-      "ContentRoot": "d:\\semester 8\\EXE2\\Yumegoji-EXE201\\backend\\wwwroot\\",
+      "ContentRoot": "C:\\Users\\Chi\\OneDrive\\Documents\\GitHub\\Yumegoji-EXE201\\backend\\wwwroot\\",
       "BasePath": "_content/backend",
       "RelativePath": "uploads/06e125544aae49c28e94222059b6b6af.png",
       "AssetKind": "All",
@@ -36,10 +36,10 @@
       "OriginalItemSpec": "wwwroot\\uploads\\06e125544aae49c28e94222059b6b6af.png"
     },
     {
-      "Identity": "d:\\semester 8\\EXE2\\Yumegoji-EXE201\\backend\\wwwroot\\uploads\\17342f9102234c51aae2dbdd2d56b04c.png",
+      "Identity": "C:\\Users\\Chi\\OneDrive\\Documents\\GitHub\\Yumegoji-EXE201\\backend\\wwwroot\\uploads\\17342f9102234c51aae2dbdd2d56b04c.png",
       "SourceId": "backend",
       "SourceType": "Discovered",
-      "ContentRoot": "d:\\semester 8\\EXE2\\Yumegoji-EXE201\\backend\\wwwroot\\",
+      "ContentRoot": "C:\\Users\\Chi\\OneDrive\\Documents\\GitHub\\Yumegoji-EXE201\\backend\\wwwroot\\",
       "BasePath": "_content/backend",
       "RelativePath": "uploads/17342f9102234c51aae2dbdd2d56b04c.png",
       "AssetKind": "All",
@@ -55,10 +55,10 @@
       "OriginalItemSpec": "wwwroot\\uploads\\17342f9102234c51aae2dbdd2d56b04c.png"
     },
     {
-      "Identity": "d:\\semester 8\\EXE2\\Yumegoji-EXE201\\backend\\wwwroot\\uploads\\1b10874230414ebe8c841754b295307e.jpg",
+      "Identity": "C:\\Users\\Chi\\OneDrive\\Documents\\GitHub\\Yumegoji-EXE201\\backend\\wwwroot\\uploads\\1b10874230414ebe8c841754b295307e.jpg",
       "SourceId": "backend",
       "SourceType": "Discovered",
-      "ContentRoot": "d:\\semester 8\\EXE2\\Yumegoji-EXE201\\backend\\wwwroot\\",
+      "ContentRoot": "C:\\Users\\Chi\\OneDrive\\Documents\\GitHub\\Yumegoji-EXE201\\backend\\wwwroot\\",
       "BasePath": "_content/backend",
       "RelativePath": "uploads/1b10874230414ebe8c841754b295307e.jpg",
       "AssetKind": "All",
@@ -74,10 +74,10 @@
       "OriginalItemSpec": "wwwroot\\uploads\\1b10874230414ebe8c841754b295307e.jpg"
     },
     {
-      "Identity": "d:\\semester 8\\EXE2\\Yumegoji-EXE201\\backend\\wwwroot\\uploads\\2152197aaa814610956875cd86a631db.png",
+      "Identity": "C:\\Users\\Chi\\OneDrive\\Documents\\GitHub\\Yumegoji-EXE201\\backend\\wwwroot\\uploads\\2152197aaa814610956875cd86a631db.png",
       "SourceId": "backend",
       "SourceType": "Discovered",
-      "ContentRoot": "d:\\semester 8\\EXE2\\Yumegoji-EXE201\\backend\\wwwroot\\",
+      "ContentRoot": "C:\\Users\\Chi\\OneDrive\\Documents\\GitHub\\Yumegoji-EXE201\\backend\\wwwroot\\",
       "BasePath": "_content/backend",
       "RelativePath": "uploads/2152197aaa814610956875cd86a631db.png",
       "AssetKind": "All",
@@ -93,10 +93,29 @@
       "OriginalItemSpec": "wwwroot\\uploads\\2152197aaa814610956875cd86a631db.png"
     },
     {
-      "Identity": "d:\\semester 8\\EXE2\\Yumegoji-EXE201\\backend\\wwwroot\\uploads\\4c0b73b5716243bca19d2aaa6be4d2e5.png",
+      "Identity": "C:\\Users\\Chi\\OneDrive\\Documents\\GitHub\\Yumegoji-EXE201\\backend\\wwwroot\\uploads\\2225bf709c974424931152fd2241655e.png",
       "SourceId": "backend",
       "SourceType": "Discovered",
-      "ContentRoot": "d:\\semester 8\\EXE2\\Yumegoji-EXE201\\backend\\wwwroot\\",
+      "ContentRoot": "C:\\Users\\Chi\\OneDrive\\Documents\\GitHub\\Yumegoji-EXE201\\backend\\wwwroot\\",
+      "BasePath": "_content/backend",
+      "RelativePath": "uploads/2225bf709c974424931152fd2241655e.png",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\uploads\\2225bf709c974424931152fd2241655e.png"
+    },
+    {
+      "Identity": "C:\\Users\\Chi\\OneDrive\\Documents\\GitHub\\Yumegoji-EXE201\\backend\\wwwroot\\uploads\\4c0b73b5716243bca19d2aaa6be4d2e5.png",
+      "SourceId": "backend",
+      "SourceType": "Discovered",
+      "ContentRoot": "C:\\Users\\Chi\\OneDrive\\Documents\\GitHub\\Yumegoji-EXE201\\backend\\wwwroot\\",
       "BasePath": "_content/backend",
       "RelativePath": "uploads/4c0b73b5716243bca19d2aaa6be4d2e5.png",
       "AssetKind": "All",
@@ -112,10 +131,67 @@
       "OriginalItemSpec": "wwwroot\\uploads\\4c0b73b5716243bca19d2aaa6be4d2e5.png"
     },
     {
-      "Identity": "d:\\semester 8\\EXE2\\Yumegoji-EXE201\\backend\\wwwroot\\uploads\\70fcc8c1ac124d768cc746944803fe5d.png",
+      "Identity": "C:\\Users\\Chi\\OneDrive\\Documents\\GitHub\\Yumegoji-EXE201\\backend\\wwwroot\\uploads\\67f58e35c5c2447da490bd1781419f4e.gif",
       "SourceId": "backend",
       "SourceType": "Discovered",
-      "ContentRoot": "d:\\semester 8\\EXE2\\Yumegoji-EXE201\\backend\\wwwroot\\",
+      "ContentRoot": "C:\\Users\\Chi\\OneDrive\\Documents\\GitHub\\Yumegoji-EXE201\\backend\\wwwroot\\",
+      "BasePath": "_content/backend",
+      "RelativePath": "uploads/67f58e35c5c2447da490bd1781419f4e.gif",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\uploads\\67f58e35c5c2447da490bd1781419f4e.gif"
+    },
+    {
+      "Identity": "C:\\Users\\Chi\\OneDrive\\Documents\\GitHub\\Yumegoji-EXE201\\backend\\wwwroot\\uploads\\6f336e3e5381450eba0b41ad1a8499b6.jpg",
+      "SourceId": "backend",
+      "SourceType": "Discovered",
+      "ContentRoot": "C:\\Users\\Chi\\OneDrive\\Documents\\GitHub\\Yumegoji-EXE201\\backend\\wwwroot\\",
+      "BasePath": "_content/backend",
+      "RelativePath": "uploads/6f336e3e5381450eba0b41ad1a8499b6.jpg",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\uploads\\6f336e3e5381450eba0b41ad1a8499b6.jpg"
+    },
+    {
+      "Identity": "C:\\Users\\Chi\\OneDrive\\Documents\\GitHub\\Yumegoji-EXE201\\backend\\wwwroot\\uploads\\709bcb7ca49e44eb85df79546acb65e0.jpg",
+      "SourceId": "backend",
+      "SourceType": "Discovered",
+      "ContentRoot": "C:\\Users\\Chi\\OneDrive\\Documents\\GitHub\\Yumegoji-EXE201\\backend\\wwwroot\\",
+      "BasePath": "_content/backend",
+      "RelativePath": "uploads/709bcb7ca49e44eb85df79546acb65e0.jpg",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\uploads\\709bcb7ca49e44eb85df79546acb65e0.jpg"
+    },
+    {
+      "Identity": "C:\\Users\\Chi\\OneDrive\\Documents\\GitHub\\Yumegoji-EXE201\\backend\\wwwroot\\uploads\\70fcc8c1ac124d768cc746944803fe5d.png",
+      "SourceId": "backend",
+      "SourceType": "Discovered",
+      "ContentRoot": "C:\\Users\\Chi\\OneDrive\\Documents\\GitHub\\Yumegoji-EXE201\\backend\\wwwroot\\",
       "BasePath": "_content/backend",
       "RelativePath": "uploads/70fcc8c1ac124d768cc746944803fe5d.png",
       "AssetKind": "All",
@@ -131,10 +207,10 @@
       "OriginalItemSpec": "wwwroot\\uploads\\70fcc8c1ac124d768cc746944803fe5d.png"
     },
     {
-      "Identity": "d:\\semester 8\\EXE2\\Yumegoji-EXE201\\backend\\wwwroot\\uploads\\77357eb4479a4f7ea2b1f87198bc8ef4.pptx",
+      "Identity": "C:\\Users\\Chi\\OneDrive\\Documents\\GitHub\\Yumegoji-EXE201\\backend\\wwwroot\\uploads\\77357eb4479a4f7ea2b1f87198bc8ef4.pptx",
       "SourceId": "backend",
       "SourceType": "Discovered",
-      "ContentRoot": "d:\\semester 8\\EXE2\\Yumegoji-EXE201\\backend\\wwwroot\\",
+      "ContentRoot": "C:\\Users\\Chi\\OneDrive\\Documents\\GitHub\\Yumegoji-EXE201\\backend\\wwwroot\\",
       "BasePath": "_content/backend",
       "RelativePath": "uploads/77357eb4479a4f7ea2b1f87198bc8ef4.pptx",
       "AssetKind": "All",
@@ -150,10 +226,10 @@
       "OriginalItemSpec": "wwwroot\\uploads\\77357eb4479a4f7ea2b1f87198bc8ef4.pptx"
     },
     {
-      "Identity": "d:\\semester 8\\EXE2\\Yumegoji-EXE201\\backend\\wwwroot\\uploads\\7c42f2d691c34c11b132e0c16288b3ca.jpg",
+      "Identity": "C:\\Users\\Chi\\OneDrive\\Documents\\GitHub\\Yumegoji-EXE201\\backend\\wwwroot\\uploads\\7c42f2d691c34c11b132e0c16288b3ca.jpg",
       "SourceId": "backend",
       "SourceType": "Discovered",
-      "ContentRoot": "d:\\semester 8\\EXE2\\Yumegoji-EXE201\\backend\\wwwroot\\",
+      "ContentRoot": "C:\\Users\\Chi\\OneDrive\\Documents\\GitHub\\Yumegoji-EXE201\\backend\\wwwroot\\",
       "BasePath": "_content/backend",
       "RelativePath": "uploads/7c42f2d691c34c11b132e0c16288b3ca.jpg",
       "AssetKind": "All",
@@ -169,10 +245,10 @@
       "OriginalItemSpec": "wwwroot\\uploads\\7c42f2d691c34c11b132e0c16288b3ca.jpg"
     },
     {
-      "Identity": "d:\\semester 8\\EXE2\\Yumegoji-EXE201\\backend\\wwwroot\\uploads\\84901ec9b32e4231beb44f10e4acebfb.png",
+      "Identity": "C:\\Users\\Chi\\OneDrive\\Documents\\GitHub\\Yumegoji-EXE201\\backend\\wwwroot\\uploads\\84901ec9b32e4231beb44f10e4acebfb.png",
       "SourceId": "backend",
       "SourceType": "Discovered",
-      "ContentRoot": "d:\\semester 8\\EXE2\\Yumegoji-EXE201\\backend\\wwwroot\\",
+      "ContentRoot": "C:\\Users\\Chi\\OneDrive\\Documents\\GitHub\\Yumegoji-EXE201\\backend\\wwwroot\\",
       "BasePath": "_content/backend",
       "RelativePath": "uploads/84901ec9b32e4231beb44f10e4acebfb.png",
       "AssetKind": "All",
@@ -188,10 +264,10 @@
       "OriginalItemSpec": "wwwroot\\uploads\\84901ec9b32e4231beb44f10e4acebfb.png"
     },
     {
-      "Identity": "d:\\semester 8\\EXE2\\Yumegoji-EXE201\\backend\\wwwroot\\uploads\\be95693654a24407a33495abdac3ed61.pptx",
+      "Identity": "C:\\Users\\Chi\\OneDrive\\Documents\\GitHub\\Yumegoji-EXE201\\backend\\wwwroot\\uploads\\be95693654a24407a33495abdac3ed61.pptx",
       "SourceId": "backend",
       "SourceType": "Discovered",
-      "ContentRoot": "d:\\semester 8\\EXE2\\Yumegoji-EXE201\\backend\\wwwroot\\",
+      "ContentRoot": "C:\\Users\\Chi\\OneDrive\\Documents\\GitHub\\Yumegoji-EXE201\\backend\\wwwroot\\",
       "BasePath": "_content/backend",
       "RelativePath": "uploads/be95693654a24407a33495abdac3ed61.pptx",
       "AssetKind": "All",
@@ -207,10 +283,10 @@
       "OriginalItemSpec": "wwwroot\\uploads\\be95693654a24407a33495abdac3ed61.pptx"
     },
     {
-      "Identity": "d:\\semester 8\\EXE2\\Yumegoji-EXE201\\backend\\wwwroot\\uploads\\beba0c991c0145bca8c7a3f7df2069e6.png",
+      "Identity": "C:\\Users\\Chi\\OneDrive\\Documents\\GitHub\\Yumegoji-EXE201\\backend\\wwwroot\\uploads\\beba0c991c0145bca8c7a3f7df2069e6.png",
       "SourceId": "backend",
       "SourceType": "Discovered",
-      "ContentRoot": "d:\\semester 8\\EXE2\\Yumegoji-EXE201\\backend\\wwwroot\\",
+      "ContentRoot": "C:\\Users\\Chi\\OneDrive\\Documents\\GitHub\\Yumegoji-EXE201\\backend\\wwwroot\\",
       "BasePath": "_content/backend",
       "RelativePath": "uploads/beba0c991c0145bca8c7a3f7df2069e6.png",
       "AssetKind": "All",
@@ -226,10 +302,10 @@
       "OriginalItemSpec": "wwwroot\\uploads\\beba0c991c0145bca8c7a3f7df2069e6.png"
     },
     {
-      "Identity": "d:\\semester 8\\EXE2\\Yumegoji-EXE201\\backend\\wwwroot\\uploads\\c94d931a451b4e39b305f02c4b9fb7ac.png",
+      "Identity": "C:\\Users\\Chi\\OneDrive\\Documents\\GitHub\\Yumegoji-EXE201\\backend\\wwwroot\\uploads\\c94d931a451b4e39b305f02c4b9fb7ac.png",
       "SourceId": "backend",
       "SourceType": "Discovered",
-      "ContentRoot": "d:\\semester 8\\EXE2\\Yumegoji-EXE201\\backend\\wwwroot\\",
+      "ContentRoot": "C:\\Users\\Chi\\OneDrive\\Documents\\GitHub\\Yumegoji-EXE201\\backend\\wwwroot\\",
       "BasePath": "_content/backend",
       "RelativePath": "uploads/c94d931a451b4e39b305f02c4b9fb7ac.png",
       "AssetKind": "All",
@@ -245,10 +321,10 @@
       "OriginalItemSpec": "wwwroot\\uploads\\c94d931a451b4e39b305f02c4b9fb7ac.png"
     },
     {
-      "Identity": "d:\\semester 8\\EXE2\\Yumegoji-EXE201\\backend\\wwwroot\\uploads\\e40882994cea438a80bce61b6ba28261.pptx",
+      "Identity": "C:\\Users\\Chi\\OneDrive\\Documents\\GitHub\\Yumegoji-EXE201\\backend\\wwwroot\\uploads\\e40882994cea438a80bce61b6ba28261.pptx",
       "SourceId": "backend",
       "SourceType": "Discovered",
-      "ContentRoot": "d:\\semester 8\\EXE2\\Yumegoji-EXE201\\backend\\wwwroot\\",
+      "ContentRoot": "C:\\Users\\Chi\\OneDrive\\Documents\\GitHub\\Yumegoji-EXE201\\backend\\wwwroot\\",
       "BasePath": "_content/backend",
       "RelativePath": "uploads/e40882994cea438a80bce61b6ba28261.pptx",
       "AssetKind": "All",
@@ -264,10 +340,10 @@
       "OriginalItemSpec": "wwwroot\\uploads\\e40882994cea438a80bce61b6ba28261.pptx"
     },
     {
-      "Identity": "d:\\semester 8\\EXE2\\Yumegoji-EXE201\\backend\\wwwroot\\uploads\\f4fccb7e204745d888e17730f75b8bb0.png",
+      "Identity": "C:\\Users\\Chi\\OneDrive\\Documents\\GitHub\\Yumegoji-EXE201\\backend\\wwwroot\\uploads\\f4fccb7e204745d888e17730f75b8bb0.png",
       "SourceId": "backend",
       "SourceType": "Discovered",
-      "ContentRoot": "d:\\semester 8\\EXE2\\Yumegoji-EXE201\\backend\\wwwroot\\",
+      "ContentRoot": "C:\\Users\\Chi\\OneDrive\\Documents\\GitHub\\Yumegoji-EXE201\\backend\\wwwroot\\",
       "BasePath": "_content/backend",
       "RelativePath": "uploads/f4fccb7e204745d888e17730f75b8bb0.png",
       "AssetKind": "All",
@@ -281,6 +357,25 @@
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot\\uploads\\f4fccb7e204745d888e17730f75b8bb0.png"
+    },
+    {
+      "Identity": "C:\\Users\\Chi\\OneDrive\\Documents\\GitHub\\Yumegoji-EXE201\\backend\\wwwroot\\uploads\\fb8ceae6bedf45e3bcb9025ab08abbc3.jpg",
+      "SourceId": "backend",
+      "SourceType": "Discovered",
+      "ContentRoot": "C:\\Users\\Chi\\OneDrive\\Documents\\GitHub\\Yumegoji-EXE201\\backend\\wwwroot\\",
+      "BasePath": "_content/backend",
+      "RelativePath": "uploads/fb8ceae6bedf45e3bcb9025ab08abbc3.jpg",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\uploads\\fb8ceae6bedf45e3bcb9025ab08abbc3.jpg"
     }
   ]
 }
