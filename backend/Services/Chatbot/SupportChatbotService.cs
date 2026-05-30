@@ -1,7 +1,7 @@
-using System.Net.Http.Headers;
-using System.Text;
+using System.Collections.Generic;
 using System.Text.Json;
 using backend.DTOs.Chatbot;
+using backend.Services.AI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
@@ -10,15 +10,18 @@ namespace backend.Services.Chatbot;
 public class SupportChatbotService : ISupportChatbotService
 {
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IGoogleGeminiService _gemini;
     private readonly IConfiguration _configuration;
     private readonly ILogger<SupportChatbotService> _logger;
 
     public SupportChatbotService(
         IHttpClientFactory httpClientFactory,
+        IGoogleGeminiService gemini,
         IConfiguration configuration,
         ILogger<SupportChatbotService> logger)
     {
         _httpClientFactory = httpClientFactory;
+        _gemini = gemini;
         _configuration = configuration;
         _logger = logger;
     }
@@ -33,26 +36,53 @@ public class SupportChatbotService : ISupportChatbotService
         if (template != null)
             return new GuestChatbotResponse { Reply = template, Source = "template" };
 
-        var apiKey = _configuration["OpenAI:ApiKey"]?.Trim();
-        if (string.IsNullOrEmpty(apiKey))
+        var provider = (_configuration["Chatbot:Provider"] ?? "auto").Trim().ToLowerInvariant();
+        var hasGeminiKey = _gemini.IsConfigured;
+        var hasOpenAiKey = !string.IsNullOrWhiteSpace(_configuration["OpenAI:ApiKey"]);
+
+        if (provider == "gemini" || (provider == "auto" && hasGeminiKey))
         {
-            return new GuestChatbotResponse
+            if (!hasGeminiKey)
             {
-                Reply = DefaultNoLlmReply(),
-                Source = "template"
-            };
+                return new GuestChatbotResponse { Reply = DefaultNoGeminiReply(), Source = "template" };
+            }
+
+            try
+            {
+                var llm = await _gemini.GenerateAsync(ChatbotSystemPrompt, trimmed, cancellationToken: cancellationToken);
+                return new GuestChatbotResponse { Reply = llm, Source = "gemini" };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Chatbot Gemini failed, fallback template");
+                var msg = ex.Message.Contains("429", StringComparison.Ordinal) ||
+                          ex.Message.Contains("quota", StringComparison.OrdinalIgnoreCase)
+                    ? "Gemini đang hết quota (429). Thử lại sau vài phút, hoặc tạo API key mới tại Google AI Studio."
+                    : DefaultNoGeminiReply();
+                return new GuestChatbotResponse { Reply = msg, Source = "template" };
+            }
         }
 
-        try
+        if (provider == "openai" || (provider == "auto" && hasOpenAiKey))
         {
-            var llm = await CallLlmAsync(trimmed, cancellationToken);
-            return new GuestChatbotResponse { Reply = llm, Source = "llm" };
+            if (!hasOpenAiKey)
+            {
+                return new GuestChatbotResponse { Reply = DefaultNoLlmReply(), Source = "template" };
+            }
+
+            try
+            {
+                var llm = await CallOpenAiAsync(trimmed, cancellationToken);
+                return new GuestChatbotResponse { Reply = llm, Source = "llm" };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Chatbot OpenAI LLM failed, fallback template");
+                return new GuestChatbotResponse { Reply = DefaultNoLlmReply(), Source = "template" };
+            }
         }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Chatbot LLM failed, fallback template");
-            return new GuestChatbotResponse { Reply = DefaultNoLlmReply(), Source = "template" };
-        }
+
+        return new GuestChatbotResponse { Reply = DefaultNoGeminiReply(), Source = "template" };
     }
 
     private static bool ContainsAny(string t, params string[] needles)
@@ -125,33 +155,37 @@ public class SupportChatbotService : ISupportChatbotService
     }
 
     private static string DefaultNoLlmReply() =>
-        "Hiện chưa cấu hình AI (OpenAI:ApiKey). Bạn vẫn hỏi được các chủ đề có sẵn: đăng ký/đăng nhập, /learn, /play, /chat, /upgrade, quên mật khẩu (/forgot-password). Sau đăng nhập có thể chat với điều hành viên qua nút trong khung chat này.";
+        "Hiện chưa cấu hình AI (OpenAI:ApiKey). Bạn vẫn hỏi được các chủ đề có sẵn: đăng ký/đăng nhập, /learn, /play, /chat, /upgrade, quên mật khẩu (/forgot-password).";
 
-    private async Task<string> CallLlmAsync(string userMessage, CancellationToken cancellationToken)
+    private static string DefaultNoGeminiReply() =>
+        "Chưa cấu hình Google Gemini (Gemini:ApiKey trong appsettings.Secrets.json). Bạn vẫn hỏi được các chủ đề có sẵn: đăng ký, /learn, /play, /chat, /upgrade.";
+
+    private static string ChatbotSystemPrompt =>
+        "Bạn là chatbot hỗ trợ YumeGo-ji (nền tảng học tiếng Nhật cho người Việt). Người hỏi có thể là khách hoặc đã đăng nhập. " +
+        "Trả lời ngắn gọn, thân thiện, tiếng Việt; ưu tiên gợi ý đúng tính năng sau (đường dẫn gốc site): " +
+        "/register đăng ký; /login đăng nhập; /forgot-password quên mật khẩu; /learn học bài và khóa; /play mini game; " +
+        "/chat chat cộng đồng (cần đăng nhập); /dashboard bảng điều khiển; /account tài khoản; /upgrade Premium; /placement-test bài kiểm tra đầu vào. " +
+        "Chat 1-1 với điều hành viên: chỉ sau đăng nhập (nút trong widget chat hoặc khu hỗ trợ). " +
+        "Không bịa giá, hạn duyệt, hoặc chính sách pháp lý cụ thể. Không cam kết chấm bài hay thay giáo viên. " +
+        "Nếu không chắc hoặc hỏi ngoài phạm vi web, gợi đăng ký hoặc liên hệ điều hành viên.";
+
+    private async Task<string> CallOpenAiAsync(string userMessage, CancellationToken cancellationToken)
     {
         var model = _configuration["OpenAI:Model"] ?? "gpt-4o-mini";
         var baseUrl = (_configuration["OpenAI:BaseUrl"] ?? "https://api.openai.com/v1").TrimEnd('/');
         var key = _configuration["OpenAI:ApiKey"]!.Trim();
 
-        var systemPrompt =
-            "Bạn là chatbot hỗ trợ YumeGo-ji (nền tảng học tiếng Nhật cho người Việt). Người hỏi có thể là khách hoặc đã đăng nhập. " +
-            "Trả lời ngắn gọn, thân thiện, tiếng Việt; ưu tiên gợi ý đúng tính năng sau (đường dẫn gốc site): " +
-            "/register đăng ký; /login đăng nhập; /forgot-password quên mật khẩu; /learn học bài và khóa; /play mini game; " +
-            "/chat chat cộng đồng (cần đăng nhập); /dashboard bảng điều khiển; /account tài khoản; /upgrade Premium; /placement-test bài kiểm tra đầu vào. " +
-            "Chat 1-1 với điều hành viên: chỉ sau đăng nhập (nút trong widget chat hoặc khu hỗ trợ). " +
-            "Không bịa giá, hạn duyệt, hoặc chính sách pháp lý cụ thể. Không cam kết chấm bài hay thay giáo viên. " +
-            "Nếu không chắc hoặc hỏi ngoài phạm vi web, gợi đăng ký hoặc liên hệ điều hành viên.";
-
         var client = _httpClientFactory.CreateClient(nameof(SupportChatbotService));
         client.Timeout = TimeSpan.FromSeconds(90);
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", key);
+        client.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", key);
 
         var payload = new
         {
             model,
             messages = new object[]
             {
-                new { role = "system", content = systemPrompt },
+                new { role = "system", content = ChatbotSystemPrompt },
                 new { role = "user", content = userMessage }
             }
         };
@@ -159,7 +193,7 @@ public class SupportChatbotService : ISupportChatbotService
         var json = JsonSerializer.Serialize(payload, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
         using var req = new HttpRequestMessage(HttpMethod.Post, $"{baseUrl}/chat/completions")
         {
-            Content = new StringContent(json, Encoding.UTF8, "application/json")
+            Content = new StringContent(json, System.Text.Encoding.UTF8, "application/json")
         };
 
         var resp = await client.SendAsync(req, cancellationToken);

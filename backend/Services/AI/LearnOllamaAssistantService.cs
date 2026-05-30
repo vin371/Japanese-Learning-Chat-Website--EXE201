@@ -1,9 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http;
-using System.Text;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using backend.DTOs.Learning;
@@ -25,16 +22,16 @@ public class LearnOllamaAssistantService : ILearnOllamaAssistantService
         "Giải thích rõ ràng, ngắn gọn khi có thể; nếu có ảnh chụp bài tập, tài liệu hoặc kanji, hãy đọc và phân tích nội dung. " +
         "Không bịa đặt nguồn; nếu không đọc được ảnh, hãy nói thẳng.";
 
-    private readonly IHttpClientFactory _httpFactory;
+    private readonly IGoogleGeminiService _gemini;
     private readonly IConfiguration _configuration;
     private readonly ILogger<LearnOllamaAssistantService> _logger;
 
     public LearnOllamaAssistantService(
-        IHttpClientFactory httpFactory,
+        IGoogleGeminiService gemini,
         IConfiguration configuration,
         ILogger<LearnOllamaAssistantService> logger)
     {
-        _httpFactory = httpFactory;
+        _gemini = gemini;
         _configuration = configuration;
         _logger = logger;
     }
@@ -65,99 +62,28 @@ public class LearnOllamaAssistantService : ILearnOllamaAssistantService
                 throw new ArgumentException("Ảnh base64 không hợp lệ hoặc quá lớn.");
         }
 
-        var baseUrl = (_configuration["Ollama:BaseUrl"] ?? "http://127.0.0.1:11434").TrimEnd('/');
-        var textModel = _configuration["Ollama:ChatModel"] ?? "llama3.2";
-        var visionModel = _configuration["Ollama:VisionModel"] ?? textModel;
+        if (!_gemini.IsConfigured)
+            throw new InvalidOperationException("Chưa cấu hình Gemini:ApiKey trong appsettings.Secrets.json.");
+
+        var textModel = _configuration["Gemini:ChatModel"] ?? "gemini-2.0-flash";
+        var visionModel = _configuration["Gemini:VisionModel"] ?? textModel;
         var model = images.Count > 0 ? visionModel : textModel;
 
-        var ollamaMessages = new List<Dictionary<string, object?>>
-        {
-            new()
-            {
-                ["role"] = "system",
-                ["content"] = SystemPrompt
-            }
-        };
+        var chatMessages = request.Messages
+            .Where(m => !string.Equals(m.Role, "system", StringComparison.OrdinalIgnoreCase))
+            .Select(m => new GeminiChatMessage { Role = m.Role, Content = m.Content.Trim() })
+            .ToList();
 
-        var lastUserIndex = -1;
-        for (var i = request.Messages.Count - 1; i >= 0; i--)
-        {
-            if (string.Equals(request.Messages[i].Role, "user", StringComparison.OrdinalIgnoreCase))
-            {
-                lastUserIndex = i;
-                break;
-            }
-        }
+        var imageParts = images.Select(ParseImagePart).Where(x => x != null).Cast<GeminiImagePart>().ToList();
 
-        for (var i = 0; i < request.Messages.Count; i++)
-        {
-            var m = request.Messages[i];
-            var rl = m.Role.ToLowerInvariant();
-            var role = rl is "user" or "assistant" or "system" ? rl : "user";
-            if (role == "system")
-                continue;
-
-            if (i == lastUserIndex && role == "user" && images.Count > 0)
-            {
-                ollamaMessages.Add(new Dictionary<string, object?>
-                {
-                    ["role"] = "user",
-                    ["content"] = m.Content.Trim(),
-                    ["images"] = images.Select(StripDataUrlPrefix).ToList()
-                });
-            }
-            else
-            {
-                ollamaMessages.Add(new Dictionary<string, object?>
-                {
-                    ["role"] = role,
-                    ["content"] = m.Content.Trim()
-                });
-            }
-        }
-
-        var payload = new Dictionary<string, object?>
-        {
-            ["model"] = model,
-            ["stream"] = false,
-            ["messages"] = ollamaMessages
-        };
-
-        var client = _httpFactory.CreateClient(nameof(LearnOllamaAssistantService));
-        using var content = new StringContent(
-            JsonSerializer.Serialize(payload, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }),
-            Encoding.UTF8,
-            "application/json");
-
-        HttpResponseMessage resp;
         try
         {
-            resp = await client.PostAsync($"{baseUrl}/api/chat", content, cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Không kết nối được Ollama tại {BaseUrl}", baseUrl);
-            throw new InvalidOperationException(
-                "Không gọi được Ollama. Hãy chạy `ollama serve` và kiểm tra Ollama:BaseUrl trong appsettings.", ex);
-        }
-
-        using (resp)
-        {
-            var body = await resp.Content.ReadAsStringAsync(cancellationToken);
-            if (!resp.IsSuccessStatusCode)
-            {
-                _logger.LogWarning("Ollama HTTP {Status}: {Body}", (int)resp.StatusCode, body.Length > 500 ? body[..500] : body);
-                throw new InvalidOperationException(
-                    resp.StatusCode == System.Net.HttpStatusCode.NotFound
-                        ? $"Model '{model}' có thể chưa được tải. Chạy: ollama pull {model}"
-                        : "Ollama trả lỗi. Kiểm tra model trong cấu hình Ollama:ChatModel / Ollama:VisionModel.");
-            }
-
-            using var doc = JsonDocument.Parse(body);
-            var root = doc.RootElement;
-            var messageText = root.TryGetProperty("message", out var msgEl) && msgEl.TryGetProperty("content", out var cEl)
-                ? cEl.GetString() ?? ""
-                : "";
+            var messageText = await _gemini.GenerateChatAsync(
+                SystemPrompt,
+                chatMessages,
+                imageParts.Count > 0 ? imageParts : null,
+                model,
+                cancellationToken: cancellationToken);
 
             return new LearnAiChatResponse
             {
@@ -165,12 +91,38 @@ public class LearnOllamaAssistantService : ILearnOllamaAssistantService
                 Model = model
             };
         }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Learn AI Gemini failed");
+            throw new InvalidOperationException(
+                "Không gọi được Google Gemini. Kiểm tra Gemini:ApiKey và model.", ex);
+        }
     }
 
-    private static string StripDataUrlPrefix(string raw)
+    private static GeminiImagePart? ParseImagePart(string raw)
     {
         var s = raw.Trim();
-        var idx = s.IndexOf("base64,", StringComparison.OrdinalIgnoreCase);
-        return idx >= 0 ? s[(idx + 7)..] : s;
+        var mime = "image/jpeg";
+        var data = s;
+
+        if (s.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
+        {
+            var semi = s.IndexOf(';');
+            var comma = s.IndexOf("base64,", StringComparison.OrdinalIgnoreCase);
+            if (semi > 5 && comma > semi)
+            {
+                mime = s[5..semi];
+                data = s[(comma + 7)..];
+            }
+            else if (comma >= 0)
+            {
+                data = s[(comma + 7)..];
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(data))
+            return null;
+
+        return new GeminiImagePart { MimeType = mime, Base64Data = data };
     }
 }

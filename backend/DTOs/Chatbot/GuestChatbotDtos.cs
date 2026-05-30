@@ -10,6 +10,6 @@ public class GuestChatbotRequest
 public class GuestChatbotResponse
 {
     public string Reply { get; set; } = "";
-    /// <summary>llm (OpenAI/Ollama tương thích) | template (câu có sẵn)</summary>
+    /// <summary>gemini | llm (OpenAI) | ollama | template (câu có sẵn)</summary>
     public string Source { get; set; } = "template";
 }

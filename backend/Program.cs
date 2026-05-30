@@ -61,12 +61,20 @@ namespace backend
             builder.Services.AddScoped<IAdminService, AdminService>();
             builder.Services.AddScoped<IPaymentService, PaymentService>();
             builder.Services.AddScoped<IAIService, AIService>();
+            builder.Services.AddHttpClient(nameof(GoogleGeminiService), client =>
+            {
+                client.Timeout = TimeSpan.FromMinutes(6);
+            });
+            builder.Services.AddSingleton<IGoogleGeminiService, GoogleGeminiService>();
             builder.Services.AddHttpClient(nameof(LearnOllamaAssistantService), client =>
             {
                 client.Timeout = TimeSpan.FromMinutes(3);
             });
             builder.Services.AddScoped<ILearnOllamaAssistantService, LearnOllamaAssistantService>();
-            builder.Services.AddHttpClient(nameof(SupportChatbotService));
+            builder.Services.AddHttpClient(nameof(SupportChatbotService), client =>
+            {
+                client.Timeout = TimeSpan.FromMinutes(2);
+            });
             builder.Services.AddScoped<ISupportChatbotService, SupportChatbotService>();
             builder.Services.AddHttpClient(nameof(LessonAiImportService));
             builder.Services.AddScoped<ILessonAiImportService, LessonAiImportService>();

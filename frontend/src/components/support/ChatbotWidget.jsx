@@ -9,6 +9,17 @@ const INTRO_GUEST =
 const INTRO_MEMBER =
   'Chào bạn! Mình vẫn là chatbot YumeGo-ji — bạn có thể hỏi mình như khách. Nếu cần nói chuyện trực tiếp với người, hãy bấm nút "Mở chat với điều hành viên" phía trên.';
 
+const THINKING_MIN_MS = 5000;
+
+function waitMs(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function waitRemainingThinkingTime(startedAt, minMs = THINKING_MIN_MS) {
+  const remain = minMs - (Date.now() - startedAt);
+  if (remain > 0) await waitMs(remain);
+}
+
 /** Gửi nguyên câu này — khớp template backend để trả lời nhanh cả khi chưa bật LLM. */
 const CHAT_SUGGESTIONS = [
   { label: 'JLPT / N5', query: 'Lộ trình JLPT và bắt đầu N5 như thế nào?' },
@@ -19,9 +30,25 @@ const CHAT_SUGGESTIONS = [
 ];
 
 function sourceLabel(source) {
+  if (source === 'gemini') return ' · Chatbot (Gemini)';
   if (source === 'llm') return ' · Chatbot (LLM)';
-  if (source === 'template') return ' · Chatbot (mẫu)';
+  if (source === 'ollama') return ' · Chatbot (Ollama)';
+  
   return '';
+}
+
+function ChatbotTypingIndicator() {
+  return (
+    <div
+      className="support-chat-msg support-chat-msg--bot support-chat-msg--typing"
+      role="status"
+      aria-live="polite"
+      aria-label="Chatbot đang suy nghĩ"
+    >
+      <span className="support-chat-spinner" aria-hidden />
+      <span className="support-chat-msg__thinking">Đang suy nghĩ…</span>
+    </div>
+  );
 }
 
 export function ChatbotWidget() {
@@ -44,7 +71,7 @@ export function ChatbotWidget() {
     if (!open) return;
     const el = listRef.current;
     if (el) el.scrollTop = el.scrollHeight;
-  }, [messages, open]);
+  }, [messages, open, sending]);
 
   const sendGuest = useCallback(
     async (preset) => {
@@ -55,8 +82,10 @@ export function ChatbotWidget() {
       setError('');
       setMessages((m) => [...m, { role: 'user', text }]);
       setSending(true);
+      const startedAt = Date.now();
       try {
         const res = await postGuestChatbotMessage(text);
+        await waitRemainingThinkingTime(startedAt);
         const reply = res?.reply ?? 'Xin lỗi, chatbot chưa trả lời được.';
         setMessages((m) => [...m, { role: 'bot', text: reply, source: res?.source }]);
       } catch (e) {
@@ -93,7 +122,7 @@ export function ChatbotWidget() {
     <>
       <div className="support-chat-fab-wrap">
         <span className="support-chat-fab__hint">
-          {isAuthenticated ? 'Trợ lý học tiếng Nhật (AI)' : 'Chatbot (Khách)'}
+          {isAuthenticated ? 'Trợ lý học tiếng Nhật (AI)' : 'Chatbot'}
         </span>
         <button
           type="button"
@@ -175,6 +204,7 @@ export function ChatbotWidget() {
                 {msg.source ? <span className="support-chat-msg__meta">{sourceLabel(msg.source)}</span> : null}
               </div>
             ))}
+            {sending ? <ChatbotTypingIndicator /> : null}
           </div>
           <div className="support-chat-panel__form">
             <input
@@ -192,7 +222,7 @@ export function ChatbotWidget() {
               disabled={sending}
             />
             <button type="button" disabled={sending || !input.trim()} onClick={() => void sendGuest()}>
-              Gửi
+              {sending ? <span className="support-chat-spinner support-chat-spinner--btn" aria-hidden /> : 'Gửi'}
             </button>
           </div>
         </aside>

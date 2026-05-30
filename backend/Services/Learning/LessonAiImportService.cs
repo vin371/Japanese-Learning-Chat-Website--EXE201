@@ -9,6 +9,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using backend.DTOs.Learning;
+using backend.Services.AI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
@@ -29,15 +30,18 @@ public class LessonAiImportService : ILessonAiImportService
     };
 
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IGoogleGeminiService _gemini;
     private readonly IConfiguration _configuration;
     private readonly ILogger<LessonAiImportService> _logger;
 
     public LessonAiImportService(
         IHttpClientFactory httpClientFactory,
+        IGoogleGeminiService gemini,
         IConfiguration configuration,
         ILogger<LessonAiImportService> logger)
     {
         _httpClientFactory = httpClientFactory;
+        _gemini = gemini;
         _configuration = configuration;
         _logger = logger;
     }
@@ -59,16 +63,20 @@ public class LessonAiImportService : ILessonAiImportService
         }
 
         var provider = (_configuration["LessonImport:Provider"] ?? "auto").Trim().ToLowerInvariant();
+        var hasGeminiKey = _gemini.IsConfigured;
         var hasOpenAiKey = !string.IsNullOrWhiteSpace(_configuration["OpenAI:ApiKey"]);
+
+        if (provider == "gemini" || (provider == "auto" && hasGeminiKey))
+            return await GenerateWithGeminiAsync(trimmed, warning, lessonKind, cancellationToken);
 
         if (provider == "openai" || (provider == "auto" && hasOpenAiKey))
             return await GenerateWithOpenAiAsync(trimmed, warning, lessonKind, cancellationToken);
 
-        if (provider == "ollama" || (provider == "auto" && !hasOpenAiKey))
+        if (provider == "ollama" || (provider == "auto" && !hasOpenAiKey && !hasGeminiKey))
             return await GenerateWithOllamaAsync(trimmed, warning, lessonKind, cancellationToken);
 
         throw new InvalidOperationException(
-            "Cấu hình LessonImport:Provider không hợp lệ. Dùng: auto | openai | ollama.");
+            "Cấu hình LessonImport:Provider không hợp lệ. Dùng: auto | gemini | openai | ollama.");
     }
 
     /// <summary>Prompt chung — nhấn mạnh không làm sai kana/kanji (vd あ ≠ か).</summary>
@@ -162,6 +170,63 @@ public class LessonAiImportService : ILessonAiImportService
         }
 
         return "llama3.2";
+    }
+
+    private async Task<GenerateLessonDraftResponseDto> GenerateWithGeminiAsync(
+        string trimmed,
+        string? warning,
+        string? lessonKind,
+        CancellationToken cancellationToken)
+    {
+        if (!_gemini.IsConfigured)
+        {
+            throw new InvalidOperationException(
+                "LessonImport:Provider=gemini nhưng chưa cấu hình Gemini:ApiKey trong appsettings.Secrets.json.");
+        }
+
+        var geminiCap = ResolveGeminiMaxSourceChars();
+        if (trimmed.Length > geminiCap)
+        {
+            var note =
+                $"Gemini: chỉ dùng {geminiCap:N0} ký tự đầu (cấu hình LessonImport:GeminiMaxSourceChars, tối đa {MaxSourceChars:N0}).";
+            warning = CombineWarnings(warning, note);
+            trimmed = trimmed.Substring(0, geminiCap);
+        }
+
+        var model = _configuration["Gemini:ChatModel"] ?? "gemini-2.0-flash";
+        var systemPrompt = BuildSystemPrompt(lessonKind);
+        var userMessage = "Nội dung tài liệu gốc (giữ nguyên mọi ký tự tiếng Nhật):\n\n" + trimmed;
+
+        string content;
+        try
+        {
+            content = await _gemini.GenerateAsync(systemPrompt, userMessage, model, jsonMode: true, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Gemini lesson import failed");
+            throw;
+        }
+
+        var draft = ParseDraftFromAiContent(content);
+        SanitizeDraft(draft);
+
+        var previewLen = Math.Min(AiResponseExtractPreviewChars, trimmed.Length);
+        return new GenerateLessonDraftResponseDto
+        {
+            ExtractedCharacterCount = trimmed.Length,
+            ExtractedPreview = previewLen > 0 ? trimmed[..previewLen] : null,
+            Warning = CombineWarnings(warning, $"AI: Gemini ({model})."),
+            Draft = draft
+        };
+    }
+
+    private int ResolveGeminiMaxSourceChars()
+    {
+        var s = _configuration["LessonImport:GeminiMaxSourceChars"];
+        if (int.TryParse(s, out var n) && n is >= 4_000 and <= MaxSourceChars)
+            return n;
+        return MaxSourceChars;
     }
 
     private async Task<GenerateLessonDraftResponseDto> GenerateWithOpenAiAsync(

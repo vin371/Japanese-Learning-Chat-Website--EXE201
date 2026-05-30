@@ -2892,6 +2892,43 @@ html[data-theme='dark'] .app--learner .app-main--learner {
   margin-top: 0.2rem;
 }
 
+.support-chat-msg--typing {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 2.75rem;
+  min-height: 2rem;
+  padding: 0.55rem 0.85rem;
+}
+
+.support-chat-msg__thinking {
+  font-size: 0.78rem;
+  opacity: 0.72;
+}
+
+.support-chat-spinner {
+  display: inline-block;
+  width: 1.15rem;
+  height: 1.15rem;
+  border: 2px solid color-mix(in srgb, #7c3aed 22%, transparent);
+  border-top-color: #7c3aed;
+  border-radius: 50%;
+  animation: support-chat-spin 0.65s linear infinite;
+}
+
+.support-chat-spinner--btn {
+  width: 0.95rem;
+  height: 0.95rem;
+  border-color: color-mix(in srgb, #fff 35%, transparent);
+  border-top-color: #fff;
+}
+
+@keyframes support-chat-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .support-chat-panel__form {
   display: flex;
   gap: 0.4rem;
@@ -2918,6 +2955,11 @@ html[data-theme='dark'] .app--learner .app-main--learner {
   background: #7c3aed;
   color: #fff;
   cursor: pointer;
+  min-width: 3.1rem;
+  min-height: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .support-chat-panel__form button:disabled {
