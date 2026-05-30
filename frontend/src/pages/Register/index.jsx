@@ -316,11 +316,9 @@ export default function Register() {
                 </Motion.div>
               </Motion.div>
 
-              {error && (
-                <Motion.p className="form-error" variants={loginStaggerItem}>
-                  {error}
-                </Motion.p>
-              )}
+              <div className="auth-form-error-slot" aria-live="polite">
+                {error ? <p className="form-error">{error}</p> : null}
+              </div>
 
               <Motion.div variants={loginStaggerItem}>
                 <Motion.button

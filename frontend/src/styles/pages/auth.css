@@ -731,9 +731,10 @@
   position: relative;
   display: block;
   width: 100%;
+  height: 3.25rem;
   min-height: 3.25rem;
   margin: 0;
-  overflow: visible;
+  overflow: hidden;
   border-radius: 14px;
 }
 
@@ -747,6 +748,7 @@
   justify-content: center;
   align-items: center;
   width: 100%;
+  height: 3.25rem;
   min-height: 3.25rem;
   pointer-events: auto;
 }
@@ -761,9 +763,20 @@
   display: block !important;
   width: 100% !important;
   min-width: 100% !important;
+  height: 3.25rem !important;
   min-height: 3.25rem !important;
+  max-height: 3.25rem !important;
   margin: 0 auto !important;
   border: none !important;
+}
+
+.auth-form-error-slot {
+  min-height: 3.25rem;
+  margin: 0 0 0.75rem;
+}
+
+.auth-form-error-slot .form-error {
+  margin: 0;
 }
 
 .auth-google-fallback-pill {

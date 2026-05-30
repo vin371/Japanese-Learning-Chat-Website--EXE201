@@ -4,6 +4,7 @@ import { getGoogleClientId } from '../utils/googleClientId';
 
 const GSI_SCRIPT_URL = 'https://accounts.google.com/gsi/client';
 const GSI_SCRIPT_SELECTOR = 'script[data-yumegoji-gsi]';
+const WIDTH_EPSILON = 8;
 
 function loadGsiScript() {
   if (globalThis.google?.accounts?.id) {
@@ -30,6 +31,11 @@ function loadGsiScript() {
     script.onerror = () => reject(new Error('gsi-load-failed'));
     document.head.appendChild(script);
   });
+}
+
+function measureButtonWidth(mountEl) {
+  const wrap = mountEl.closest('.auth-google-pill-wrap');
+  return Math.min(400, Math.max(240, Math.round(wrap?.clientWidth || mountEl.clientWidth || 320)));
 }
 
 /**
@@ -68,13 +74,20 @@ export function useGoogleIdentityButton(onCredential, options = {}) {
 
     let cancelled = false;
     let intervalId;
-    let resizeObserver;
     let resizeTimer;
     let gsiInitialized = false;
+    let renderedWidth = 0;
 
-    const render = () => {
+    const render = (force = false) => {
       const g = globalThis.google;
       if (cancelled || !g?.accounts?.id) return false;
+
+      const w = measureButtonWidth(mountEl);
+      const hasButton = mountEl.childElementCount > 0;
+      if (!force && hasButton && Math.abs(w - renderedWidth) < WIDTH_EPSILON) {
+        return true;
+      }
+
       if (!gsiInitialized) {
         g.accounts.id.initialize({
           client_id: clientId,
@@ -84,9 +97,9 @@ export function useGoogleIdentityButton(onCredential, options = {}) {
         });
         gsiInitialized = true;
       }
+
+      renderedWidth = w;
       mountEl.replaceChildren();
-      const wrap = mountEl.closest('.auth-google-pill-wrap');
-      const w = Math.min(400, Math.max(240, Math.round(wrap?.clientWidth || mountEl.clientWidth || 320)));
       g.accounts.id.renderButton(mountEl, {
         type: 'standard',
         theme: 'outline',
@@ -99,31 +112,33 @@ export function useGoogleIdentityButton(onCredential, options = {}) {
       return true;
     };
 
-    if (!render()) {
+    const scheduleRender = (force = false) => {
+      globalThis.requestAnimationFrame(() => {
+        if (!cancelled) render(force);
+      });
+    };
+
+    if (!render(true)) {
       intervalId = globalThis.setInterval(() => {
-        if (render() && intervalId != null) globalThis.clearInterval(intervalId);
+        if (render(true) && intervalId != null) globalThis.clearInterval(intervalId);
       }, 120);
     }
 
-    if (typeof ResizeObserver !== 'undefined') {
-      const wrap = mountEl.closest('.auth-google-pill-wrap');
-      if (wrap) {
-        resizeObserver = new ResizeObserver(() => {
-          if (cancelled) return;
-          globalThis.clearTimeout(resizeTimer);
-          resizeTimer = globalThis.setTimeout(() => {
-            if (!cancelled) render();
-          }, 180);
-        });
-        resizeObserver.observe(wrap);
-      }
-    }
+    const onWindowResize = () => {
+      if (cancelled) return;
+      globalThis.clearTimeout(resizeTimer);
+      resizeTimer = globalThis.setTimeout(() => {
+        if (!cancelled) render(false);
+      }, 250);
+    };
+
+    globalThis.addEventListener('resize', onWindowResize, { passive: true });
 
     return () => {
       cancelled = true;
       if (intervalId != null) globalThis.clearInterval(intervalId);
       globalThis.clearTimeout(resizeTimer);
-      resizeObserver?.disconnect();
+      globalThis.removeEventListener('resize', onWindowResize);
       mountEl.replaceChildren();
     };
   }, [clientId, text, gsiReady]);
