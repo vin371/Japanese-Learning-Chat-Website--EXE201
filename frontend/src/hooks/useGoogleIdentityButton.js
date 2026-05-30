@@ -68,17 +68,21 @@ export function useGoogleIdentityButton(onCredential, options = {}) {
     let cancelled = false;
     let intervalId;
     let resizeObserver;
+    let gsiInitialized = false;
 
     const render = () => {
       const g = globalThis.google;
       if (cancelled || !g?.accounts?.id) return false;
+      if (!gsiInitialized) {
+        g.accounts.id.initialize({
+          client_id: clientId,
+          callback: (res) => {
+            void onCredential(res?.credential);
+          },
+        });
+        gsiInitialized = true;
+      }
       mountEl.replaceChildren();
-      g.accounts.id.initialize({
-        client_id: clientId,
-        callback: (res) => {
-          void onCredential(res?.credential);
-        },
-      });
       const wrap = mountEl.closest('.auth-google-pill-wrap');
       const w = Math.min(400, Math.max(240, Math.round(wrap?.clientWidth || mountEl.parentElement?.clientWidth || 320)));
       g.accounts.id.renderButton(mountEl, {

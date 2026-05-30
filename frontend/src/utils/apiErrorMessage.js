@@ -36,6 +36,10 @@ export function getErrorMessageForUser(err, fallbackVi = 'Đã có lỗi xảy r
     return 'Bạn không có quyền thực hiện thao tác này.';
   }
   if (status === 404) {
+    const url = String(err?.config?.url || err?.response?.config?.url || '');
+    if (url.includes('/api/') || url.includes('/hubs/')) {
+      return 'Không gọi được API backend (404). Trên Vercel: đặt VITE_API_URL trỏ tới URL backend (Railway/Azure) rồi deploy lại frontend.';
+    }
     return 'Không tìm thấy dữ liệu.';
   }
   if (status === 500) {
