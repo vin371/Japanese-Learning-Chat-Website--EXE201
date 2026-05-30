@@ -1,0 +1,202 @@
+using System;
+using System.Security.Claims;
+using System.Threading.Tasks;
+using backend.Authorization;
+using backend.DTOs.Auth;
+using backend.DTOs.User;
+using backend.Services.Auth;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc;
+using Npgsql;
+using backend.Data;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
+
+namespace backend.Controllers;
+
+/// <summary>API Mô-đun 1: Xác thực – Đăng ký, đăng nhập, xác minh email, quên mật khẩu.</summary>
+[ApiController]
+[Route("api/[controller]")]
+public class AuthController : ControllerBase
+{
+    private readonly IAuthService _authService;
+    private readonly IWebHostEnvironment _env;
+    private readonly IConfiguration _configuration;
+
+    public AuthController(IAuthService authService, IWebHostEnvironment env, IConfiguration configuration)
+    {
+        _authService = authService;
+        _env = env;
+        _configuration = configuration;
+    }
+
+    [HttpPost("forgot-password")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
+    {
+        var email = request?.Email?.Trim();
+        if (string.IsNullOrEmpty(email))
+            return BadRequest(new { message = "Vui lòng nhập email." });
+
+        var result = await _authService.RequestPasswordResetAsync(email);
+        const string msg =
+            "Nếu email đã được đăng ký trên hệ thống, bạn sẽ nhận được hướng dẫn đặt lại mật khẩu (kiểm tra hộp thư hoặc liên hệ hỗ trợ).";
+        if (!_env.IsDevelopment())
+            return Ok(new { message = msg });
+
+        var smtpReady = !string.IsNullOrWhiteSpace(_configuration["Smtp:Host"])
+                        && !string.IsNullOrWhiteSpace(_configuration["Smtp:FromEmail"]);
+        return Ok(new
+        {
+            message = msg,
+            resetUrl = result.DevelopmentResetUrl,
+            smtpNotConfigured = !smtpReady,
+        });
+    }
+
+    [HttpPost("reset-password")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+    {
+        try
+        {
+            await _authService.ResetPasswordWithTokenAsync(request?.Token ?? "", request?.NewPassword ?? "");
+            return Ok(new { message = "Đặt lại mật khẩu thành công. Bạn có thể đăng nhập." });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("register")]
+    [AllowAnonymous]
+    public async Task<IActionResult> Register([FromBody] RegisterRequest request)
+    {
+        try
+        {
+            var result = await _authService.RegisterAsync(request);
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("login")]
+    [AllowAnonymous]
+    public async Task<IActionResult> Login([FromBody] LoginRequest request)
+    {
+        try
+        {
+            var result = await _authService.LoginAsync(request);
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("google")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequest request)
+    {
+        try
+        {
+            var result = await _authService.LoginWithGoogleAsync(request?.IdToken ?? string.Empty);
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpGet("users")]
+    [Authorize(Policy = AuthPolicies.AdminOnly)]
+    public async Task<IActionResult> GetAllUsers()
+    {
+        var users = await _authService.GetAllUsersAsync();
+        return Ok(users);
+    }
+
+    [HttpGet("users/{id:int}")]
+    [Authorize(Policy = AuthPolicies.Member)]
+    public async Task<IActionResult> GetUserById(int id)
+    {
+        var currentUserIdString = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        int.TryParse(currentUserIdString, out var currentUserId);
+        var isAdmin = User.IsInRole(AppRoles.Admin);
+
+        if (!isAdmin && currentUserId != id)
+        {
+            return Forbid();
+        }
+
+        var user = await _authService.GetUserByIdAsync(id);
+        if (user == null) return NotFound();
+
+        return Ok(user);
+    }
+
+    [HttpPut("users/{id:int}")]
+    [Authorize(Policy = AuthPolicies.Member)]
+    public async Task<IActionResult> UpdateUser(int id, [FromBody] UpdateUserRequest request)
+    {
+        var currentUserIdString = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        int.TryParse(currentUserIdString, out var currentUserId);
+        var isAdmin = User.IsInRole(AppRoles.Admin);
+
+        if (!isAdmin && currentUserId != id)
+        {
+            return Forbid();
+        }
+
+        // Non-admin chỉ được cập nhật hồ sơ cơ bản của chính mình.
+        if (!isAdmin && (request.Role != null || request.LevelId.HasValue || request.IsLocked.HasValue || request.IsPremium.HasValue))
+        {
+            return Forbid();
+        }
+
+        var updated = await _authService.UpdateUserAsync(id, request);
+        if (updated == null) return NotFound();
+
+        return Ok(updated);
+    }
+
+    [HttpDelete("users/{id:int}")]
+    [Authorize(Policy = AuthPolicies.AdminOnly)]
+    public async Task<IActionResult> DeleteUser(int id)
+    {
+        var sub = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        _ = int.TryParse(sub, out var adminId);
+        if (adminId != 0 && id == adminId)
+            return BadRequest(new { message = "Không thể xóa tài khoản admin đang đăng nhập." });
+
+        try
+        {
+            var ok = await _authService.DeleteUserAsync(id);
+            if (!ok) return NotFound();
+
+            return NoContent();
+        }
+        catch (DbUpdateException ex)
+        {
+            var sqlEx = ex.InnerException as PostgresException ?? ex.InnerException?.InnerException as PostgresException;
+            var detail = _env.IsDevelopment() && sqlEx != null
+                ? $"#{sqlEx.SqlState}: {sqlEx.Message}"
+                : null;
+            return Conflict(new
+            {
+                message =
+                    "Không thể xóa tài khoản: còn dữ liệu liên quan trên database (ràng buộc khóa ngoại). Kiểm tra log server hoặc dọn bảng trỏ tới user này.",
+                detail
+            });
+        }
+    }
+}
+

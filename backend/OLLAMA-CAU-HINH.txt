@@ -1,0 +1,34 @@
+CẤU HÌNH OLLAMA (LOCAL AI — KHÔNG CẦN API KEY GEMINI/OPENAI)
+==============================================================
+
+Project Yumegoji dùng Ollama cho:
+  - Chatbot khách (Chatbot:Provider = ollama)
+  - AI dùm tôi trong /learn (LearnAiController)
+  - Import bài học bằng AI (LessonImport:Provider = ollama)
+
+1. Cài Ollama: https://ollama.com/download
+2. Terminal:
+
+     ollama serve
+     ollama pull llama3.2
+     ollama pull llava          # tuỳ chọn — phân tích ảnh trong Learn AI
+
+3. appsettings.json (mặc định repo):
+
+     "Chatbot": { "Provider": "ollama" }
+     "LessonImport": { "Provider": "ollama" }
+     "Ollama": {
+       "BaseUrl": "http://127.0.0.1:11434",
+       "ChatModel": "llama3.2",
+       "VisionModel": "llava"
+     }
+
+4. Khởi động lại backend: dotnet run
+
+Provider:
+  - ollama  → luôn dùng Ollama (khuyến nghị dev)
+  - openai  → cần OpenAI:ApiKey trong appsettings.Secrets.json
+  - auto    → có ApiKey thì OpenAI, không thì Ollama
+
+Lưu ý: Không dán API key Gemini/OpenAI vào appsettings.json (file commit Git).
+       Dùng appsettings.Secrets.json (đã .gitignore) nếu cần OpenAI.

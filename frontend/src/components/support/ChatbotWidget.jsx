@@ -1,0 +1,232 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
+import { postGuestChatbotMessage, createModeratorSupportRoom } from '../../services/chatbotService';
+
+const INTRO_GUEST =
+  'Chào bạn! Mình là chatbot YumeGo-ji (không cần tài khoản). Hỏi mình về học Nhật, đăng ký, hoặc cách dùng web nhé.';
+
+const INTRO_MEMBER =
+  'Chào bạn! Mình vẫn là chatbot YumeGo-ji — bạn có thể hỏi mình như khách. Nếu cần nói chuyện trực tiếp với người, hãy bấm nút "Mở chat với điều hành viên" phía trên.';
+
+const THINKING_MIN_MS = 5000;
+
+function waitMs(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function waitRemainingThinkingTime(startedAt, minMs = THINKING_MIN_MS) {
+  const remain = minMs - (Date.now() - startedAt);
+  if (remain > 0) await waitMs(remain);
+}
+
+/** Gửi nguyên câu này — khớp template backend để trả lời nhanh cả khi chưa bật LLM. */
+const CHAT_SUGGESTIONS = [
+  { label: 'JLPT / N5', query: 'Lộ trình JLPT và bắt đầu N5 như thế nào?' },
+  { label: 'Học bài', query: 'Tôi muốn vào học bài và khóa học ở đâu?' },
+  { label: 'Khu game', query: 'Mini game và khu Play ở đâu?' },
+  { label: 'Premium', query: 'Nâng cấp Premium như thế nào?' },
+  { label: 'Chat điều hành', query: 'Làm sao để chat với điều hành viên?' },
+];
+
+function sourceLabel(source) {
+  if (source === 'gemini') return ' · Chatbot (Gemini)';
+  if (source === 'llm') return ' · Chatbot (LLM)';
+  if (source === 'ollama') return ' · Chatbot (Ollama)';
+  
+  return '';
+}
+
+function ChatbotTypingIndicator() {
+  return (
+    <div
+      className="support-chat-msg support-chat-msg--bot support-chat-msg--typing"
+      role="status"
+      aria-live="polite"
+      aria-label="Chatbot đang suy nghĩ"
+    >
+      <span className="support-chat-spinner" aria-hidden />
+      <span className="support-chat-msg__thinking">Đang suy nghĩ…</span>
+    </div>
+  );
+}
+
+export function ChatbotWidget() {
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState('');
+  const [sending, setSending] = useState(false);
+  const [modLoading, setModLoading] = useState(false);
+  const [error, setError] = useState('');
+  const listRef = useRef(null);
+
+  useEffect(() => {
+    if (!open || messages.length > 0) return;
+    setMessages([{ role: 'bot', text: isAuthenticated ? INTRO_MEMBER : INTRO_GUEST }]);
+  }, [open, isAuthenticated, messages.length]);
+
+  useEffect(() => {
+    if (!open) return;
+    const el = listRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [messages, open, sending]);
+
+  const sendGuest = useCallback(
+    async (preset) => {
+      const raw = typeof preset === 'string' ? preset : input;
+      const text = raw.trim();
+      if (!text || sending) return;
+      setInput('');
+      setError('');
+      setMessages((m) => [...m, { role: 'user', text }]);
+      setSending(true);
+      const startedAt = Date.now();
+      try {
+        const res = await postGuestChatbotMessage(text);
+        await waitRemainingThinkingTime(startedAt);
+        const reply = res?.reply ?? 'Xin lỗi, chatbot chưa trả lời được.';
+        setMessages((m) => [...m, { role: 'bot', text: reply, source: res?.source }]);
+      } catch (e) {
+        const msg = e?.response?.data?.message || e?.message || 'Không gửi được tin. Thử lại sau.';
+        setError(msg);
+        setMessages((m) => [...m, { role: 'bot', text: `Lỗi: ${msg}` }]);
+      } finally {
+        setSending(false);
+      }
+    },
+    [input, sending],
+  );
+
+  const showSuggestionChips = open && messages.length > 0 && !messages.some((m) => m.role === 'user') && !sending;
+
+  const openModeratorChat = useCallback(async () => {
+    setError('');
+    setModLoading(true);
+    try {
+      const room = await createModeratorSupportRoom();
+      const id = room?.id ?? room?.Id;
+      if (id == null) throw new Error('Không lấy được phòng chat.');
+      setOpen(false);
+      navigate(`/chat/room/${id}`);
+    } catch (e) {
+      const msg = e?.response?.data?.message || e?.message || 'Không mở được chat với điều hành viên.';
+      setError(msg);
+    } finally {
+      setModLoading(false);
+    }
+  }, [navigate]);
+
+  return (
+    <>
+      <div className="support-chat-fab-wrap">
+        <span className="support-chat-fab__hint">
+          {isAuthenticated ? 'Trợ lý học tiếng Nhật (AI)' : 'Chatbot'}
+        </span>
+        <button
+          type="button"
+          className="support-chat-fab"
+          aria-expanded={open}
+          aria-label="Trợ lý học tiếng Nhật và hỗ trợ"
+          onClick={() => setOpen((o) => !o)}
+        >
+          <img
+            className="support-chat-fab__mascot"
+            src={`${import.meta.env.BASE_URL}chatbot-mascot.png`}
+            alt=""
+            width={52}
+            height={52}
+            decoding="async"
+          />
+        </button>
+      </div>
+
+      {open && (
+        <div className="support-chat-backdrop" role="presentation" onClick={() => setOpen(false)} />
+      )}
+
+      {open && (
+        <aside
+          className={`support-chat-panel${isAuthenticated ? ' support-chat-panel--member' : ''}`}
+          aria-label="Chatbot và hỗ trợ"
+        >
+          <div className="support-chat-panel__head">
+            <h3 className="support-chat-panel__title">Chatbot YumeGo-ji</h3>
+            <button type="button" className="support-chat-panel__close" onClick={() => setOpen(false)} aria-label="Đóng">
+              ×
+            </button>
+          </div>
+
+          {error && (
+            <p className="support-chat-panel__error" role="alert">
+              {error}
+            </p>
+          )}
+
+          {isAuthenticated ? (
+            <div className="support-chat-panel__member-bar">
+              <button
+                type="button"
+                className="support-chat-panel__btn support-chat-panel__btn--primary support-chat-panel__member-bar__btn"
+                disabled={modLoading}
+                onClick={() => void openModeratorChat()}
+              >
+                {modLoading ? 'Đang mở phòng chat…' : 'Mở chat với điều hành viên'}
+              </button>
+            </div>
+          ) : null}
+
+          {showSuggestionChips ? (
+            <div className="support-chat-panel__suggestions" role="group" aria-label="Gợi ý câu hỏi">
+              {CHAT_SUGGESTIONS.map((s) => (
+                <button
+                  key={s.label}
+                  type="button"
+                  className="support-chat-panel__suggestion-chip"
+                  onClick={() => void sendGuest(s.query)}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          ) : null}
+
+          <div className="support-chat-panel__messages" ref={listRef}>
+            {messages.map((msg, i) => (
+              <div
+                key={i}
+                className={
+                  msg.role === 'user' ? 'support-chat-msg support-chat-msg--user' : 'support-chat-msg support-chat-msg--bot'
+                }
+              >
+                {msg.text}
+                {msg.source ? <span className="support-chat-msg__meta">{sourceLabel(msg.source)}</span> : null}
+              </div>
+            ))}
+            {sending ? <ChatbotTypingIndicator /> : null}
+          </div>
+          <div className="support-chat-panel__form">
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Nhập câu hỏi cho chatbot…"
+              maxLength={2000}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  void sendGuest();
+                }
+              }}
+              disabled={sending}
+            />
+            <button type="button" disabled={sending || !input.trim()} onClick={() => void sendGuest()}>
+              {sending ? <span className="support-chat-spinner support-chat-spinner--btn" aria-hidden /> : 'Gửi'}
+            </button>
+          </div>
+        </aside>
+      )}
+    </>
+  );
+}

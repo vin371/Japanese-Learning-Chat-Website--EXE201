@@ -1,0 +1,4 @@
+﻿-- Yumegoji seed PART 8/13 (run 01 -> 13 in order)
+-- File: yumegoji_supabase_data_v2_part08.sql
+INSERT INTO "messages" ("id", "room_id", "user_id", "content", "type", "reply_to_id", "is_pinned", "pinned_by", "pinned_at", "is_deleted", "deleted_at", "created_at", "updated_at", "conversation_id", "sender_id") VALUES (94, NULL, NULL, '@member', 'text', NULL, false, NULL, NULL, false, NULL, '2026-03-26T04:56:31.7782053', '2026-03-26T04:56:31.7782053', 4, 27);
+INSERT INTO "messages" ("id", "room_id", "user_id", "content", "type", "reply_to_id", "is_pinned", "pinned_by", "pinned_at", "is_deleted", "deleted_at", "created_at", "updated_at", "conversation_id", "sender_id") VALUES (95, NULL, NULL, '{"emoji":"📚","title":"Bài học: Hiragana cơ bản","courseName":"JLPT N5 — Bài 1","lessonUrl":"http://localhost:8080/learn"}', 'lesson_share', NULL, false, NULL, NULL, false, NULL, '2026-03-26T04:56:36.3337539', '2026-03-26T04:56:36.3337539', 4, 27);

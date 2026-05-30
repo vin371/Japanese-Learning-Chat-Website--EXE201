@@ -1,0 +1,72 @@
+# Yumegoji — SQL Server + tự init DB + API (.NET 8)
+#
+# Lần đầu (từ thư mục gốc repo):
+#   copy .env.example .env   (tuỳ chọn — có giá trị mặc định)
+#   docker compose up -d --build
+#
+# API:     http://localhost:5056/swagger
+# SQL:     localhost,14333  (sa / MSSQL_SA_PASSWORD)
+# Tắt:     docker compose down
+# Xoá DB:  docker compose down -v
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: yumegoji-sql
+    hostname: yumegoji-sql
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:-Yumegoji_Sql_2024!}
+    ports:
+      - "14333:1433"
+    volumes:
+      - yumegoji_mssql_data:/var/opt/mssql
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -Q \"SELECT 1\" -C || exit 1",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 35s
+
+  db-init:
+    build:
+      context: ./docker/sql-init
+      dockerfile: Dockerfile
+    container_name: yumegoji-db-init
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    environment:
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:-Yumegoji_Sql_2024!}
+      SQL_HOST: yumegoji-sql
+      SQL_DIR: /sql
+    volumes:
+      - ./backend/doc/sql:/sql:ro
+    restart: "no"
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: yumegoji-api
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
+    ports:
+      - "${API_HOST_PORT:-5056}:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Docker
+      ConnectionStrings__DefaultConnection: Server=yumegoji-sql,1433;Database=YumegojiDB;User Id=sa;Password=${MSSQL_SA_PASSWORD:-Yumegoji_Sql_2024!};TrustServerCertificate=True;
+      Jwt__Key: ${JWT_KEY:-change-this-docker-jwt-key-minimum-32-characters-long}
+      Frontend__PublicBaseUrl: http://localhost:8080
+    volumes:
+      - yumegoji_uploads:/app/wwwroot/uploads
+    restart: unless-stopped
+
+volumes:
+  yumegoji_mssql_data:
+  yumegoji_uploads:

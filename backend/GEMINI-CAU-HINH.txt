@@ -1,0 +1,31 @@
+CẤU HÌNH GOOGLE GEMINI (AI CHÍNH — THAY OLLAMA)
+================================================
+
+1. Lấy API key: https://aistudio.google.com/apikey
+2. Copy appsettings.Secrets.example.json → appsettings.Secrets.json
+3. Dán key vào:
+
+   {
+     "Gemini": {
+       "ApiKey": "AIza... hoặc AQ...."
+     }
+   }
+
+4. appsettings.json (đã cấu hình sẵn):
+
+   "Chatbot": { "Provider": "gemini" }
+   "LessonImport": { "Provider": "gemini" }
+   "Gemini": {
+     "ChatModel": "gemini-2.5-flash",
+     "VisionModel": "gemini-2.5-flash"
+   }
+
+5. Khởi động lại backend: dotnet run
+
+Tính năng dùng Gemini:
+  - Chatbot khách (widget trang chủ)
+  - AI dùm tôi (/learn)
+  - Import bài học bằng AI (moderator)
+
+Lỗi 429 (quota): đợi vài phút hoặc tạo key mới / bật billing trên Google AI Studio.
+Không commit appsettings.Secrets.json (đã .gitignore).
