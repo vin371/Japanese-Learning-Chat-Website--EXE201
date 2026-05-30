@@ -37,7 +37,7 @@ const MISSING_CONFIG_MSG =
   'Chưa cấu hình Google OAuth: thêm VITE_GOOGLE_CLIENT_ID vào frontend/.env (xem .env.example).';
 
 /**
- * Nút Google full-width — render trực tiếp GIS (không iframe ẩn overlay) để click ổn định trên production.
+ * Nút Google cố định — luôn hiện chữ "Google", không hiện tên tài khoản trình duyệt.
  */
 export function GoogleAuthPill({
   onCredential,
@@ -49,19 +49,14 @@ export function GoogleAuthPill({
   className = '',
   showLabel = true,
 }) {
-  const { mountRef, clientIdConfigured, gsiReady } = useGoogleIdentityButton(onCredential, { text });
-
-  const wrapClass = [
-    'auth-google-pill-wrap',
-    gsiReady && disabled ? 'auth-google-pill-wrap--disabled' : '',
-  ]
-    .filter(Boolean)
-    .join(' ');
+  const { mountRef, clientIdConfigured, gsiReady, triggerSignIn } = useGoogleIdentityButton(onCredential, {
+    text,
+  });
 
   return (
     <div className={`auth-google-only ${className}`.trim()}>
       {showLabel && <p className="auth-google-only__label">{label}</p>}
-      <div className={wrapClass}>
+      <div className="auth-google-pill-wrap">
         {!clientIdConfigured ? (
           <Motion.button
             type="button"
@@ -87,11 +82,21 @@ export function GoogleAuthPill({
             <span>Đang tải…</span>
           </Motion.button>
         ) : (
-          <div
-            ref={mountRef}
-            className="auth-google-mount auth-google-mount--visible"
-            aria-label={`${buttonLabel} — đăng nhập`}
-          />
+          <>
+            <Motion.button
+              type="button"
+              className="auth-google-fallback-pill"
+              disabled={disabled}
+              onClick={() => triggerSignIn()}
+              aria-label={`${buttonLabel} — đăng nhập`}
+              whileHover={{ scale: disabled ? 1 : 1.01 }}
+              whileTap={{ scale: disabled ? 1 : 0.98 }}
+            >
+              <IconGoogleG />
+              <span>{buttonLabel}</span>
+            </Motion.button>
+            <div ref={mountRef} className="auth-google-mount auth-google-mount--hidden" aria-hidden="true" />
+          </>
         )}
       </div>
     </div>

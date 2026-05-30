@@ -9,6 +9,7 @@ import { getPostLoginRoute } from '../../utils/postLoginRoute';
 import { isStaffUser } from '../../utils/roles';
 import { isRequired, isEmail } from '../../utils/validators';
 import { getErrorMessageForUser } from '../../utils/apiErrorMessage';
+import { BACKEND_MISSING_HINT, isBackendConfigured } from '../../utils/apiConfig';
 import { AuthSakuraLayer } from '../../components/auth/AuthSakuraLayer';
 import { AuthHeroAvatars } from '../../components/auth/AuthHeroAvatars';
 import { GoogleAuthPill } from '../../components/auth/GoogleAuthPill';
@@ -61,6 +62,10 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    if (!isBackendConfigured()) {
+      setError(BACKEND_MISSING_HINT);
+      return;
+    }
     if (!isRequired(email)) {
       setError('Vui lòng nhập email.');
       return;
@@ -88,6 +93,10 @@ export default function Login() {
     async (credential) => {
       if (!credential) return;
       setError('');
+      if (!isBackendConfigured()) {
+        setError(BACKEND_MISSING_HINT);
+        return;
+      }
       setLoading(true);
       try {
         const data = await loginWithGoogle({ idToken: credential });
@@ -140,6 +149,12 @@ export default function Login() {
           <Motion.p className="auth-right__subtitle" variants={loginStaggerItem}>
             Nhập email và mật khẩu để đăng nhập.
           </Motion.p>
+
+          {!isBackendConfigured() && (
+            <p className="auth-backend-hint" role="status">
+              {BACKEND_MISSING_HINT}
+            </p>
+          )}
 
           {message && (
             <Motion.p className="auth-card__message" variants={loginStaggerItem}>

@@ -738,36 +738,16 @@
   border-radius: 14px;
 }
 
-.auth-google-pill-wrap--disabled {
-  pointer-events: none;
-  opacity: 0.65;
-}
-
-.auth-google-mount--visible {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-  height: 3.25rem;
-  min-height: 3.25rem;
-  pointer-events: auto;
-}
-
-.auth-google-mount--visible > div {
-  width: 100% !important;
-  max-width: 100%;
-  margin: 0 !important;
-}
-
-.auth-google-mount--visible iframe {
-  display: block !important;
-  width: 100% !important;
-  min-width: 100% !important;
-  height: 3.25rem !important;
-  min-height: 3.25rem !important;
-  max-height: 3.25rem !important;
-  margin: 0 auto !important;
-  border: none !important;
+.auth-google-mount--hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .auth-form-error-slot {
@@ -777,6 +757,17 @@
 
 .auth-form-error-slot .form-error {
   margin: 0;
+}
+
+.auth-backend-hint {
+  margin: 0 0 1rem;
+  padding: 0.75rem 0.9rem;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: #7a4f00;
+  background: #fff8e6;
+  border: 1px solid #f0d080;
+  border-radius: 10px;
 }
 
 .auth-google-fallback-pill {

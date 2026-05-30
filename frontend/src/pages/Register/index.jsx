@@ -10,6 +10,7 @@ import { isStaffUser } from '../../utils/roles';
 import { GoogleAuthPill } from '../../components/auth/GoogleAuthPill';
 import { isRequired, isEmail, minLength } from '../../utils/validators';
 import { getErrorMessageForUser } from '../../utils/apiErrorMessage';
+import { BACKEND_MISSING_HINT, isBackendConfigured } from '../../utils/apiConfig';
 import { AuthSakuraLayer } from '../../components/auth/AuthSakuraLayer';
 import { AuthHeroAvatars } from '../../components/auth/AuthHeroAvatars';
 import {
@@ -50,6 +51,10 @@ export default function Register() {
     async (credential) => {
       if (!credential) return;
       setError('');
+      if (!isBackendConfigured()) {
+        setError(BACKEND_MISSING_HINT);
+        return;
+      }
       setLoading(true);
       try {
         const data = await loginWithGoogle({ idToken: credential });
@@ -100,6 +105,10 @@ export default function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    if (!isBackendConfigured()) {
+      setError(BACKEND_MISSING_HINT);
+      return;
+    }
     if (!isRequired(fullName)) {
       setError('Vui lòng nhập họ tên.');
       return;
@@ -179,6 +188,12 @@ export default function Register() {
           <Motion.p className="auth-right__subtitle" variants={loginStaggerItem}>
             Tham gia cộng đồng YumeGo-ji ngay hôm nay.
           </Motion.p>
+
+          {!isBackendConfigured() && (
+            <p className="auth-backend-hint" role="status">
+              {BACKEND_MISSING_HINT}
+            </p>
+          )}
 
           <div className="auth-google-slot">
             <GoogleAuthPill

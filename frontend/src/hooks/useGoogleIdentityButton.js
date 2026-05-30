@@ -1,10 +1,10 @@
 /* eslint-env browser */
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { getGoogleClientId } from '../utils/googleClientId';
 
 const GSI_SCRIPT_URL = 'https://accounts.google.com/gsi/client';
 const GSI_SCRIPT_SELECTOR = 'script[data-yumegoji-gsi]';
-const WIDTH_EPSILON = 8;
+const HIDDEN_BUTTON_WIDTH = 280;
 
 function loadGsiScript() {
   if (globalThis.google?.accounts?.id) {
@@ -33,13 +33,8 @@ function loadGsiScript() {
   });
 }
 
-function measureButtonWidth(mountEl) {
-  const wrap = mountEl.closest('.auth-google-pill-wrap');
-  return Math.min(400, Math.max(240, Math.round(wrap?.clientWidth || mountEl.clientWidth || 320)));
-}
-
 /**
- * Gắn nút Google Identity Services vào mountRef.
+ * GIS render ẩn — nút hiển thị luôn là pill tùy chỉnh (không hiện tên Google tự động).
  */
 export function useGoogleIdentityButton(onCredential, options = {}) {
   const { text = 'signin_with' } = options;
@@ -74,19 +69,12 @@ export function useGoogleIdentityButton(onCredential, options = {}) {
 
     let cancelled = false;
     let intervalId;
-    let resizeTimer;
     let gsiInitialized = false;
-    let renderedWidth = 0;
 
-    const render = (force = false) => {
+    const render = () => {
       const g = globalThis.google;
       if (cancelled || !g?.accounts?.id) return false;
-
-      const w = measureButtonWidth(mountEl);
-      const hasButton = mountEl.childElementCount > 0;
-      if (!force && hasButton && Math.abs(w - renderedWidth) < WIDTH_EPSILON) {
-        return true;
-      }
+      if (mountEl.childElementCount > 0) return true;
 
       if (!gsiInitialized) {
         g.accounts.id.initialize({
@@ -94,58 +82,52 @@ export function useGoogleIdentityButton(onCredential, options = {}) {
           callback: (res) => {
             void onCredentialRef.current?.(res?.credential);
           },
+          auto_select: false,
+          cancel_on_tap_outside: true,
         });
         gsiInitialized = true;
       }
 
-      renderedWidth = w;
-      mountEl.replaceChildren();
       g.accounts.id.renderButton(mountEl, {
         type: 'standard',
         theme: 'outline',
         size: 'large',
         shape: 'rectangular',
         text,
-        width: w,
+        width: HIDDEN_BUTTON_WIDTH,
         locale: 'vi',
       });
       return true;
     };
 
-    const scheduleRender = (force = false) => {
-      globalThis.requestAnimationFrame(() => {
-        if (!cancelled) render(force);
-      });
-    };
-
-    if (!render(true)) {
+    if (!render()) {
       intervalId = globalThis.setInterval(() => {
-        if (render(true) && intervalId != null) globalThis.clearInterval(intervalId);
+        if (render() && intervalId != null) globalThis.clearInterval(intervalId);
       }, 120);
     }
-
-    const onWindowResize = () => {
-      if (cancelled) return;
-      globalThis.clearTimeout(resizeTimer);
-      resizeTimer = globalThis.setTimeout(() => {
-        if (!cancelled) render(false);
-      }, 250);
-    };
-
-    globalThis.addEventListener('resize', onWindowResize, { passive: true });
 
     return () => {
       cancelled = true;
       if (intervalId != null) globalThis.clearInterval(intervalId);
-      globalThis.clearTimeout(resizeTimer);
-      globalThis.removeEventListener('resize', onWindowResize);
       mountEl.replaceChildren();
     };
   }, [clientId, text, gsiReady]);
+
+  const triggerSignIn = useCallback(() => {
+    const mountEl = mountRef.current;
+    const roleBtn = mountEl?.querySelector('[role="button"]');
+    if (roleBtn instanceof HTMLElement) {
+      roleBtn.click();
+      return;
+    }
+    const g = globalThis.google;
+    g?.accounts?.id?.prompt?.();
+  }, []);
 
   return {
     mountRef,
     clientIdConfigured: !!clientId,
     gsiReady: !!clientId && gsiReady,
+    triggerSignIn,
   };
 }
