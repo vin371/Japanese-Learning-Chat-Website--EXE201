@@ -44,7 +44,3 @@ Thumbs.db
 
 # --- Codacy CLI (tùy chọn cục bộ, không cần trong repo) ---
 .codacy/
-
-
-#Ignore cursor AI rules
-.cursor\rules\codacy.mdc

@@ -10,6 +10,7 @@ import { isStaffUser } from '../../utils/roles';
 import { GoogleAuthPill } from '../../components/auth/GoogleAuthPill';
 import { isRequired, isEmail, minLength } from '../../utils/validators';
 import { getErrorMessageForUser } from '../../utils/apiErrorMessage';
+import { BACKEND_MISSING_HINT, isBackendConfigured } from '../../utils/apiConfig';
 import { AuthSakuraLayer } from '../../components/auth/AuthSakuraLayer';
 import { AuthHeroAvatars } from '../../components/auth/AuthHeroAvatars';
 import {
@@ -50,6 +51,10 @@ export default function Register() {
     async (credential) => {
       if (!credential) return;
       setError('');
+      if (!isBackendConfigured()) {
+        setError(BACKEND_MISSING_HINT);
+        return;
+      }
       setLoading(true);
       try {
         const data = await loginWithGoogle({ idToken: credential });
@@ -100,6 +105,10 @@ export default function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    if (!isBackendConfigured()) {
+      setError(BACKEND_MISSING_HINT);
+      return;
+    }
     if (!isRequired(fullName)) {
       setError('Vui lòng nhập họ tên.');
       return;
@@ -180,7 +189,13 @@ export default function Register() {
             Tham gia cộng đồng YumeGo-ji ngay hôm nay.
           </Motion.p>
 
-          <Motion.div className="auth-google-slot" variants={loginStaggerItem}>
+          {!isBackendConfigured() && (
+            <p className="auth-backend-hint" role="status">
+              {BACKEND_MISSING_HINT}
+            </p>
+          )}
+
+          <div className="auth-google-slot">
             <GoogleAuthPill
               onCredential={onGoogleCredential}
               text="signup_with"
@@ -190,7 +205,7 @@ export default function Register() {
               showLabel={false}
               className="auth-google-only--register"
             />
-          </Motion.div>
+          </div>
 
           <Motion.div className="auth-divider" variants={loginStaggerItem}>
             HOẶC TIẾP TỤC BẰNG EMAIL
@@ -316,11 +331,9 @@ export default function Register() {
                 </Motion.div>
               </Motion.div>
 
-              {error && (
-                <Motion.p className="form-error" variants={loginStaggerItem}>
-                  {error}
-                </Motion.p>
-              )}
+              <div className="auth-form-error-slot" aria-live="polite">
+                {error ? <p className="form-error">{error}</p> : null}
+              </div>
 
               <Motion.div variants={loginStaggerItem}>
                 <Motion.button
