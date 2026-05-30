@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using backend.Data;
 using backend.DTOs.Admin;
 using backend.Services.Admin;
 using Microsoft.AspNetCore.Authorization;
@@ -16,7 +17,14 @@ public class PublicController : ControllerBase
     [HttpGet("system-announcements/latest")]
     public async Task<ActionResult<object>> GetLatestSystemAnnouncement([FromServices] IAdminService admin)
     {
-        SystemAnnouncementPublicDto? dto = await admin.GetLatestPublishedAnnouncementAsync();
-        return Ok(new { announcement = dto });
+        try
+        {
+            SystemAnnouncementPublicDto? dto = await admin.GetLatestPublishedAnnouncementAsync();
+            return Ok(new { announcement = dto });
+        }
+        catch (Exception ex) when (DbExceptionHelper.IsConnectionError(ex))
+        {
+            return StatusCode(503, new { message = "Không kết nối được cơ sở dữ liệu.", announcement = (object?)null });
+        }
     }
 }

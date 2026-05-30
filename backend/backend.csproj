@@ -8,6 +8,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="tools/**" />
+    <Content Remove="tools/**" />
+    <None Remove="tools/**" />
     <PackageReference Include="Dapper" Version="2.1.35" />
     <PackageReference Include="Google.Apis.Auth" Version="1.68.0" />
     <PackageReference Include="MailKit" Version="4.9.0" />

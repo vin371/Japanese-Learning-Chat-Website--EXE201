@@ -221,7 +221,7 @@ namespace backend
                 }
                 catch (Exception ex)
                 {
-                    log.LogError(ex, "Lỗi kết nối Supabase — đổi YOUR_SUPABASE_DB_PASSWORD trong appsettings.Secrets.json.");
+                    log.LogError(ex, "Lỗi kết nối Supabase — dùng Session pooler (aws-1-<region>.pooler.supabase.com) trong appsettings.Secrets.json.");
                 }
             }
 

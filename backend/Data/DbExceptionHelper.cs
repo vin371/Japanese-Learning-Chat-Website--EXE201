@@ -19,6 +19,16 @@ public static class DbExceptionHelper
             _ => FindPostgres(ex)?.SqlState == PostgresErrorCodes.UndefinedColumn
         };
 
+    public static bool IsConnectionError(Exception ex)
+    {
+        for (var e = ex; e != null; e = e.InnerException)
+        {
+            if (e is PostgresException or System.Net.Sockets.SocketException or TimeoutException)
+                return true;
+        }
+        return false;
+    }
+
     private static PostgresException? FindPostgres(Exception ex)
     {
         for (var e = ex; e != null; e = e.InnerException)

@@ -99,6 +99,10 @@ public class AuthController : ControllerBase
         {
             return BadRequest(new { message = ex.Message });
         }
+        catch (Exception ex) when (DbExceptionHelper.IsConnectionError(ex))
+        {
+            return StatusCode(503, new { message = "Không kết nối được cơ sở dữ liệu. Kiểm tra Supabase trong appsettings.Secrets.json." });
+        }
     }
 
     [HttpPost("google")]
@@ -113,6 +117,10 @@ public class AuthController : ControllerBase
         catch (InvalidOperationException ex)
         {
             return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex) when (DbExceptionHelper.IsConnectionError(ex))
+        {
+            return StatusCode(503, new { message = "Không kết nối được cơ sở dữ liệu. Kiểm tra Supabase trong appsettings.Secrets.json." });
         }
     }
 

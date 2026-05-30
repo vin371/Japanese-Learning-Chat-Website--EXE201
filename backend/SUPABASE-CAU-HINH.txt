@@ -4,8 +4,13 @@ YUMEGO-JI — Kết nối Supabase (PostgreSQL)
 1) Lấy mật khẩu DB
    Supabase Dashboard → Project Settings → Database → Database password
 
-2) Connection string (tab Direct / URI)
-   postgresql://postgres:MAT_KHAU@db.jvdghkjkgrdogpymnwpu.supabase.co:5432/postgres
+2) Connection string (Supabase Dashboard → Connect → Session pooler, IPv4)
+   Host thường là aws-1-<region>.pooler.supabase.com (KHÔNG đoán aws-0-ap-southeast-1).
+   Ví dụ project jvdghkjkgrdogpymnwpu (ap-southeast-2):
+   Host=aws-1-ap-southeast-2.pooler.supabase.com;Port=5432;Database=postgres;Username=postgres.jvdghkjkgrdogpymnwpu;Password=MAT_KHAU;SSL Mode=Require;Trust Server Certificate=true
+
+   Hoặc URI:
+   postgresql://postgres.jvdghkjkgrdogpymnwpu:MAT_KHAU@aws-1-ap-southeast-2.pooler.supabase.com:5432/postgres
 
 3) File đã tạo sẵn (đã .gitignore — KHÔNG commit):
    backend/appsettings.Secrets.json
@@ -21,5 +26,14 @@ YUMEGO-JI — Kết nối Supabase (PostgreSQL)
 5) Chạy API:
    cd backend
    dotnet run
+
+6) Lỗi 500 / login Google không được — kiểm tra log dotnet:
+   SocketException (11004) hoặc "no data of the requested type was found"
+   → Máy không kết nối được Host db....supabase.co (thường chỉ có IPv6).
+   → Supabase Dashboard → Connect → dùng **Session pooler** (URI có pooler.supabase.com),
+     dán vào appsettings.Secrets.json → DefaultConnection, rồi chạy lại dotnet run.
+
+   Password authentication failed
+   → Chưa thay YOUR_SUPABASE_DB_PASSWORD bằng mật khẩu Database thật trong Secrets.
 
 Lưu ý: Không ghi mật khẩu Supabase vào appsettings.json (file commit).
