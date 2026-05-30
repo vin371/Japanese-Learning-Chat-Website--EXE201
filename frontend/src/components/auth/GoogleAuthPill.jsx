@@ -33,20 +33,11 @@ function IconGoogleG() {
   );
 }
 
-function GooglePillVisual({ label = 'Google' }) {
-  return (
-    <div className="auth-google-fallback-pill auth-google-fallback-pill--visual" aria-hidden="true">
-      <IconGoogleG />
-      <span>{label}</span>
-    </div>
-  );
-}
-
 const MISSING_CONFIG_MSG =
   'Chưa cấu hình Google OAuth: thêm VITE_GOOGLE_CLIENT_ID vào frontend/.env (xem .env.example).';
 
 /**
- * Nút Google full-width cố định — iframe GIS ẩn phía trên khi đã cấu hình .env.
+ * Nút Google full-width — render trực tiếp GIS (không iframe ẩn overlay) để click ổn định trên production.
  */
 export function GoogleAuthPill({
   onCredential,
@@ -60,10 +51,17 @@ export function GoogleAuthPill({
 }) {
   const { mountRef, clientIdConfigured, gsiReady } = useGoogleIdentityButton(onCredential, { text });
 
+  const wrapClass = [
+    'auth-google-pill-wrap',
+    gsiReady && disabled ? 'auth-google-pill-wrap--disabled' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   return (
     <div className={`auth-google-only ${className}`.trim()}>
       {showLabel && <p className="auth-google-only__label">{label}</p>}
-      <div className="auth-google-pill-wrap">
+      <div className={wrapClass}>
         {!clientIdConfigured ? (
           <Motion.button
             type="button"
@@ -89,14 +87,11 @@ export function GoogleAuthPill({
             <span>Đang tải…</span>
           </Motion.button>
         ) : (
-          <>
-            <GooglePillVisual label={buttonLabel} />
-            <div
-              ref={mountRef}
-              className="auth-google-mount auth-google-mount--overlay"
-              aria-label={`${buttonLabel} — đăng nhập`}
-            />
-          </>
+          <div
+            ref={mountRef}
+            className="auth-google-mount auth-google-mount--visible"
+            aria-label={`${buttonLabel} — đăng nhập`}
+          />
         )}
       </div>
     </div>

@@ -180,7 +180,7 @@ export default function Register() {
             Tham gia cộng đồng YumeGo-ji ngay hôm nay.
           </Motion.p>
 
-          <Motion.div className="auth-google-slot" variants={loginStaggerItem}>
+          <div className="auth-google-slot">
             <GoogleAuthPill
               onCredential={onGoogleCredential}
               text="signup_with"
@@ -190,7 +190,7 @@ export default function Register() {
               showLabel={false}
               className="auth-google-only--register"
             />
-          </Motion.div>
+          </div>
 
           <Motion.div className="auth-divider" variants={loginStaggerItem}>
             HOẶC TIẾP TỤC BẰNG EMAIL

@@ -240,14 +240,14 @@ export default function Login() {
             </Motion.div>
           </form>
 
-          <Motion.div className="auth-google-slot" variants={loginStaggerItem}>
+          <div className="auth-google-slot">
             <GoogleAuthPill
               onCredential={onGoogleCredential}
               text="signin_with"
               disabled={loading}
               onConfigError={setError}
             />
-          </Motion.div>
+          </div>
 
           <Motion.p className="auth-footer" variants={loginStaggerItem}>
             Chưa có tài khoản? <Link to={ROUTES.REGISTER}>Đăng ký</Link>

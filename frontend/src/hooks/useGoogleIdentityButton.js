@@ -34,11 +34,12 @@ function loadGsiScript() {
 
 /**
  * Gắn nút Google Identity Services vào mountRef.
- * Chỉ load script GIS khi có VITE_GOOGLE_CLIENT_ID hợp lệ.
  */
 export function useGoogleIdentityButton(onCredential, options = {}) {
   const { text = 'signin_with' } = options;
   const mountRef = useRef(null);
+  const onCredentialRef = useRef(onCredential);
+  onCredentialRef.current = onCredential;
   const clientId = getGoogleClientId();
   const [gsiReady, setGsiReady] = useState(false);
 
@@ -68,6 +69,7 @@ export function useGoogleIdentityButton(onCredential, options = {}) {
     let cancelled = false;
     let intervalId;
     let resizeObserver;
+    let resizeTimer;
     let gsiInitialized = false;
 
     const render = () => {
@@ -77,14 +79,14 @@ export function useGoogleIdentityButton(onCredential, options = {}) {
         g.accounts.id.initialize({
           client_id: clientId,
           callback: (res) => {
-            void onCredential(res?.credential);
+            void onCredentialRef.current?.(res?.credential);
           },
         });
         gsiInitialized = true;
       }
       mountEl.replaceChildren();
       const wrap = mountEl.closest('.auth-google-pill-wrap');
-      const w = Math.min(400, Math.max(240, Math.round(wrap?.clientWidth || mountEl.parentElement?.clientWidth || 320)));
+      const w = Math.min(400, Math.max(240, Math.round(wrap?.clientWidth || mountEl.clientWidth || 320)));
       g.accounts.id.renderButton(mountEl, {
         type: 'standard',
         theme: 'outline',
@@ -107,7 +109,11 @@ export function useGoogleIdentityButton(onCredential, options = {}) {
       const wrap = mountEl.closest('.auth-google-pill-wrap');
       if (wrap) {
         resizeObserver = new ResizeObserver(() => {
-          if (!cancelled) render();
+          if (cancelled) return;
+          globalThis.clearTimeout(resizeTimer);
+          resizeTimer = globalThis.setTimeout(() => {
+            if (!cancelled) render();
+          }, 180);
         });
         resizeObserver.observe(wrap);
       }
@@ -116,10 +122,11 @@ export function useGoogleIdentityButton(onCredential, options = {}) {
     return () => {
       cancelled = true;
       if (intervalId != null) globalThis.clearInterval(intervalId);
+      globalThis.clearTimeout(resizeTimer);
       resizeObserver?.disconnect();
       mountEl.replaceChildren();
     };
-  }, [onCredential, clientId, text, gsiReady]);
+  }, [clientId, text, gsiReady]);
 
   return {
     mountRef,
