@@ -158,6 +158,116 @@ html[data-theme='dark'] body {
   color: var(--text);
 }
 
+.api-offline-banner {
+  position: sticky;
+  top: 0;
+  z-index: 120;
+  background: #fff7ed;
+  border-bottom: 1px solid #fdba74;
+  color: #9a3412;
+}
+
+.api-offline-banner__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0.55rem 1rem;
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+.api-offline-banner__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #ea580c;
+  flex-shrink: 0;
+}
+
+.api-offline-banner__text {
+  flex: 1 1 220px;
+  margin: 0;
+}
+
+.api-offline-banner__text code {
+  font-size: 0.8em;
+}
+
+.api-offline-banner__retry {
+  flex-shrink: 0;
+  border: 1px solid #fdba74;
+  background: #fff;
+  color: #9a3412;
+  border-radius: 999px;
+  padding: 0.35rem 0.85rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.api-offline-banner__retry:hover:not(:disabled) {
+  background: #ffedd5;
+}
+
+.api-offline-banner__retry:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+html[data-theme='dark'] .api-offline-banner {
+  background: rgba(154, 52, 18, 0.22);
+  border-bottom-color: rgba(251, 146, 60, 0.35);
+  color: #fed7aa;
+}
+
+html[data-theme='dark'] .api-offline-banner__retry {
+  background: rgba(15, 23, 42, 0.5);
+  border-color: rgba(251, 146, 60, 0.35);
+  color: #fed7aa;
+}
+
+.app-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  padding: 2rem 1rem;
+}
+
+.app-fallback__card {
+  max-width: 420px;
+  width: 100%;
+  padding: 1.5rem;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+  text-align: center;
+}
+
+.app-fallback__title {
+  margin: 0 0 0.65rem;
+  font-size: 1.25rem;
+  color: var(--text-h);
+}
+
+.app-fallback__text {
+  margin: 0 0 1.1rem;
+  color: var(--text);
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.app-fallback__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  justify-content: center;
+}
+
 .page {
   padding: 2rem;
   max-width: 600px;
