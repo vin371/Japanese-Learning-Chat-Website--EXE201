@@ -11,6 +11,8 @@ import { LearnerTopNav } from './layout/LearnerTopNav';
 import { Footer } from './layout/Footer';
 import { ROUTES } from './data/routes';
 import { SystemAnnouncementBanner } from './components/system/SystemAnnouncementBanner';
+import { ApiOfflineBanner } from './components/system/ApiOfflineBanner';
+import { ErrorBoundary } from './components/system/ErrorBoundary';
 import './index.css';
 import './styles/theme.css';
 import './styles/learner-nav.css';
@@ -68,8 +70,10 @@ function AppShell() {
       <main
         className={`app-main ${chatFull ? 'app-main--chat' : ''} ${learnerShell ? 'app-main--learner' : ''}`}
       >
+        <ApiOfflineBanner />
         <SystemAnnouncementBanner />
-        {learnerShell ? (
+        <ErrorBoundary>
+          {learnerShell ? (
           <AnimatePresence mode="wait" initial={false}>
             <Motion.div
               key={learnerSectionKey(location.pathname)}
@@ -87,11 +91,12 @@ function AppShell() {
               </Suspense>
             </Motion.div>
           </AnimatePresence>
-        ) : (
-          <Suspense fallback={<div className="app-loading">Đang tải...</div>}>
-            <AppRoutes />
-          </Suspense>
-        )}
+          ) : (
+            <Suspense fallback={<div className="app-loading">Đang tải...</div>}>
+              <AppRoutes />
+            </Suspense>
+          )}
+        </ErrorBoundary>
       </main>
       {!learnerShell && <Footer />}
     </div>

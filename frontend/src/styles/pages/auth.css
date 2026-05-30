@@ -711,9 +711,9 @@
 .auth-google-only {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
+  align-self: stretch;
   margin: 1.5rem 0 1.25rem;
-  /* Tăng khoảng cách trên và dưới để tách biệt rõ rệt khối này */
   width: 100%;
 }
 
@@ -724,49 +724,71 @@
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: #94a3b8;
+  text-align: center;
 }
 
 .auth-google-pill-wrap {
-  display: flex;
-  justify-content: center;
+  position: relative;
+  display: block;
   width: 100%;
-  max-width: 300px;
-  margin: 0 auto;
-  background: transparent;
-  border: none;
-  box-shadow: none;
-  border-radius: 0;
-  overflow: visible;
+  min-height: 3.25rem;
+  margin: 0;
+  overflow: hidden;
+  border-radius: 14px;
 }
 
-.auth-google-mount--pill {
-  min-height: 48px;
+.auth-google-fallback-pill--visual {
+  pointer-events: none;
+  user-select: none;
   width: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  box-sizing: border-box;
 }
 
-.auth-google-mount--pill iframe {
-  max-width: 100% !important;
+.auth-google-mount--overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  overflow: hidden;
+  border-radius: 14px;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.auth-google-mount--overlay > div {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 3.25rem !important;
+  margin: 0 !important;
+}
+
+.auth-google-mount--overlay iframe {
+  display: block !important;
+  width: 100% !important;
+  min-width: 100% !important;
+  height: 3.25rem !important;
+  min-height: 3.25rem !important;
+  max-height: 3.25rem !important;
+  margin: 0 !important;
+  border: none !important;
 }
 
 .auth-google-fallback-pill {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.7rem;
+  gap: 0.65rem;
+  box-sizing: border-box;
   width: 100%;
-  min-height: 48px;
-  padding: 0 1.35rem;
+  min-height: 3.25rem;
+  padding: 0.85rem 1.25rem;
   margin: 0;
   border: 1px solid #dadce0;
-  border-radius: 999px;
+  border-radius: 14px;
   background: #f8f9fa;
   color: #3c4043;
   font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
-  font-size: 0.9375rem;
-  font-weight: 500;
+  font-size: 1.05rem;
+  font-weight: 600;
   letter-spacing: 0.01em;
   cursor: pointer;
   box-shadow: 0 1px 2px rgba(60, 64, 67, 0.08);
@@ -791,6 +813,26 @@
 
 .auth-google-fallback-pill__g {
   flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+}
+
+.auth-google-fallback-pill--loading {
+  opacity: 0.75;
+  cursor: wait;
+}
+
+.auth-google-slot {
+  width: 100%;
+  align-self: stretch;
+}
+
+.auth-google-only--register {
+  margin: 0 0 1rem;
+}
+
+.auth-google-only--register .auth-google-pill-wrap {
+  width: 100%;
 }
 
 .auth-login-tagline {

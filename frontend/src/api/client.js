@@ -12,6 +12,7 @@
 import axios from 'axios';
 import { ROUTES } from '../data/routes';
 import { storage } from '../utils/storage';
+import { getErrorMessageForUser } from '../utils/apiErrorMessage';
 
 const raw = import.meta.env.VITE_API_URL;
 const API_URL = import.meta.env.DEV
@@ -73,6 +74,7 @@ const AUTH_PAGES_NO_401_REDIRECT = new Set([
 http.interceptors.response.use(
   (res) => res,
   (err) => {
+    err.userMessage = getErrorMessageForUser(err);
     if (err.response?.status === 401) {
       storage.remove(TOKEN_KEY);
       const loc = typeof globalThis !== 'undefined' ? globalThis.location : null;
