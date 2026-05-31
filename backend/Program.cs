@@ -28,6 +28,9 @@ namespace backend
     {
         public static void Main(string[] args)
         {
+            // Supabase/PostgreSQL: cột timestamp (không time zone) — tương thích DateTime UTC từ code SQL Server cũ
+            AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
             var builder = WebApplication.CreateBuilder(args);
             // OpenAI ApiKey: đặt trong appsettings.Secrets.json (đã .gitignore) hoặc User Secrets — xem OPENAI-CAU-HINH.txt
             builder.Configuration.AddJsonFile("appsettings.Secrets.json", optional: true, reloadOnChange: true);
@@ -47,6 +50,8 @@ namespace backend
                     npgsql.EnableRetryOnFailure();
                 });
             });
+
+            builder.Services.AddMemoryCache();
 
             // YUMEGO-JI: Đăng ký 10 mô-đun theo đặc tả hệ thống
             builder.Services.AddSingleton<IEmailSender, SmtpEmailSender>();

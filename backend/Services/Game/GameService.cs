@@ -69,37 +69,34 @@ public partial class GameService : IGameService
     /// <summary>Nếu user chưa có vật phẩm nào (tổng quantity = 0), cấp gói mở đầu để dùng power-up khi chơi.</summary>
     private static async Task EnsureStarterInventoryIfEmptyAsync(NpgsqlConnection db, int userId)
     {
-        var sum = await db.PgExecuteScalarAsync<int?>(
-            "SELECT SUM(quantity) FROM dbo.user_inventory WHERE user_id = @u",
+        var sum = await db.ExecuteScalarAsync<int?>(
+            "SELECT SUM(quantity) FROM user_inventory WHERE user_id = @u",
             new { u = userId }) ?? 0;
         if (sum > 0)
             return;
 
         /* Không cấp 50:50 miễn phí — tính năng gợi ý chưa mở; tránh hiển thị số túi gây nhầm. */
-        const string slugNorm = """
-            LOWER(REPLACE(REPLACE(LTRIM(RTRIM(p.slug)), N'_', N'-'), N' ', N''))
-            """;
+        const string slugNorm = "LOWER(REPLACE(REPLACE(TRIM(p.slug), '_', '-'), ' ', ''))";
 
-        await db.PgExecuteAsync(
+        await db.ExecuteAsync(
             $"""
-            UPDATE i
-            SET i.quantity = @qty, i.updated_at = SYSUTCDATETIME()
-            FROM dbo.user_inventory i
-            INNER JOIN dbo.power_ups p ON p.id = i.power_up_id
-            WHERE i.user_id = @u
-              AND {slugNorm} <> N'fifty-fifty'
+            UPDATE user_inventory i
+            SET quantity = @qty, updated_at = (NOW() AT TIME ZONE 'utc')
+            FROM power_ups p
+            WHERE i.power_up_id = p.id AND i.user_id = @u
+              AND {slugNorm} <> 'fifty-fifty'
             """,
             new { u = userId, qty = StarterPowerUpQuantityPerType });
 
-        await db.PgExecuteAsync(
+        await db.ExecuteAsync(
             $"""
-            INSERT INTO dbo.user_inventory (user_id, power_up_id, quantity, updated_at)
-            SELECT @u, p.id, @qty, SYSUTCDATETIME()
-            FROM dbo.power_ups p
-            WHERE ISNULL(p.is_active, 1) = 1
-              AND {slugNorm} <> N'fifty-fifty'
+            INSERT INTO user_inventory (user_id, power_up_id, quantity, updated_at)
+            SELECT @u, p.id, @qty, (NOW() AT TIME ZONE 'utc')
+            FROM power_ups p
+            WHERE COALESCE(p.is_active, true)
+              AND {slugNorm} <> 'fifty-fifty'
               AND NOT EXISTS (
-                  SELECT 1 FROM dbo.user_inventory i
+                  SELECT 1 FROM user_inventory i
                   WHERE i.user_id = @u AND i.power_up_id = p.id)
             """,
             new { u = userId, qty = StarterPowerUpQuantityPerType });
@@ -110,18 +107,19 @@ public partial class GameService : IGameService
         const string sql = """
             SELECT id AS Id, slug AS Slug, name AS Name, description AS Description,
                    skill_type AS SkillType, max_hearts AS MaxHearts,
-                   CAST(ISNULL(is_pvp, 0) AS BIT) AS IsPvp,
-                   CAST(ISNULL(is_boss_mode, 0) AS BIT) AS IsBossMode,
-                   ISNULL(sort_order, 0) AS SortOrder,
+                   COALESCE(is_pvp, false) AS IsPvp,
+                   COALESCE(is_boss_mode, false) AS IsBossMode,
+                   COALESCE(sort_order, 0) AS SortOrder,
                    level_min AS LevelMin,
                    level_max AS LevelMax
-            FROM dbo.games
-            WHERE ISNULL(is_active, 1) = 1
-              AND LOWER(LTRIM(RTRIM(slug))) NOT IN (N'fill-in-blank', N'fill-blank')
-            ORDER BY ISNULL(sort_order, 0), id
+            FROM games
+            WHERE COALESCE(is_active, true)
+              AND LOWER(TRIM(slug)) NOT IN ('fill-in-blank', 'fill-blank')
+            ORDER BY COALESCE(sort_order, 0), id
             """;
         using var db = CreateConnection();
-        var rows = await db.PgQueryAsync<GameInfoDto>(sql);
+        await db.OpenAsync();
+        var rows = await db.QueryAsync<GameInfoDto>(sql);
         return rows.ToList();
     }
 
@@ -129,18 +127,19 @@ public partial class GameService : IGameService
     {
         const string sql = """
             SELECT id AS Id, slug AS Slug, name AS Name, description AS Description,
-                   skill_type AS SkillType, ISNULL(max_hearts, 3) AS MaxHearts,
-                   CAST(ISNULL(is_pvp, 0) AS BIT) AS IsPvp,
-                   CAST(ISNULL(is_boss_mode, 0) AS BIT) AS IsBossMode,
-                   ISNULL(sort_order, 0) AS SortOrder,
+                   skill_type AS SkillType, COALESCE(max_hearts, 3) AS MaxHearts,
+                   COALESCE(is_pvp, false) AS IsPvp,
+                   COALESCE(is_boss_mode, false) AS IsBossMode,
+                   COALESCE(sort_order, 0) AS SortOrder,
                    level_min AS LevelMin,
                    level_max AS LevelMax
-            FROM dbo.games
-            WHERE ISNULL(is_active, 1) = 1
-            ORDER BY ISNULL(sort_order, 0), id
+            FROM games
+            WHERE COALESCE(is_active, true)
+            ORDER BY COALESCE(sort_order, 0), id
             """;
         using var db = CreateConnection();
-        var rows = await db.PgQueryAsync<GameInfoDto>(sql);
+        await db.OpenAsync();
+        var rows = await db.QueryAsync<GameInfoDto>(sql);
         return rows.ToList();
     }
 
@@ -155,18 +154,18 @@ public partial class GameService : IGameService
 
         using var db = CreateConnection();
         await db.OpenAsync();
-        var exists = await db.PgExecuteScalarAsync<int>(
-            "SELECT COUNT(1) FROM dbo.games WHERE LOWER(LTRIM(RTRIM(slug))) = @s",
+        var exists = await db.ExecuteScalarAsync<int>(
+            "SELECT COUNT(1) FROM games WHERE LOWER(TRIM(slug)) = @s",
             new { s = slug });
         if (exists > 0)
             throw new InvalidOperationException("Slug game đã tồn tại.");
 
-        var id = await db.PgExecuteScalarAsync<int>(
+        var id = await db.ExecuteScalarAsync<int>(
             """
-            INSERT INTO dbo.games
+            INSERT INTO games
                 (slug, name, description, skill_type, max_hearts, is_pvp, is_boss_mode, sort_order, level_min, level_max, is_active)
-            OUTPUT INSERTED.id
-            VALUES (@slug, @name, @desc, @skill, @hearts, @pvp, @boss, @sort, @lmin, @lmax, 1)
+            VALUES (@slug, @name, @desc, @skill, @hearts, @pvp, @boss, @sort, @lmin, @lmax, true)
+            RETURNING id
             """,
             new
             {

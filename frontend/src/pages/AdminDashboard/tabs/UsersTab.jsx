@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { authService } from '../../../services/authService';
 import { adminService } from '../../../services/adminService';
+import { useAdminOverview } from '../../../hooks/useAdminOverview';
 import { moderationService } from '../../../services/moderationService';
 import { ShieldUser, MonitorCog, Star, StarOff, UserRoundPlus, Ellipsis, Info, Key, Trash, Shield, ShieldBan } from 'lucide-react';
 
@@ -79,7 +80,7 @@ export function UsersTab() {
   const [detailError, setDetailError] = useState('');
   const [warnings, setWarnings] = useState([]);
   const [warnLoading, setWarnLoading] = useState(false);
-  const [overview, setOverview] = useState(null);
+  const { ov: overview } = useAdminOverview();
   const reduceMotion = useReducedMotion();
 
   const myId = authService.getEffectiveUserId();
@@ -151,13 +152,6 @@ export function UsersTab() {
   useEffect(() => {
     void load();
   }, [load]);
-
-  useEffect(() => {
-    adminService
-      .getOverview()
-      .then((data) => setOverview(data))
-      .catch(() => setOverview(null));
-  }, [users.length]);
 
   useEffect(() => {
     moderationService

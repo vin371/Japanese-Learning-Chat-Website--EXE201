@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { adminService } from '../../../services/adminService';
+import { fetchAdminOverview } from '../../../hooks/useAdminOverview';
 import { moderationService } from '../../../services/moderationService';
 
 const LS_POL = 'yumegoji_admin_policies_v1';
@@ -35,7 +36,7 @@ export function SystemAdminTab() {
     setApiErr('');
     try {
       const [overview, reportRows] = await Promise.all([
-        adminService.getOverview(),
+        fetchAdminOverview(false),
         moderationService.listStaffReports({ limit: 120 }),
       ]);
       setOv(overview);

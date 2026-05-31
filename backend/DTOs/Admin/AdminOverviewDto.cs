@@ -14,6 +14,8 @@ public class AdminOverviewDto
     public decimal RevenueCumulativeVnd { get; set; }
     /// <summary>Tỷ lệ chuyển đổi Free → Premium, tính theo Premium / AcademyUsers (%).</summary>
     public double PremiumConversionRatePercent { get; set; }
+    /// <summary>Số lượt nâng cấp Premium đã duyệt trong tháng hiện tại.</summary>
+    public int PremiumUpgradesThisMonth { get; set; }
     public int NewUsersLast7Days { get; set; }
     public int NewUsersLast30Days { get; set; }
     /// <summary>Tỷ lệ % user tạo trước 30 ngày có đăng nhập trong 30 ngày qua.</summary>

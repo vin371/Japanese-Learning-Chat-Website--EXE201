@@ -6,7 +6,7 @@ import http from './client';
 const ADMIN_BASE = '/api/Admin';
 
 export const adminApi = {
-  getOverview: () => http.get(`${ADMIN_BASE}/overview`),
+  getOverview: () => http.get(`${ADMIN_BASE}/overview`, { timeout: 30000 }),
 
   listSensitiveKeywords: () => http.get(`${ADMIN_BASE}/sensitive-keywords`),
 

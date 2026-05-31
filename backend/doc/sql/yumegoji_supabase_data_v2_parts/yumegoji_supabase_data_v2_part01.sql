@@ -14,7 +14,7 @@ INSERT INTO "levels" ("id","code","name","description","sort_order") VALUES
 -- premium_payment_config (REQUIRED — update thông tin ngân hàng thật)
 -- ============================================================
 INSERT INTO "premium_payment_config" ("id","bank_code","account_no","account_name","premium_price_vnd","premium_duration_days","is_active","updated_at") VALUES
-  (1,'ICB','105877558159','HOANG NGUYEN THE VINH',99000,30,true,NOW());
+  (1,'ICB','105877558159','HOANG NGUYEN THE VINH',50000,30,true,NOW());
 
 -- ============================================================
 -- plans (3 rows)

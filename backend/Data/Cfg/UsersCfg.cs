@@ -34,7 +34,7 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
         entity.HasIndex(u => u.GoogleSub)
             .IsUnique()
             .HasDatabaseName("UX_users_google_sub")
-            .HasFilter("[google_sub] IS NOT NULL");
+            .HasFilter("google_sub IS NOT NULL");
     }
 }
 

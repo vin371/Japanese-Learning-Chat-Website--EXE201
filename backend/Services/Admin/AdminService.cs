@@ -7,82 +7,327 @@ using backend.Data;
 using backend.DTOs.Admin;
 using backend.Models.Admin;
 using backend.Models.Moderation;
-using AppUser = backend.Models.User.User;
+using Dapper;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Npgsql;
-using backend.Data;
 
 namespace backend.Services.Admin;
 
 public class AdminService : IAdminService
 {
-    private readonly ApplicationDbContext _db;
+    private const string OverviewCacheKey = "admin:overview:v1";
+    private static readonly TimeSpan OverviewCacheTtl = TimeSpan.FromSeconds(45);
 
-    public AdminService(ApplicationDbContext db)
+    private readonly ApplicationDbContext _db;
+    private readonly IMemoryCache _cache;
+
+    public AdminService(ApplicationDbContext db, IMemoryCache cache)
     {
         _db = db;
+        _cache = cache;
     }
+
+    /// <summary>PostgreSQL timestamp without time zone — không gửi Kind=UTC.</summary>
+    private static DateTime PgTimestamp(DateTime dt) =>
+        dt.Kind == DateTimeKind.Utc ? DateTime.SpecifyKind(dt, DateTimeKind.Unspecified) : dt;
 
     public async Task<AdminOverviewDto> GetOverviewAsync()
     {
+        if (_cache.TryGetValue(OverviewCacheKey, out AdminOverviewDto? cached) && cached != null)
+            return cached;
+
+        var dto = await BuildOverviewAsync();
+        _cache.Set(OverviewCacheKey, dto, OverviewCacheTtl);
+        return dto;
+    }
+
+    private async Task<AdminOverviewDto> BuildOverviewAsync()
+    {
+        var connStr = _db.Database.GetConnectionString()
+            ?? throw new InvalidOperationException("ConnectionStrings:DefaultConnection chưa cấu hình.");
+
         var now = DateTime.UtcNow;
         var dayStart = now.Date;
         var d7 = dayStart.AddDays(-7);
         var d30 = dayStart.AddDays(-30);
         var d30SignupChart = dayStart.AddDays(-29);
+        var msgSince = now.AddHours(-24);
 
-        var baseQ = _db.Users.AsNoTracking().Where(u => u.DeletedAt == null);
-        var academyQ = baseQ.Where(u => u.Role == "user");
+        var userAggTask = QueryUserAggregateAsync(connStr, d7, d30);
+        var signupTask = QuerySignupsPerDayAsync(connStr, d30SignupChart, dayStart);
+        var levelTask = QueryUsersByLevelAsync(connStr);
+        var paymentTask = QueryPaymentBundleAsync(connStr, dayStart, now);
+        var learningTask = QueryLearningActivityAsync(connStr, now);
+        var msgTask = QueryMessagesCountAsync(connStr, msgSince);
 
-        var total = await baseQ.CountAsync();
-        var academyUsers = await academyQ.CountAsync();
-        var active = await academyQ.CountAsync(u => !u.IsLocked);
-        var locked = await academyQ.CountAsync(u => u.IsLocked);
-        var premium = await academyQ.CountAsync(u => u.IsPremium);
+        await Task.WhenAll(userAggTask, signupTask, levelTask, paymentTask, learningTask, msgTask);
+
+        var users = await userAggTask;
+        var payment = await paymentTask;
+        var premium = users.PremiumUsers;
+        var academyUsers = users.AcademyUsers;
         var freeUsers = Math.Max(0, academyUsers - premium);
-        var new7 = await academyQ.CountAsync(u => u.CreatedAt >= d7);
-        var new30 = await academyQ.CountAsync(u => u.CreatedAt >= d30);
         var conversion = academyUsers == 0 ? 0 : Math.Round(100.0 * premium / academyUsers, 2);
-
-        var retention = await ComputeRetentionRatePercentAsync(academyQ, d30);
-        var byLevel = await BuildUsersByLevelAsync(academyQ);
-
-        var msg24 = await _db.Messages.AsNoTracking()
-            .CountAsync(m => !m.IsDeleted && m.CreatedAt >= now.AddHours(-24));
-
-        var perDay = await BuildNewUsersPerDayAsync(academyQ, d30SignupChart, dayStart);
-
-        var (revenueToday, revenueCumulative) = await GetRevenueMetricsAsync(dayStart);
-        var revenueLast8 = await GetRevenueLast8MonthsAsync(now);
-        var learning = await GetLearningActivityAsync(now);
-        var byPackage = new List<PackageSliceDto>
-        {
-            new() { Name = "Miễn phí", Count = freeUsers, Color = "#94a3b8" },
-            new() { Name = "Premium", Count = premium, Color = "#7c3aed" }
-        };
+        var retention = users.CohortSize == 0
+            ? 0
+            : Math.Round(100.0 * users.RetainedCount / users.CohortSize, 1);
 
         return new AdminOverviewDto
         {
             AcademyUsers = academyUsers,
             FreeUsers = freeUsers,
-            TotalUsers = total,
-            ActiveUsers = active,
-            LockedUsers = locked,
+            TotalUsers = users.TotalUsers,
+            ActiveUsers = users.ActiveUsers,
+            LockedUsers = users.LockedUsers,
             PremiumUsers = premium,
-            RevenueTodayVnd = revenueToday,
-            RevenueCumulativeVnd = revenueCumulative,
+            RevenueTodayVnd = payment.RevenueToday,
+            RevenueCumulativeVnd = payment.RevenueCumulative,
             PremiumConversionRatePercent = conversion,
-            NewUsersLast7Days = new7,
-            NewUsersLast30Days = new30,
+            PremiumUpgradesThisMonth = payment.UpgradesThisMonth,
+            NewUsersLast7Days = users.NewUsersLast7Days,
+            NewUsersLast30Days = users.NewUsersLast30Days,
             RetentionRatePercent = retention,
-            UsersByLevel = byLevel,
-            MessagesLast24Hours = msg24,
-            NewUsersPerDay = perDay,
-            RevenueLast8Months = revenueLast8,
-            LearningActivity = learning,
-            UsersByPackage = byPackage
+            UsersByLevel = await levelTask,
+            MessagesLast24Hours = await msgTask,
+            NewUsersPerDay = await signupTask,
+            RevenueLast8Months = payment.RevenueLast8Months,
+            LearningActivity = await learningTask,
+            UsersByPackage =
+            [
+                new PackageSliceDto { Name = "Miễn phí", Count = freeUsers, Color = "#94a3b8" },
+                new PackageSliceDto { Name = "Premium", Count = premium, Color = "#7c3aed" }
+            ]
         };
     }
+
+    private sealed class UserAggregateRow
+    {
+        public int TotalUsers { get; set; }
+        public int AcademyUsers { get; set; }
+        public int ActiveUsers { get; set; }
+        public int LockedUsers { get; set; }
+        public int PremiumUsers { get; set; }
+        public int NewUsersLast7Days { get; set; }
+        public int NewUsersLast30Days { get; set; }
+        public int CohortSize { get; set; }
+        public int RetainedCount { get; set; }
+    }
+
+    private sealed class PaymentBundle
+    {
+        public decimal RevenueToday { get; set; }
+        public decimal RevenueCumulative { get; set; }
+        public int UpgradesThisMonth { get; set; }
+        public List<MonthlyRevenueDto> RevenueLast8Months { get; set; } = new();
+    }
+
+    private sealed class LearningRow
+    {
+        public int GameSessionsStartedLast30Days { get; set; }
+        public int GameSessionsEndedLast30Days { get; set; }
+        public int CompletedLessonsLast30Days { get; set; }
+    }
+
+    private static async Task<UserAggregateRow> QueryUserAggregateAsync(string connStr, DateTime d7, DateTime d30)
+    {
+        await using var conn = new NpgsqlConnection(connStr);
+        return await conn.QueryFirstAsync<UserAggregateRow>(
+            """
+            SELECT
+                COUNT(*)::int AS TotalUsers,
+                COUNT(*) FILTER (WHERE role = 'user')::int AS AcademyUsers,
+                COUNT(*) FILTER (WHERE role = 'user' AND NOT is_locked)::int AS ActiveUsers,
+                COUNT(*) FILTER (WHERE role = 'user' AND is_locked)::int AS LockedUsers,
+                COUNT(*) FILTER (WHERE role = 'user' AND is_premium)::int AS PremiumUsers,
+                COUNT(*) FILTER (WHERE role = 'user' AND created_at >= @d7)::int AS NewUsersLast7Days,
+                COUNT(*) FILTER (WHERE role = 'user' AND created_at >= @d30)::int AS NewUsersLast30Days,
+                COUNT(*) FILTER (WHERE role = 'user' AND created_at < @d30)::int AS CohortSize,
+                COUNT(*) FILTER (
+                    WHERE role = 'user' AND created_at < @d30
+                      AND last_login_at IS NOT NULL AND last_login_at >= @d30
+                )::int AS RetainedCount
+            FROM users
+            WHERE deleted_at IS NULL
+            """,
+            new { d7 = PgTimestamp(d7), d30 = PgTimestamp(d30) });
+    }
+
+    private static async Task<List<DailyCountDto>> QuerySignupsPerDayAsync(
+        string connStr, DateTime from, DateTime dayStart)
+    {
+        await using var conn = new NpgsqlConnection(connStr);
+        var rows = (await conn.QueryAsync<(DateTime Day, int Count)>(
+            """
+            SELECT DATE(created_at) AS Day, COUNT(*)::int AS Count
+            FROM users
+            WHERE deleted_at IS NULL AND role = 'user' AND created_at >= @from
+            GROUP BY 1
+            ORDER BY 1
+            """,
+            new { from = PgTimestamp(from) })).ToList();
+        var byDay = rows.ToDictionary(r => r.Day.Date, r => r.Count);
+
+        var perDay = new List<DailyCountDto>();
+        for (var d = from; d <= dayStart; d = d.AddDays(1))
+        {
+            byDay.TryGetValue(d.Date, out var c);
+            perDay.Add(new DailyCountDto { Date = d.ToString("yyyy-MM-dd"), Count = c });
+        }
+
+        return perDay;
+    }
+
+    private static async Task<List<LevelCountDto>> QueryUsersByLevelAsync(string connStr)
+    {
+        await using var conn = new NpgsqlConnection(connStr);
+        var rows = await conn.QueryAsync<(int? LevelId, int Cnt)>(
+            """
+            SELECT level_id AS LevelId, COUNT(*)::int AS Cnt
+            FROM users
+            WHERE deleted_at IS NULL AND role = 'user'
+            GROUP BY level_id
+            ORDER BY level_id NULLS LAST
+            """);
+        return rows.Select(x => new LevelCountDto
+        {
+            LevelId = x.LevelId,
+            Label = LevelLabel(x.LevelId),
+            Count = x.Cnt
+        }).ToList();
+    }
+
+    private static async Task<int> QueryMessagesCountAsync(string connStr, DateTime since)
+    {
+        try
+        {
+            await using var conn = new NpgsqlConnection(connStr);
+            return await conn.ExecuteScalarAsync<int>(
+                """
+                SELECT COUNT(*)::int FROM messages
+                WHERE NOT is_deleted AND created_at >= @since
+                """,
+                new { since = PgTimestamp(since) });
+        }
+        catch (PostgresException)
+        {
+            return 0;
+        }
+    }
+
+    private static async Task<PaymentBundle> QueryPaymentBundleAsync(
+        string connStr, DateTime dayStart, DateTime nowUtc)
+    {
+        var monthStart = new DateTime(nowUtc.Year, nowUtc.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        var nextMonth = monthStart.AddMonths(1);
+        var firstMonth = monthStart.AddMonths(-7);
+        var rangeEndExclusive = monthStart.AddMonths(1);
+
+        var result = new PaymentBundle();
+        for (var i = 0; i < 8; i++)
+        {
+            var m = firstMonth.AddMonths(i);
+            result.RevenueLast8Months.Add(new MonthlyRevenueDto
+            {
+                MonthKey = m.ToString("yyyy-MM"),
+                MonthLabel = $"T{m.Month}/{m.Year % 100:D2}",
+                AmountVnd = 0
+            });
+        }
+
+        try
+        {
+            await using var conn = new NpgsqlConnection(connStr);
+            var summary = await conn.QueryFirstOrDefaultAsync<PaymentBundle>(
+                """
+                SELECT
+                    COALESCE(SUM(CASE WHEN approved_at >= @dayStart THEN amount_vnd ELSE 0 END), 0) AS RevenueToday,
+                    COALESCE(SUM(amount_vnd), 0) AS RevenueCumulative,
+                    COUNT(*) FILTER (
+                        WHERE approved_at >= @monthStart AND approved_at < @nextMonth
+                    )::int AS UpgradesThisMonth
+                FROM premium_payment_requests
+                WHERE status = 'approved'
+                """,
+                new
+                {
+                    dayStart = PgTimestamp(dayStart),
+                    monthStart = PgTimestamp(monthStart),
+                    nextMonth = PgTimestamp(nextMonth)
+                });
+            if (summary != null)
+            {
+                result.RevenueToday = summary.RevenueToday;
+                result.RevenueCumulative = summary.RevenueCumulative;
+                result.UpgradesThisMonth = summary.UpgradesThisMonth;
+            }
+
+            var monthly = await conn.QueryAsync<(int Y, int Mo, decimal Total)>(
+                """
+                SELECT EXTRACT(YEAR FROM approved_at)::int AS Y,
+                       EXTRACT(MONTH FROM approved_at)::int AS Mo,
+                       COALESCE(SUM(amount_vnd), 0) AS Total
+                FROM premium_payment_requests
+                WHERE status = 'approved'
+                  AND approved_at IS NOT NULL
+                  AND approved_at >= @start
+                  AND approved_at < @endEx
+                GROUP BY 1, 2
+                """,
+                new
+                {
+                    start = PgTimestamp(firstMonth),
+                    endEx = PgTimestamp(rangeEndExclusive)
+                });
+
+            var byKey = result.RevenueLast8Months.ToDictionary(b => b.MonthKey, b => b, StringComparer.Ordinal);
+            foreach (var row in monthly)
+            {
+                var key = $"{row.Y}-{row.Mo:D2}";
+                if (byKey.TryGetValue(key, out var bucket))
+                    bucket.AmountVnd = row.Total;
+            }
+        }
+        catch (PostgresException)
+        {
+            /* bảng payment chưa có */
+        }
+        catch (ArgumentException)
+        {
+            /* timestamp */
+        }
+
+        return result;
+    }
+
+    private static async Task<LearningActivityStatsDto> QueryLearningActivityAsync(string connStr, DateTime nowUtc)
+    {
+        var from30 = PgTimestamp(nowUtc.AddDays(-30));
+        var dto = new LearningActivityStatsDto();
+        try
+        {
+            await using var conn = new NpgsqlConnection(connStr);
+            var row = await conn.QueryFirstOrDefaultAsync<LearningRow>(
+                """
+                SELECT
+                    (SELECT COUNT(*)::int FROM game_sessions WHERE started_at >= @from) AS GameSessionsStartedLast30Days,
+                    (SELECT COUNT(*)::int FROM game_sessions WHERE ended_at IS NOT NULL AND ended_at >= @from) AS GameSessionsEndedLast30Days,
+                    (SELECT COUNT(*)::int FROM user_lesson_progress WHERE completed_at IS NOT NULL AND completed_at >= @from) AS CompletedLessonsLast30Days
+                """,
+                new { from = from30 });
+            if (row == null) return dto;
+            dto.GameSessionsStartedLast30Days = row.GameSessionsStartedLast30Days;
+            dto.GameSessionsEndedLast30Days = row.GameSessionsEndedLast30Days;
+            dto.CompletedLessonsLast30Days = row.CompletedLessonsLast30Days;
+        }
+        catch (PostgresException)
+        {
+            /* bảng chưa migrate */
+        }
+
+        return dto;
+    }
+
 
     private static string LevelLabel(int? lid) => lid switch
     {
@@ -93,233 +338,6 @@ public class AdminService : IAdminService
         5 => "N1",
         _ => "Chưa gán"
     };
-
-    private static async Task<double> ComputeRetentionRatePercentAsync(
-        IQueryable<AppUser> academyQ,
-        DateTime d30)
-    {
-        var cohort = await academyQ
-            .Where(u => u.CreatedAt < d30)
-            .Select(u => new { u.Id, u.LastLoginAt })
-            .ToListAsync();
-        var cohortSize = cohort.Count;
-        if (cohortSize == 0) return 0;
-        var retained = cohort.Count(u => u.LastLoginAt.HasValue && u.LastLoginAt.Value >= d30);
-        return Math.Round(100.0 * retained / cohortSize, 1);
-    }
-
-    private static async Task<List<LevelCountDto>> BuildUsersByLevelAsync(IQueryable<AppUser> academyQ)
-    {
-        var levelGroups = await academyQ
-            .GroupBy(u => u.LevelId)
-            .Select(g => new { LevelId = g.Key, Cnt = g.Count() })
-            .ToListAsync();
-
-        return levelGroups
-            .OrderBy(x => x.LevelId ?? 99)
-            .Select(x => new LevelCountDto
-            {
-                LevelId = x.LevelId,
-                Label = LevelLabel(x.LevelId),
-                Count = x.Cnt
-            })
-            .ToList();
-    }
-
-    private static async Task<List<DailyCountDto>> BuildNewUsersPerDayAsync(
-        IQueryable<AppUser> academyQ,
-        DateTime d30SignupChart,
-        DateTime dayStart)
-    {
-        var signupDays = await academyQ
-            .Where(u => u.CreatedAt >= d30SignupChart)
-            .Select(u => u.CreatedAt.Date)
-            .ToListAsync();
-
-        var perDay = new List<DailyCountDto>();
-        for (var d = d30SignupChart; d <= dayStart; d = d.AddDays(1))
-        {
-            var c = signupDays.Count(x => x == d);
-            perDay.Add(new DailyCountDto { Date = d.ToString("yyyy-MM-dd"), Count = c });
-        }
-
-        return perDay;
-    }
-
-    private async Task<List<MonthlyRevenueDto>> GetRevenueLast8MonthsAsync(DateTime nowUtc)
-    {
-        var monthStart = new DateTime(nowUtc.Year, nowUtc.Month, 1, 0, 0, 0, DateTimeKind.Utc);
-        var firstMonth = monthStart.AddMonths(-7);
-        var rangeEndExclusive = monthStart.AddMonths(1);
-
-        var buckets = new List<MonthlyRevenueDto>();
-        for (var i = 0; i < 8; i++)
-        {
-            var m = firstMonth.AddMonths(i);
-            buckets.Add(new MonthlyRevenueDto
-            {
-                MonthKey = m.ToString("yyyy-MM"),
-                MonthLabel = $"T{m.Month}/{m.Year % 100:D2}",
-                AmountVnd = 0
-            });
-        }
-
-        var byKey = buckets.ToDictionary(b => b.MonthKey, b => b, StringComparer.Ordinal);
-
-        try
-        {
-            var conn = _db.Database.GetDbConnection();
-            if (conn.State != ConnectionState.Open)
-                await conn.OpenAsync();
-
-            await using var cmd = conn.CreateCommand();
-            cmd.CommandText =
-                """
-                SELECT EXTRACT(YEAR FROM approved_at)::int AS y,
-                       EXTRACT(MONTH FROM approved_at)::int AS mo,
-                       COALESCE(SUM(amount_vnd), 0) AS total
-                FROM premium_payment_requests
-                WHERE status = 'approved'
-                  AND approved_at IS NOT NULL
-                  AND approved_at >= @start
-                  AND approved_at < @endEx
-                GROUP BY 1, 2
-                """;
-            var p1 = cmd.CreateParameter();
-            p1.ParameterName = "@start";
-            p1.Value = firstMonth;
-            p1.DbType = DbType.DateTime2;
-            cmd.Parameters.Add(p1);
-            var p2 = cmd.CreateParameter();
-            p2.ParameterName = "@endEx";
-            p2.Value = rangeEndExclusive;
-            p2.DbType = DbType.DateTime2;
-            cmd.Parameters.Add(p2);
-
-            await using var reader = await cmd.ExecuteReaderAsync();
-            while (await reader.ReadAsync())
-            {
-                var y = reader.GetInt32(0);
-                var mo = reader.GetInt32(1);
-                var total = reader.IsDBNull(2) ? 0m : Convert.ToDecimal(reader.GetValue(2));
-                var key = $"{y}-{mo:D2}";
-                if (byKey.TryGetValue(key, out var row))
-                    row.AmountVnd = total;
-            }
-        }
-        catch (PostgresException)
-        {
-            /* bảng payment chưa có */
-        }
-
-        return buckets;
-    }
-
-    private async Task<LearningActivityStatsDto> GetLearningActivityAsync(DateTime nowUtc)
-    {
-        var from30 = nowUtc.AddDays(-30);
-        var dto = new LearningActivityStatsDto();
-        try
-        {
-            var conn = _db.Database.GetDbConnection();
-            if (conn.State != ConnectionState.Open)
-                await conn.OpenAsync();
-
-            await using (var cmd = conn.CreateCommand())
-            {
-                cmd.CommandText =
-                    "SELECT COUNT(1) FROM game_sessions WHERE started_at >= @from";
-                var p = cmd.CreateParameter();
-                p.ParameterName = "@from";
-                p.Value = from30;
-                p.DbType = DbType.DateTime2;
-                cmd.Parameters.Add(p);
-                var o = await cmd.ExecuteScalarAsync();
-                dto.GameSessionsStartedLast30Days = o is int i ? i : Convert.ToInt32(o ?? 0);
-            }
-
-            await using (var cmd = conn.CreateCommand())
-            {
-                cmd.CommandText =
-                    """
-                    SELECT COUNT(1) FROM game_sessions
-                    WHERE ended_at IS NOT NULL AND ended_at >= @from
-                    """;
-                var p = cmd.CreateParameter();
-                p.ParameterName = "@from";
-                p.Value = from30;
-                p.DbType = DbType.DateTime2;
-                cmd.Parameters.Add(p);
-                var o = await cmd.ExecuteScalarAsync();
-                dto.GameSessionsEndedLast30Days = o is int i ? i : Convert.ToInt32(o ?? 0);
-            }
-
-            await using (var cmd = conn.CreateCommand())
-            {
-                cmd.CommandText =
-                    """
-                    SELECT COUNT(1) FROM user_lesson_progress
-                    WHERE completed_at IS NOT NULL AND completed_at >= @from
-                    """;
-                var p = cmd.CreateParameter();
-                p.ParameterName = "@from";
-                p.Value = from30;
-                p.DbType = DbType.DateTime2;
-                cmd.Parameters.Add(p);
-                var o = await cmd.ExecuteScalarAsync();
-                dto.CompletedLessonsLast30Days = o is int i ? i : Convert.ToInt32(o ?? 0);
-            }
-        }
-        catch (PostgresException)
-        {
-            /* bảng chưa migrate */
-        }
-
-        return dto;
-    }
-
-    private async Task<(decimal RevenueToday, decimal RevenueCumulative)> GetRevenueMetricsAsync(DateTime dayStartUtc)
-    {
-        try
-        {
-            var conn = _db.Database.GetDbConnection();
-            if (conn.State != System.Data.ConnectionState.Open)
-                await conn.OpenAsync();
-
-            await using var cmd = conn.CreateCommand();
-            cmd.CommandText =
-                """
-                SELECT
-                    COALESCE(SUM(CASE WHEN approved_at >= @dayStart THEN amount_vnd ELSE 0 END), 0) AS revenue_today,
-                    COALESCE(SUM(amount_vnd), 0) AS revenue_total
-                FROM premium_payment_requests
-                WHERE status = 'approved'
-                """;
-            var p = cmd.CreateParameter();
-            p.ParameterName = "@dayStart";
-            p.Value = dayStartUtc;
-            p.DbType = System.Data.DbType.DateTime2;
-            cmd.Parameters.Add(p);
-
-            await using var reader = await cmd.ExecuteReaderAsync();
-            if (await reader.ReadAsync())
-            {
-                var today = reader.IsDBNull(0) ? 0m : Convert.ToDecimal(reader.GetValue(0));
-                var total = reader.IsDBNull(1) ? 0m : Convert.ToDecimal(reader.GetValue(1));
-                return (today, total);
-            }
-        }
-        catch (PostgresException)
-        {
-            // Bảng payment chưa tạo patch thì fallback 0.
-        }
-        catch (InvalidOperationException)
-        {
-            // Lỗi kết nối tạm thời: fallback 0 để dashboard vẫn chạy.
-        }
-
-        return (0m, 0m);
-    }
 
     public async Task<IReadOnlyList<SensitiveKeywordAdminDto>> ListSensitiveKeywordsAsync()
     {

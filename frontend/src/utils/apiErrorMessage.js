@@ -1,3 +1,20 @@
+import { ENV } from '../api/client';
+
+const PROD_API_HINT =
+  'Chưa kết nối API backend trên production. Deploy backend (.NET) lên Railway/Azure, thêm biến VITE_API_URL (URL API public) trên Vercel → Settings → Environment Variables, rồi Redeploy frontend.';
+
+const DEV_API_HINT =
+  'Không kết nối được API. Chạy backend: cd backend && dotnet run (cổng 5056). Dev: để trống VITE_API_URL trong frontend/.env để dùng proxy Vite.';
+
+function apiConnectionHint() {
+  if (ENV.PROD) {
+    return ENV.API_URL
+      ? 'Không kết nối được API backend. Kiểm tra backend (Railway/Azure) đang chạy và VITE_API_URL trên Vercel trỏ đúng URL.'
+      : PROD_API_HINT;
+  }
+  return DEV_API_HINT;
+}
+
 /**
  * Lỗi mạng / gateway — API không phản hồi hoặc proxy lỗi.
  */
@@ -21,7 +38,7 @@ export function getErrorMessageForUser(err, fallbackVi = 'Đã có lỗi xảy r
 
   const status = err?.response?.status;
   if (status === 502) {
-    return 'Máy chủ chưa phản hồi (502). Kiểm tra backend có đang chạy (dotnet run, cổng 5056) và VITE_PROXY_TARGET trong frontend/.env.';
+    return `Máy chủ chưa phản hồi (502). ${apiConnectionHint()}`;
   }
   if (status === 503) {
     return 'Dịch vụ tạm không khả dụng (503). Thử lại sau.';
@@ -50,7 +67,7 @@ export function getErrorMessageForUser(err, fallbackVi = 'Đã có lỗi xảy r
     return 'Hết thời gian chờ. Vui lòng thử lại.';
   }
   if (err?.code === 'ERR_NETWORK' || (!err?.response && err?.request)) {
-    return 'Không kết nối được API. Kiểm tra backend đang chạy và cấu hình proxy (VITE_PROXY_TARGET=http://localhost:5056).';
+    return apiConnectionHint();
   }
 
   const raw = err?.message;

@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useAuth } from '../../hooks/useAuth';
+import { prefetchAdminOverview } from '../../hooks/useAdminOverview';
 import { SakuraRainLayer } from '../../components/effects/SakuraRainLayer';
 import { GamesAdminTab } from './tabs/GamesAdminTab';
 import { ModerationAdminTab } from './tabs/ModerationAdminTab';
@@ -38,6 +39,10 @@ export default function AdminDashboard() {
   );
 
   const tabLabel = useMemo(() => TABS.find((t) => t.id === tab)?.label ?? 'Quản trị', [tab]);
+
+  useEffect(() => {
+    prefetchAdminOverview();
+  }, []);
 
   /** Một số trình duyệt ngắt sai tiếng Việt trong tiêu đề hẹp — hiển thị tường minh. */
   const pageTitleNode = useMemo(() => {

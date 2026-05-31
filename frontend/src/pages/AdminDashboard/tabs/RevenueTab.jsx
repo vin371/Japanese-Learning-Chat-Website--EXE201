@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { adminService } from '../../../services/adminService';
+import { useAdminOverview } from '../../../hooks/useAdminOverview';
 import { useAnimatedNumber } from '../../../hooks/useAnimatedNumber';
 import { CircleDollarSign, Wallet, Users, Percent } from 'lucide-react';
 
@@ -19,24 +19,8 @@ function barFill(index, total) {
 }
 
 export function RevenueTab() {
-  const [ov, setOv] = useState(null);
-  const [err, setErr] = useState('');
+  const { ov, err } = useAdminOverview();
   const reduceMotion = useReducedMotion();
-
-  useEffect(() => {
-    let cancelled = false;
-    adminService
-      .getOverview()
-      .then((data) => {
-        if (!cancelled) setOv(data);
-      })
-      .catch((e) => {
-        if (!cancelled) setErr(e?.response?.data?.message || e?.message || 'Không tải được số liệu doanh thu.');
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const data = useMemo(() => {
     const revenueToday = Number(ov?.revenueTodayVnd ?? ov?.RevenueTodayVnd ?? 0);

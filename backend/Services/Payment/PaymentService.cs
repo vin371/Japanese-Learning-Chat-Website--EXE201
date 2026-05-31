@@ -7,12 +7,14 @@ using backend.Data;
 
 namespace backend.Services.Payment;
 
+/// <summary>Thanh toán Premium — PostgreSQL / Supabase (không dùng SQL Server).</summary>
 public class PaymentService : IPaymentService
 {
     private const string DefaultBankCode = "ICB";
     private const string DefaultAccountNo = "105877558159";
     private const string DefaultAccountName = "HOANG NGUYEN THE VINH";
-    private const int DefaultPremiumPriceVnd = 10000;
+    /// <summary>Giá Premium mặc định (VND) khi chưa có dòng config — admin đổi qua API.</summary>
+    private const int DefaultPremiumPriceVnd = 50_000;
     private const int DefaultPremiumDurationDays = 30;
 
     private readonly string _connectionString;
@@ -43,12 +45,12 @@ public class PaymentService : IPaymentService
         var token = await CreateUniqueTokenAsync(db);
         var now = DateTime.UtcNow;
 
-        var requestId = await db.PgExecuteScalarAsync<int>(
+        var requestId = await db.ExecuteScalarAsync<int>(
             """
-            INSERT INTO dbo.premium_payment_requests
+            INSERT INTO premium_payment_requests
                 (user_id, token, amount_vnd, duration_days, status, created_at, bank_code, account_no, account_name)
-            OUTPUT INSERTED.id
-            VALUES (@uid, @token, @amount, @days, N'created', @now, @bank, @accNo, @accName)
+            VALUES (@uid, @token, @amount, @days, 'created', @now, @bank, @accNo, @accName)
+            RETURNING id
             """,
             new
             {
@@ -85,70 +87,31 @@ public class PaymentService : IPaymentService
         using var db = CreateConnection();
         await db.OpenAsync();
 
-        var row = await db.PgQueryFirstOrDefaultAsync<PremiumIntentRow>(
-            """
-            SELECT TOP 1 id AS RequestId, token AS Token, amount_vnd AS AmountVnd, duration_days AS DurationDays,
-                   bank_code AS BankCode, account_no AS AccountNo, account_name AS AccountName,
-                   created_at AS CreatedAtUtc, status AS Status
-            FROM dbo.premium_payment_requests
-            WHERE user_id = @uid AND token = @token
-            ORDER BY id DESC
-            """,
-            new { uid = userId, token = t });
+        var row = await QueryLatestIntentRowAsync(db, "WHERE user_id = @uid AND token = @token", new { uid = userId, token = t });
         if (row is null) return null;
 
         if (!string.Equals(row.Status, "approved", StringComparison.OrdinalIgnoreCase) &&
             !string.Equals(row.Status, "pending_review", StringComparison.OrdinalIgnoreCase))
         {
-            await db.PgExecuteAsync(
+            await db.ExecuteAsync(
                 """
-                UPDATE dbo.premium_payment_requests
-                SET status = N'pending_review', confirmed_at = SYSUTCDATETIME()
+                UPDATE premium_payment_requests
+                SET status = 'pending_review', confirmed_at = NOW() AT TIME ZONE 'utc'
                 WHERE id = @id
                 """,
                 new { id = row.RequestId });
             row = row with { Status = "pending_review" };
         }
 
-        return new PremiumIntentDto(
-            row.RequestId,
-            row.Token,
-            row.AmountVnd,
-            row.DurationDays,
-            row.BankCode,
-            row.AccountNo,
-            row.AccountName,
-            BuildVietQrUrl(row.BankCode, row.AccountNo, row.AccountName, row.AmountVnd, row.Token),
-            row.CreatedAtUtc,
-            row.Status);
+        return ToIntentDto(row);
     }
 
     public async Task<PremiumIntentDto?> GetLatestPremiumIntentAsync(int userId)
     {
         using var db = CreateConnection();
         await db.OpenAsync();
-        var row = await db.PgQueryFirstOrDefaultAsync<PremiumIntentRow>(
-            """
-            SELECT TOP 1 id AS RequestId, token AS Token, amount_vnd AS AmountVnd, duration_days AS DurationDays,
-                   bank_code AS BankCode, account_no AS AccountNo, account_name AS AccountName,
-                   created_at AS CreatedAtUtc, status AS Status
-            FROM dbo.premium_payment_requests
-            WHERE user_id = @uid
-            ORDER BY id DESC
-            """,
-            new { uid = userId });
-        if (row is null) return null;
-        return new PremiumIntentDto(
-            row.RequestId,
-            row.Token,
-            row.AmountVnd,
-            row.DurationDays,
-            row.BankCode,
-            row.AccountNo,
-            row.AccountName,
-            BuildVietQrUrl(row.BankCode, row.AccountNo, row.AccountName, row.AmountVnd, row.Token),
-            row.CreatedAtUtc,
-            row.Status);
+        var row = await QueryLatestIntentRowAsync(db, "WHERE user_id = @uid", new { uid = userId });
+        return row is null ? null : ToIntentDto(row);
     }
 
     public async Task<PremiumConfigDto> AdminUpdatePremiumConfigAsync(UpdatePremiumConfigRequest request)
@@ -161,20 +124,20 @@ public class PaymentService : IPaymentService
         {
             AccountNo = string.IsNullOrWhiteSpace(request.AccountNo) ? cfg.AccountNo : request.AccountNo.Trim(),
             AccountName = string.IsNullOrWhiteSpace(request.AccountName) ? cfg.AccountName : request.AccountName.Trim(),
-            PremiumPriceVnd = request.PremiumPriceVnd is > 999 ? request.PremiumPriceVnd.Value : cfg.PremiumPriceVnd,
+            PremiumPriceVnd = request.PremiumPriceVnd is >= 1000 ? request.PremiumPriceVnd.Value : cfg.PremiumPriceVnd,
             PremiumDurationDays = request.PremiumDurationDays is > 0 ? request.PremiumDurationDays.Value : cfg.PremiumDurationDays,
             IsActive = request.IsActive ?? cfg.IsActive
         };
 
-        await db.PgExecuteAsync(
+        await db.ExecuteAsync(
             """
-            UPDATE dbo.premium_payment_config
+            UPDATE premium_payment_config
             SET account_no = @accNo,
                 account_name = @accName,
                 premium_price_vnd = @amount,
                 premium_duration_days = @days,
                 is_active = @active,
-                updated_at = SYSUTCDATETIME()
+                updated_at = NOW() AT TIME ZONE 'utc'
             WHERE id = 1
             """,
             new
@@ -194,14 +157,14 @@ public class PaymentService : IPaymentService
         var st = string.IsNullOrWhiteSpace(status) ? "pending_review" : status.Trim().ToLowerInvariant();
         using var db = CreateConnection();
         await db.OpenAsync();
-        var rows = await db.PgQueryAsync<PremiumRequestDto>(
+        var rows = await db.QueryAsync<PremiumRequestDto>(
             """
             SELECT r.id AS Id, r.user_id AS UserId, u.username AS Username, r.token AS Token,
                    r.amount_vnd AS AmountVnd, r.duration_days AS DurationDays, r.status AS Status,
                    r.created_at AS CreatedAt, r.confirmed_at AS ConfirmedAt, r.approved_at AS ApprovedAt, r.note AS Note
-            FROM dbo.premium_payment_requests r
-            INNER JOIN dbo.users u ON u.id = r.user_id
-            WHERE (@status = N'all' OR r.status = @status)
+            FROM premium_payment_requests r
+            INNER JOIN users u ON u.id = r.user_id
+            WHERE (@status = 'all' OR r.status = @status)
             ORDER BY r.id DESC
             """,
             new { status = st });
@@ -213,10 +176,10 @@ public class PaymentService : IPaymentService
         using var db = CreateConnection();
         await db.OpenAsync();
         using var tx = db.BeginTransaction();
-        var row = await db.PgQueryFirstOrDefaultAsync<(int UserId, int DurationDays, string Status)?>(
+        var row = await db.QueryFirstOrDefaultAsync<(int UserId, int DurationDays, string Status)?>(
             """
-            SELECT user_id, duration_days, status
-            FROM dbo.premium_payment_requests
+            SELECT user_id AS UserId, duration_days AS DurationDays, status AS Status
+            FROM premium_payment_requests
             WHERE id = @id
             """,
             new { id = requestId }, tx);
@@ -230,25 +193,25 @@ public class PaymentService : IPaymentService
         var now = DateTime.UtcNow;
         var expires = now.AddDays(Math.Max(1, row.Value.DurationDays));
 
-        await db.PgExecuteAsync(
+        await db.ExecuteAsync(
             """
-            UPDATE dbo.users
-            SET is_premium = 1, updated_at = @now
+            UPDATE users
+            SET is_premium = true, updated_at = @now
             WHERE id = @uid
             """,
             new { now, uid = row.Value.UserId }, tx);
 
-        await db.PgExecuteAsync(
+        await db.ExecuteAsync(
             """
-            INSERT INTO dbo.premium_subscriptions (user_id, payment_request_id, started_at, expires_at, is_active)
-            VALUES (@uid, @rid, @startAt, @endAt, 1)
+            INSERT INTO premium_subscriptions (user_id, payment_request_id, started_at, expires_at, is_active)
+            VALUES (@uid, @rid, @startAt, @endAt, true)
             """,
             new { uid = row.Value.UserId, rid = requestId, startAt = now, endAt = expires }, tx);
 
-        await db.PgExecuteAsync(
+        await db.ExecuteAsync(
             """
-            UPDATE dbo.premium_payment_requests
-            SET status = N'approved', approved_at = @now, approved_by = @adminId, note = @note
+            UPDATE premium_payment_requests
+            SET status = 'approved', approved_at = @now, approved_by = @adminId, note = @note
             WHERE id = @id
             """,
             new { id = requestId, now, adminId = adminUserId, note = (note ?? "").Trim() }, tx);
@@ -261,14 +224,43 @@ public class PaymentService : IPaymentService
     {
         using var db = CreateConnection();
         await db.OpenAsync();
-        var n = await db.PgExecuteAsync(
+        var n = await db.ExecuteAsync(
             """
-            UPDATE dbo.premium_payment_requests
-            SET status = N'rejected', approved_at = SYSUTCDATETIME(), approved_by = @adminId, note = @note
+            UPDATE premium_payment_requests
+            SET status = 'rejected', approved_at = NOW() AT TIME ZONE 'utc', approved_by = @adminId, note = @note
             WHERE id = @id
             """,
             new { id = requestId, adminId = adminUserId, note = (note ?? "").Trim() });
         return n > 0;
+    }
+
+    private static PremiumIntentDto ToIntentDto(PremiumIntentRow row) =>
+        new(
+            row.RequestId,
+            row.Token,
+            row.AmountVnd,
+            row.DurationDays,
+            row.BankCode,
+            row.AccountNo,
+            row.AccountName,
+            BuildVietQrUrl(row.BankCode, row.AccountNo, row.AccountName, row.AmountVnd, row.Token),
+            row.CreatedAtUtc,
+            row.Status);
+
+    private static async Task<PremiumIntentRow?> QueryLatestIntentRowAsync(
+        NpgsqlConnection db, string whereClause, object param)
+    {
+        return await db.QueryFirstOrDefaultAsync<PremiumIntentRow>(
+            $"""
+            SELECT id AS RequestId, token AS Token, amount_vnd AS AmountVnd, duration_days AS DurationDays,
+                   bank_code AS BankCode, account_no AS AccountNo, account_name AS AccountName,
+                   created_at AS CreatedAtUtc, status AS Status
+            FROM premium_payment_requests
+            {whereClause}
+            ORDER BY id DESC
+            LIMIT 1
+            """,
+            param);
     }
 
     private static string BuildVietQrUrl(string bankCode, string accountNo, string accountName, int amount, string token)
@@ -277,25 +269,22 @@ public class PaymentService : IPaymentService
                $"&addInfo={Uri.EscapeDataString(token)}&accountName={Uri.EscapeDataString(accountName)}";
     }
 
-    private static string NormalizeToken(string token)
-    {
-        return string.IsNullOrWhiteSpace(token) ? "" : token.Trim();
-    }
+    private static string NormalizeToken(string token) =>
+        string.IsNullOrWhiteSpace(token) ? "" : token.Trim();
 
     private async Task<string> CreateUniqueTokenAsync(NpgsqlConnection db)
     {
         for (var i = 0; i < 20; i++)
         {
             var token = CreateToken12();
-            var exists = await db.PgExecuteScalarAsync<int>(
-                "SELECT COUNT(1) FROM dbo.premium_payment_requests WHERE token = @t",
+            var exists = await db.ExecuteScalarAsync<int>(
+                "SELECT COUNT(1) FROM premium_payment_requests WHERE token = @t",
                 new { t = token });
             if (exists == 0) return token;
         }
         throw new InvalidOperationException("Không tạo được token thanh toán, thử lại.");
     }
 
-    /// <summary>Token tổng 12 ký tự: NAP + 5 ký tự ngẫu nhiên + Yume.</summary>
     private static string CreateToken12()
     {
         const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -310,21 +299,26 @@ public class PaymentService : IPaymentService
 
     private async Task<PremiumConfigDto> EnsureConfigAsync(NpgsqlConnection db)
     {
-        var row = await db.PgQueryFirstOrDefaultAsync<PremiumConfigDto>(
+        var row = await db.QueryFirstOrDefaultAsync<PremiumConfigDto>(
             """
-            SELECT TOP 1 bank_code AS BankCode, account_no AS AccountNo, account_name AS AccountName,
-                         premium_price_vnd AS PremiumPriceVnd, premium_duration_days AS PremiumDurationDays,
-                         CAST(ISNULL(is_active, 1) AS BIT) AS IsActive
-            FROM dbo.premium_payment_config
+            SELECT bank_code AS BankCode, account_no AS AccountNo, account_name AS AccountName,
+                   premium_price_vnd AS PremiumPriceVnd, premium_duration_days AS PremiumDurationDays,
+                   COALESCE(is_active, true) AS IsActive
+            FROM premium_payment_config
             WHERE id = 1
+            LIMIT 1
             """);
         if (row is not null) return row;
 
-        await db.PgExecuteAsync(
+        await db.ExecuteAsync(
             """
-            INSERT INTO dbo.premium_payment_config
+            INSERT INTO premium_payment_config
                 (id, bank_code, account_no, account_name, premium_price_vnd, premium_duration_days, is_active, updated_at)
-            VALUES (1, @bank, @accNo, @accName, @price, @days, 1, SYSUTCDATETIME())
+            VALUES (1, @bank, @accNo, @accName, @price, @days, true, NOW() AT TIME ZONE 'utc')
+            ON CONFLICT (id) DO UPDATE SET
+                premium_price_vnd = EXCLUDED.premium_price_vnd,
+                premium_duration_days = EXCLUDED.premium_duration_days,
+                updated_at = NOW() AT TIME ZONE 'utc'
             """,
             new
             {

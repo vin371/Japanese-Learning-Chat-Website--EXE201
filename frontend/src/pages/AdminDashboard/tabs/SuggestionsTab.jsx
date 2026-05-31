@@ -1,67 +1,54 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { adminService } from '../../../services/adminService';
+import { useAdminOverview } from '../../../hooks/useAdminOverview';
 import { useAnimatedNumber } from '../../../hooks/useAnimatedNumber';
 
 const Motion = motion;
+const CONVERSION_TARGET_PERCENT = 8;
 
 function pct(cur, target) {
   if (!target) return 0;
   return Math.min(100, Math.round((cur / target) * 100));
 }
 
+function pickNum(ov, camel, pascal) {
+  const v = ov?.[camel] ?? ov?.[pascal];
+  return Number(v ?? 0);
+}
+
 export function SuggestionsTab() {
-  const [ov, setOv] = useState(null);
-  const [err, setErr] = useState('');
+  const { ov, loading, err } = useAdminOverview();
   const reduceMotion = useReducedMotion();
 
-  useEffect(() => {
-    let cancel = false;
-    adminService
-      .getOverview()
-      .then((data) => {
-        if (!cancel) setOv(data);
-      })
-      .catch((e) => {
-        if (!cancel) setErr(e?.response?.data?.message || e?.message || 'Không tải được dữ liệu đề xuất từ API.');
-      });
-    return () => {
-      cancel = true;
-    };
-  }, []);
-
-  const monthLabel = useMemo(() => {
-    const d = new Date();
-    return `${d.getMonth() + 1}/${d.getFullYear()}`;
-  }, []);
-
-  const kpi = useMemo(() => {
-    const revenueCurrent = Math.round(Number(ov?.revenueTodayVnd ?? ov?.RevenueTodayVnd ?? 0) / 1_000_000);
-    const revenueTarget = Math.max(1, revenueCurrent + 5);
-    const paidCurrent = Number(ov?.premiumUsers ?? ov?.PremiumUsers ?? 0);
-    const paidTarget = Math.max(1, paidCurrent + 20);
-    const convCurrent = Number(ov?.premiumConversionRatePercent ?? ov?.PremiumConversionRatePercent ?? 0);
-    const convTarget = Math.max(1, Math.round(convCurrent + 8));
-    return { revenueCurrent, revenueTarget, paidCurrent, paidTarget, convCurrent, convTarget };
+  const conversion = useMemo(() => {
+    const academy = pickNum(ov, 'academyUsers', 'AcademyUsers');
+    const free = pickNum(ov, 'freeUsers', 'FreeUsers');
+    const premium = pickNum(ov, 'premiumUsers', 'PremiumUsers');
+    const rate = pickNum(ov, 'premiumConversionRatePercent', 'PremiumConversionRatePercent');
+    const upgradesMonth = pickNum(ov, 'premiumUpgradesThisMonth', 'PremiumUpgradesThisMonth');
+    const total = academy > 0 ? academy : Math.max(free + premium, 1);
+    const upgradeTarget = Math.max(5, upgradesMonth + 5);
+    return { academy, free, premium, rate, upgradesMonth, total, upgradeTarget };
   }, [ov]);
 
-  const animRev = useAnimatedNumber(kpi.revenueCurrent, { duration: 900, reduceMotion });
-  const animPaid = useAnimatedNumber(kpi.paidCurrent, { duration: 850, reduceMotion });
-  const animConv = useAnimatedNumber(kpi.convCurrent, { duration: 800, reduceMotion });
+  const animFree = useAnimatedNumber(conversion.free, { duration: reduceMotion ? 0 : 400, reduceMotion });
+  const animPremium = useAnimatedNumber(conversion.premium, { duration: reduceMotion ? 0 : 400, reduceMotion });
+  const animRate = useAnimatedNumber(conversion.rate, { duration: reduceMotion ? 0 : 350, reduceMotion });
+  const animUpgrades = useAnimatedNumber(conversion.upgradesMonth, { duration: reduceMotion ? 0 : 350, reduceMotion });
 
   const suggestionCards = useMemo(() => {
-    const premium = Number(ov?.premiumUsers ?? ov?.PremiumUsers ?? 0);
-    const free = Number(ov?.freeUsers ?? ov?.FreeUsers ?? 0);
-    const conversion = Number(ov?.premiumConversionRatePercent ?? ov?.PremiumConversionRatePercent ?? 0);
-    const retention = Number(ov?.retentionRatePercent ?? ov?.RetentionRatePercent ?? 0);
-    const msg24 = Number(ov?.messagesLast24Hours ?? ov?.MessagesLast24Hours ?? 0);
-    const new7 = Number(ov?.newUsersLast7Days ?? ov?.NewUsersLast7Days ?? 0);
+    const premium = conversion.premium;
+    const free = conversion.free;
+    const rate = conversion.rate;
+    const retention = pickNum(ov, 'retentionRatePercent', 'RetentionRatePercent');
+    const msg24 = pickNum(ov, 'messagesLast24Hours', 'MessagesLast24Hours');
+    const new7 = pickNum(ov, 'newUsersLast7Days', 'NewUsersLast7Days');
     return [
       {
         tone: 'blue',
         tag: 'Chuyển đổi',
-        title: 'Tăng chuyển đổi Free -> Premium',
-        body: `Hiện có ${free.toLocaleString('vi-VN')} tài khoản Free và ${premium.toLocaleString('vi-VN')} Premium (${conversion}%). Nên đặt điểm nâng cấp ở cuối bài học có tỷ lệ hoàn thành cao.`,
+        title: 'Tăng chuyển đổi Free → Premium',
+        body: `Hiện có ${free.toLocaleString('vi-VN')} tài khoản Free và ${premium.toLocaleString('vi-VN')} Premium (${rate}%). Nên đặt điểm nâng cấp ở cuối bài học có tỷ lệ hoàn thành cao.`,
       },
       {
         tone: 'amber',
@@ -82,13 +69,13 @@ export function SuggestionsTab() {
         body: `Có ${new7.toLocaleString('vi-VN')} tài khoản mới trong 7 ngày. Nên gửi onboarding 3 bước trong 24h đầu để tăng tỷ lệ quay lại.`,
       },
     ];
-  }, [ov]);
+  }, [ov, conversion.free, conversion.premium, conversion.rate]);
 
   const listReveal = useMemo(
     () => ({
       hidden: {},
       visible: {
-        transition: { staggerChildren: reduceMotion ? 0 : 0.1, delayChildren: reduceMotion ? 0 : 0.05 },
+        transition: { staggerChildren: reduceMotion ? 0 : 0.05, delayChildren: 0 },
       },
     }),
     [reduceMotion],
@@ -106,7 +93,7 @@ export function SuggestionsTab() {
     () => ({
       hidden: {},
       visible: {
-        transition: { staggerChildren: reduceMotion ? 0 : 0.12, delayChildren: reduceMotion ? 0 : 0.25 },
+        transition: { staggerChildren: reduceMotion ? 0 : 0.06, delayChildren: reduceMotion ? 0 : 0.08 },
       },
     }),
     [reduceMotion],
@@ -115,31 +102,39 @@ export function SuggestionsTab() {
   const goalBars = useMemo(
     () => [
       {
-        key: 'revenue',
-        label: 'Doanh thu mục tiêu',
-        current: kpi.revenueCurrent,
-        target: kpi.revenueTarget,
-        color: '#8e031d',
-        display: () => `${animRev}M / ${kpi.revenueTarget}M`,
+        key: 'free',
+        label: 'Học viên Free',
+        current: conversion.free,
+        target: conversion.total,
+        color: '#64748b',
+        display: () => `${animFree.toLocaleString('vi-VN')} / ${conversion.total.toLocaleString('vi-VN')} người`,
       },
       {
-        key: 'paid',
-        label: 'Học viên trả phí mới',
-        current: kpi.paidCurrent,
-        target: kpi.paidTarget,
-        color: '#6366f1',
-        display: () => `${animPaid} / ${kpi.paidTarget}`,
+        key: 'premium',
+        label: 'Học viên Premium',
+        current: conversion.premium,
+        target: conversion.total,
+        color: '#7c3aed',
+        display: () => `${animPremium.toLocaleString('vi-VN')} / ${conversion.total.toLocaleString('vi-VN')} người`,
       },
       {
         key: 'conv',
         label: 'Tỷ lệ chuyển đổi',
-        current: kpi.convCurrent,
-        target: kpi.convTarget,
+        current: conversion.rate,
+        target: CONVERSION_TARGET_PERCENT,
         color: '#ea580c',
-        display: () => `${animConv}% / ${kpi.convTarget}%`,
+        display: () => `${animRate}% / ${CONVERSION_TARGET_PERCENT}%`,
+      },
+      {
+        key: 'upgrades',
+        label: 'Nâng cấp Premium tháng này',
+        current: conversion.upgradesMonth,
+        target: conversion.upgradeTarget,
+        color: '#8e031d',
+        display: () => `${animUpgrades} / ${conversion.upgradeTarget} lượt`,
       },
     ],
-    [kpi, animRev, animPaid, animConv],
+    [conversion, animFree, animPremium, animRate, animUpgrades],
   );
 
   return (
@@ -149,6 +144,7 @@ export function SuggestionsTab() {
         <p className="admin-dash__ai-desc">Phân tích dữ liệu thật từ API và gợi ý bốn hướng tối ưu doanh thu cùng trải nghiệm học viên.</p>
       </Motion.div>
       {err ? <div className="admin-users__alert">{err}</div> : null}
+      {loading && !err ? <div className="admin-dash__card-sub">Đang tải dữ liệu chuyển đổi…</div> : null}
 
       <Motion.div className="admin-dash__suggest-grid" variants={listReveal} initial="hidden" animate="visible">
         {suggestionCards.map((c) => (
@@ -166,8 +162,12 @@ export function SuggestionsTab() {
       <Motion.div className="admin-dash__card admin-dash__card--goals" variants={itemRise} initial="hidden" animate="visible">
         <div className="admin-dash__goals-head">
           <div>
-            <h3 className="admin-dash__card-title admin-dash__card-title--serif">Mục tiêu tháng {monthLabel}</h3>
-            <p className="admin-dash__card-sub">KPI theo dõi từ API (mục tiêu tự tính theo dữ liệu hiện tại).</p>
+            <h3 className="admin-dash__card-title admin-dash__card-title--serif">Chuyển đổi Free → Premium</h3>
+            <p className="admin-dash__card-sub">
+              {loading
+                ? 'Đang đồng bộ số liệu học viên và gói Premium…'
+                : `Tổng ${conversion.total.toLocaleString('vi-VN')} học viên — dữ liệu lấy từ API admin.`}
+            </p>
           </div>
         </div>
         <Motion.ul className="admin-dash__goal-list" variants={goalsReveal} initial="hidden" animate="visible">
@@ -175,13 +175,13 @@ export function SuggestionsTab() {
             <Motion.li key={b.key} variants={itemRise}>
               <div className="admin-dash__goal-row">
                 <span>{b.label}</span>
-                <strong>{b.display()}</strong>
+                <strong>{loading ? '…' : b.display()}</strong>
               </div>
               <div className="admin-dash__goal-track">
                 <Motion.div
                   className="admin-dash__goal-fill"
                   initial={reduceMotion ? { width: `${pct(b.current, b.target)}%` } : { width: '0%' }}
-                  animate={{ width: `${pct(b.current, b.target)}%` }}
+                  animate={{ width: loading ? '0%' : `${pct(b.current, b.target)}%` }}
                   transition={{
                     duration: reduceMotion ? 0 : 0.95,
                     ease: [0.22, 1, 0.36, 1],
@@ -190,7 +190,7 @@ export function SuggestionsTab() {
                   style={{ background: b.color }}
                 />
               </div>
-              <span className="admin-dash__goal-pct">{pct(b.current, b.target)}%</span>
+              <span className="admin-dash__goal-pct">{loading ? '—' : `${pct(b.current, b.target)}%`}</span>
             </Motion.li>
           ))}
         </Motion.ul>

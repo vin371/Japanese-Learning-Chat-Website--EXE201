@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import {
   ResponsiveContainer,
@@ -13,7 +13,7 @@ import {
   Pie,
   Cell,
 } from 'recharts';
-import { adminService } from '../../../services/adminService';
+import { useAdminOverview } from '../../../hooks/useAdminOverview';
 import { ShieldUser, MonitorCog, Star } from 'lucide-react';
 
 const Motion = motion;
@@ -32,8 +32,7 @@ function signupBarFill(index, total) {
 }
 
 export function OverviewTab() {
-  const [ov, setOv] = useState(null);
-  const [ovErr, setOvErr] = useState(null);
+  const { ov, loading, err: ovErr } = useAdminOverview();
   const reduceMotion = useReducedMotion();
 
   const listReveal = useMemo(
@@ -41,8 +40,8 @@ export function OverviewTab() {
       hidden: {},
       visible: {
         transition: {
-          staggerChildren: reduceMotion ? 0 : 0.085,
-          delayChildren: reduceMotion ? 0 : 0.05,
+          staggerChildren: reduceMotion ? 0 : 0.04,
+          delayChildren: reduceMotion ? 0 : 0,
         },
       },
     }),
@@ -60,13 +59,6 @@ export function OverviewTab() {
     }),
     [reduceMotion],
   );
-
-  useEffect(() => {
-    adminService
-      .getOverview()
-      .then(setOv)
-      .catch((e) => setOvErr(e?.message || 'Không tải được tổng quan từ API.'));
-  }, []);
 
   const growthData = useMemo(() => {
     const raw = ov?.newUsersPerDay ?? ov?.NewUsersPerDay ?? [];

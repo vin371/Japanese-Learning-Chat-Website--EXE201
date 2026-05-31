@@ -104,7 +104,7 @@ export default function UpgradePage() {
     };
   }, []);
 
-  const premiumPrice = Number(config?.premiumPriceVnd ?? 10000);
+  const premiumPrice = Number(config?.premiumPriceVnd ?? 50000);
   const durationDays = Number(config?.premiumDurationDays ?? 30);
   const bankCode = String(config?.bankCode ?? 'ICB');
   const accountNo = String(config?.accountNo ?? '105877558159');

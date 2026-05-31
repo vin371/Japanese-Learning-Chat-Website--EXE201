@@ -1,7 +1,8 @@
 /* eslint-env browser */
 import { useCallback, useEffect, useRef, useState } from 'react';
-import http from '../../api/client';
+import http, { ENV } from '../../api/client';
 import { isApiUnavailableError } from '../../utils/apiErrorMessage';
+import { BACKEND_MISSING_HINT } from '../../utils/apiConfig';
 
 const POLL_MS = 45_000;
 const PROBE_TIMEOUT_MS = 8000;
@@ -49,8 +50,11 @@ export function ApiOfflineBanner() {
       <div className="api-offline-banner__inner">
         <span className="api-offline-banner__dot" aria-hidden="true" />
         <p className="api-offline-banner__text">
-          Không kết nối được API backend. Một số tính năng có thể không hoạt động — kiểm tra{' '}
-          <code>dotnet run</code> (cổng 5056) và <code>VITE_PROXY_TARGET</code> trong frontend/.env.
+          {ENV.PROD && !ENV.API_URL
+            ? BACKEND_MISSING_HINT
+            : ENV.PROD
+              ? 'Không kết nối được API backend. Kiểm tra URL trong VITE_API_URL (Vercel) và backend Railway/Azure đang chạy.'
+              : 'Không kết nối được API backend. Chạy dotnet run trong thư mục backend (cổng 5056); dev: để trống VITE_API_URL để dùng proxy Vite.'}
         </p>
         <button
           type="button"

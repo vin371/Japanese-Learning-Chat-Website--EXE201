@@ -35,7 +35,7 @@ export function PaymentsAdminTab() {
   const [form, setForm] = useState({
     accountNo: '',
     accountName: '',
-    premiumPriceVnd: 10000,
+    premiumPriceVnd: 50000,
     premiumDurationDays: 30,
     isActive: true,
   });
@@ -46,7 +46,7 @@ export function PaymentsAdminTab() {
     setForm({
       accountNo: cfg?.accountNo ?? '',
       accountName: cfg?.accountName ?? '',
-      premiumPriceVnd: Number(cfg?.premiumPriceVnd ?? 10000),
+      premiumPriceVnd: Number(cfg?.premiumPriceVnd ?? 50000),
       premiumDurationDays: Number(cfg?.premiumDurationDays ?? 30),
       isActive: !!cfg?.isActive,
     });
@@ -69,7 +69,7 @@ export function PaymentsAdminTab() {
           setForm({
             accountNo: cfg?.accountNo ?? '',
             accountName: cfg?.accountName ?? '',
-            premiumPriceVnd: Number(cfg?.premiumPriceVnd ?? 10000),
+            premiumPriceVnd: Number(cfg?.premiumPriceVnd ?? 50000),
             premiumDurationDays: Number(cfg?.premiumDurationDays ?? 30),
             isActive: !!cfg?.isActive,
           });
