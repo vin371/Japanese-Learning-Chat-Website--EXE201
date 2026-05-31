@@ -4,32 +4,30 @@
 
 | Thuật ngữ | Ý nghĩa |
 |-----------|---------|
-| **Image** | Bản “cài đặt” sẵn (vd SQL Server 2022) — tải về chỉ là **chưa chạy** database. |
-| **Container** | Một **máy SQL đang chạy** tạo ra từ image — ứng dụng kết nối vào **container**, không kết nối vào image. |
-| **Volume** | Ổ dữ liệu để **SQL trong container không mất** khi tắt container (vd `exe201_yumegoji_mssql_data`). |
-
-Bạn thấy image `mcr.microsoft.com/mssql/server:2022-latest` trong tab **Images** = đã sẵn sàng; cần **tạo container** (hoặc dùng Compose) thì SQL mới lắng nghe cổng.
+| **Image** | Bản “cài đặt” sẵn (vd PostgreSQL 16) — tải về chỉ là **chưa chạy** database. |
+| **Container** | Một **PostgreSQL đang chạy** tạo ra từ image — ứng dụng kết nối vào **container**, không kết nối vào image. |
+| **Volume** | Ổ dữ liệu để **Postgres trong container không mất** khi tắt container (vd `yumegoji_pg_data`). |
 
 ---
 
-## 2. Cách khuyến nghị: `docker compose` (một lệnh — SQL + init DB + API)
+## 2. Cách khuyến nghị: `docker compose` (một lệnh — Postgres + init DB + API)
 
 Mở **PowerShell** hoặc **Terminal**:
 
 ```powershell
-cd D:\semester 8\EXE2\Yumegoji-EXE201
+cd E:\EXE201\Japanese-Learning-Chat-Website--EXE201\Japanese-Learning-Chat-Website--EXE201
 copy .env.example .env   # tuỳ chọn — có giá trị mặc định
 docker compose up -d --build
 ```
 
 Compose sẽ tự:
 
-1. Khởi động **SQL Server** (`yumegoji-sql`, cổng host `14333`)
-2. Chạy **db-init** — chờ SQL healthy rồi tự chạy `01_yumegoji_database_DDL.sql` + `02_yumegoji_database_seed.sql` (bỏ qua nếu `YumegojiDB` đã có)
+1. Khởi động **PostgreSQL 16** (`yumegoji-postgres`, cổng host `5433`)
+2. Chạy **db-init** — chờ Postgres healthy rồi tự chạy `yumegoji_supabase.sql` + seed part01–13 + indexes + FK (bỏ qua nếu đã có `users`)
 3. Build và chạy **API** (`yumegoji-api`) — Swagger: `http://localhost:5056/swagger`
 
 - `-d` = chạy nền (Docker Desktop → tab **Containers**).
-- Volume `yumegoji_mssql_data` giữ dữ liệu SQL; `yumegoji_uploads` giữ file upload API.
+- Volume `yumegoji_pg_data` giữ dữ liệu Postgres; `yumegoji_uploads` giữ file upload API.
 
 **Dừng container** (giữ volume / giữ data):
 
@@ -37,7 +35,7 @@ Compose sẽ tự:
 docker compose down
 ```
 
-**Xóa cả dữ liệu SQL** (chạy lại init từ đầu):
+**Xóa cả dữ liệu Postgres** (chạy lại init từ đầu):
 
 ```powershell
 docker compose down -v
@@ -47,65 +45,32 @@ docker compose up -d --build
 **Xem log:**
 
 ```powershell
-docker compose logs -f sqlserver
+docker compose logs -f postgres
 docker compose logs db-init
 docker compose logs -f api
 ```
 
-Lần đầu có thể mất **1–3 phút** (tải image SQL + build API + chạy script DDL/seed).
+Lần đầu có thể mất **2–5 phút** (tải image Postgres + build API + chạy seed).
 
 ---
 
-## 3. Cách bấm **Run** từ tab Images (nếu không dùng Compose)
-
-Khi mở **Run a new container** từ image SQL Server:
-
-1. **Container name** (tên container — *không* phải tên database):
-   - Có thể đặt: `yumegoji-sql` hoặc `yumegoji-db`  
-   - **YumegojiDB** là tên **database** bên trong SQL; tạo bằng script SQL, không bắt buộc trùng tên container.
-
-2. **Ports — Host port:** nhập **`14333`**  
-   - Bên phải giữ **`1433`** (cổng trong container).  
-   - Kết nối từ Windows: `localhost,14333`.
-
-3. **Environment variables** — thêm **2 dòng** (bắt buộc):
-
-   | Variable | Value |
-   |----------|--------|
-   | `ACCEPT_EULA` | `Y` |
-   | `MSSQL_SA_PASSWORD` | Mật khẩu **mạnh** (vd `Yumegoji_Sql_2024!`) |
-
-   Image SQL trên Linux **thường từ chối** mật khẩu quá yếu như `12345` → container sẽ **tự thoát**.
-
-4. Bấm **Run** → sang tab **Containers** kiểm tra trạng thái **Running** (xanh).
-
-**Lưu ý:** Nếu đã dùng `docker compose` trước đó, không cần Run thủ công thêm một container thứ hai trừ khi bạn biết rõ (hai container cùng map `14333` sẽ lỗi cổng).
-
----
-
-## 4. Kết nối bằng SSMS / Azure Data Studio
+## 3. Kết nối bằng pgAdmin / DBeaver / psql
 
 | Trường | Giá trị |
 |--------|---------|
-| Server | `localhost,14333` |
-| Xác thực | SQL Server Authentication |
-| Login | `sa` |
-| Password | Trùng với `MSSQL_SA_PASSWORD` trong `.env` / Compose (mặc định: `Yumegoji_Sql_2024!`) |
+| Host | `localhost` |
+| Port | `5433` |
+| Database | `yumegoji` |
+| Username | `yumegoji` |
+| Password | Trùng với `POSTGRES_PASSWORD` trong `.env` (mặc định: `Yumegoji_Pg_2024!`) |
 
-**Không cần chạy script SQL thủ công** nếu đã dùng `docker compose up` — service `db-init` tự chạy `01` + `02`.
+**Không cần chạy script SQL thủ công** nếu đã dùng `docker compose up` — service `db-init` tự init.
 
-Chỉ chạy tay khi bạn **không** dùng Compose hoặc muốn seed lại:
-
-1. `backend\doc\sql\01_yumegoji_database_DDL.sql`
-2. `backend\doc\sql\02_yumegoji_database_seed.sql`
-
-**SSMS:** Query → **SQLCMD Mode** (vì file dùng lệnh `:r` để gọi script con), mở từng file và **Execute**. Hoặc dùng **`sqlcmd`** từ PowerShell — xem [README.md](README.md) mục “Khởi tạo schema + dữ liệu mẫu”.
-
-File `YumegojiDB-AllScripts.sql` chỉ còn **tham khảo / snapshot cũ**; luồng mới dùng `01` + `02`.
+Chỉ chạy tay khi bạn **không** dùng Compose hoặc muốn seed lại — xem thứ tự trong [README.md](README.md) mục “Khởi tạo schema + dữ liệu mẫu”.
 
 ---
 
-## 5. Backend .NET với SQL Docker
+## 4. Backend .NET với Postgres Docker
 
 ### A. Chạy API trong Docker (khuyến nghị cùng Compose)
 
@@ -114,9 +79,9 @@ Sau `docker compose up -d --build`:
 - API: `http://localhost:5056/swagger`
 - Frontend dev (máy host): đặt `VITE_PROXY_TARGET=http://localhost:5056` trong `frontend/.env`
 
-### B. Chạy API trên máy host (dotnet run)
+### B. Chạy API trên máy host (`dotnet run`)
 
-- `backend\appsettings.Docker.json` — `Server=localhost,14333` khi SQL chạy trong Docker
+- `backend\appsettings.Docker.json` — `Host=localhost;Port=5433` khi Postgres chạy trong Docker
 - Profile **`Docker`** trong `launchSettings.json`
 
 ```powershell
@@ -124,27 +89,35 @@ cd backend
 dotnet run --launch-profile Docker
 ```
 
-Nếu đổi mật khẩu trong `.env` / Compose, sửa **cùng** mật khẩu trong `appsettings.Docker.json` (hoặc dùng biến môi trường `ConnectionStrings__DefaultConnection`).
+Nếu đổi mật khẩu trong `.env` / Compose, sửa **cùng** mật khẩu trong `appsettings.Docker.json`.
 
 ---
 
-## 6. Khác với SQL Server trên Windows (`LAPTOP-...\VINH`)
+## 5. Supabase cloud vs Docker local
 
-- **Windows SQL:** `Server=LAPTOP-EF9AH3K8\VINH`, `sa` / `12345` (trong `appsettings.json` khi chạy Development).
-- **Docker SQL:** `Server=localhost,14333`, `sa` / mật khẩu container (không nhất thiết là `12345`).
+| | **Supabase** | **Docker Postgres** |
+|---|-------------|---------------------|
+| Host | `*.pooler.supabase.com` | `localhost:5433` |
+| DB | `postgres` | `yumegoji` |
+| Cấu hình | `appsettings.Secrets.json` | profile Docker / Compose |
+| SSL | Bắt buộc (`SSL Mode=Require`) | Không cần (local) |
 
-Hai cái **song song được**; chỉ cần đúng **chuỗi kết nối** khi chạy backend.
+Hai môi trường **độc lập** — chọn một connection string khi chạy backend.
+
+Chi tiết Supabase: **`backend/SUPABASE-CAU-HINH.txt`**.
 
 ---
 
-## 7. Gỡ rối nhanh
+## 6. Gỡ rối nhanh
 
 | Hiện tượng | Hướng xử lý |
 |------------|-------------|
-| Container **Exited** ngay sau Run | Xem **Logs**: thiếu `ACCEPT_EULA`, mật khẩu yếu, hoặc cổng bận. |
-| Không kết nối được `localhost,14333` | Kiểm tra container đang **Running**; host port đúng **14333**. |
-| `docker compose up` báo cổng đã dùng | Đổi trong `docker-compose.yml` thành `"14334:1433"` và sửa connection string + SSMS cho khớp. |
+| Container **Exited** ngay sau Run | Xem **Logs**: cổng bận, thiếu biến môi trường. |
+| Không kết nối được `localhost:5433` | Kiểm tra container **Running**; đúng cổng **5433**. |
+| `db-init` failed | Xem `docker compose logs db-init` — thường do seed chạy lại trên DB đã có data (dùng `down -v` để reset). |
+| API 500 khi dùng Supabase | Kiểm tra Session pooler, mật khẩu trong Secrets — xem `SUPABASE-CAU-HINH.txt`. |
+| Cổng 5056 bận | `cd backend; .\stop-backend.ps1` |
 
 ---
 
-*Tài liệu tổng quan chạy dự án: [README.md](README.md).*
+*Tài liệu tổng quan: [README.md](README.md).*

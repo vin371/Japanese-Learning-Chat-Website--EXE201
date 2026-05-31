@@ -1,29 +1,24 @@
 #!/usr/bin/env bash
-# Chờ SQL Server sẵn sàng rồi chạy 01 (DDL) + 02 (seed) — idempotent nếu YumegojiDB đã tồn tại.
+# Chờ PostgreSQL sẵn sàng rồi chạy schema + seed Supabase — idempotent nếu đã có users.
 set -euo pipefail
 
-SQL_HOST="${SQL_HOST:-yumegoji-sql}"
-SA_PASSWORD="${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD}"
+PGHOST="${PGHOST:-yumegoji-postgres}"
+PGUSER="${PGUSER:-yumegoji}"
+PGPASSWORD="${PGPASSWORD:?Set PGPASSWORD or POSTGRES_PASSWORD}"
+PGDATABASE="${PGDATABASE:-yumegoji}"
 SQL_DIR="${SQL_DIR:-/sql}"
 MAX_WAIT="${MAX_WAIT:-90}"
 
-if [[ -x /opt/mssql-tools18/bin/sqlcmd ]]; then
-  SQLCMD=/opt/mssql-tools18/bin/sqlcmd
-elif [[ -x /opt/mssql-tools/bin/sqlcmd ]]; then
-  SQLCMD=/opt/mssql-tools/bin/sqlcmd
-else
-  echo "sqlcmd not found in container image." >&2
-  exit 1
-fi
+export PGHOST PGUSER PGPASSWORD PGDATABASE
 
-sql_query() {
-  "$SQLCMD" -S "$SQL_HOST" -U sa -P "$SA_PASSWORD" -C "$@"
+psql_cmd() {
+  psql -v ON_ERROR_STOP=1 "$@"
 }
 
-echo "[db-init] Waiting for SQL Server at ${SQL_HOST} (max ${MAX_WAIT}s)..."
+echo "[db-init] Waiting for PostgreSQL at ${PGHOST} (max ${MAX_WAIT}s)..."
 ready=0
 for ((i = 1; i <= MAX_WAIT; i++)); do
-  if sql_query -Q "SELECT 1" >/dev/null 2>&1; then
+  if pg_isready -h "$PGHOST" -U "$PGUSER" -d "$PGDATABASE" >/dev/null 2>&1; then
     ready=1
     break
   fi
@@ -31,27 +26,57 @@ for ((i = 1; i <= MAX_WAIT; i++)); do
 done
 
 if [[ "$ready" -ne 1 ]]; then
-  echo "[db-init] SQL Server did not become ready in time." >&2
+  echo "[db-init] PostgreSQL did not become ready in time." >&2
   exit 1
 fi
 
-echo "[db-init] SQL Server is up."
+echo "[db-init] PostgreSQL is up."
 
-db_id="$(sql_query -d master -Q "SET NOCOUNT ON; SELECT CONVERT(varchar(20), DB_ID(N'YumegojiDB'))" -h -1 -W | tr -d '[:space:]')"
-if [[ -n "$db_id" && "$db_id" != "NULL" ]]; then
-  echo "[db-init] YumegojiDB already exists (id=${db_id}) — skip DDL/seed."
+if psql_cmd -tAc "SELECT 1 FROM users LIMIT 1" 2>/dev/null | grep -q 1; then
+  echo "[db-init] Database already initialized — skip schema/seed."
   exit 0
 fi
 
-if [[ ! -f "${SQL_DIR}/01_yumegoji_database_DDL.sql" ]]; then
-  echo "[db-init] Missing ${SQL_DIR}/01_yumegoji_database_DDL.sql" >&2
+schema="${SQL_DIR}/yumegoji_supabase.sql"
+if [[ ! -f "$schema" ]]; then
+  echo "[db-init] Missing ${schema}" >&2
   exit 1
 fi
 
-echo "[db-init] Running 01_yumegoji_database_DDL.sql ..."
-(cd "$SQL_DIR" && sql_query -d master -i "01_yumegoji_database_DDL.sql")
+echo "[db-init] Running yumegoji_supabase.sql (schema)..."
+psql_cmd -f "$schema"
 
-echo "[db-init] Running 02_yumegoji_database_seed.sql ..."
-(cd "$SQL_DIR" && sql_query -d YumegojiDB -i "02_yumegoji_database_seed.sql")
+parts_dir="${SQL_DIR}/yumegoji_supabase_data_v2_parts"
+if [[ -d "$parts_dir" ]]; then
+  mapfile -t part_files < <(find "$parts_dir" -name 'yumegoji_supabase_data_v2_part*.sql' | sort)
+  if [[ ${#part_files[@]} -eq 0 ]]; then
+    echo "[db-init] No seed parts found in ${parts_dir}" >&2
+    exit 1
+  fi
+  for f in "${part_files[@]}"; do
+    echo "[db-init] Running $(basename "$f") ..."
+    psql_cmd -f "$f"
+  done
+else
+  seed="${SQL_DIR}/yumegoji_supabase_data_v2_fixed.sql"
+  if [[ ! -f "$seed" ]]; then
+    echo "[db-init] Missing seed: ${parts_dir} or ${seed}" >&2
+    exit 1
+  fi
+  echo "[db-init] Running yumegoji_supabase_data_v2_fixed.sql ..."
+  psql_cmd -f "$seed"
+fi
+
+indexes="${SQL_DIR}/yumegoji_supabase_indexes.sql"
+if [[ -f "$indexes" ]]; then
+  echo "[db-init] Running yumegoji_supabase_indexes.sql ..."
+  psql_cmd -f "$indexes"
+fi
+
+fks="${SQL_DIR}/yumegoji_supabase_missing_fks.sql"
+if [[ -f "$fks" ]]; then
+  echo "[db-init] Running yumegoji_supabase_missing_fks.sql ..."
+  psql_cmd -f "$fks"
+fi
 
 echo "[db-init] Database initialized successfully."

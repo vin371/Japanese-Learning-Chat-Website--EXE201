@@ -1,36 +1,33 @@
-# Yumegoji — SQL Server + tự init DB + API (.NET 8)
+# Yumegoji — PostgreSQL (Supabase-compatible) + tự init DB + API (.NET 8)
 #
 # Lần đầu (từ thư mục gốc repo):
 #   copy .env.example .env   (tuỳ chọn — có giá trị mặc định)
 #   docker compose up -d --build
 #
 # API:     http://localhost:5056/swagger
-# SQL:     localhost,14333  (sa / MSSQL_SA_PASSWORD)
+# Postgres: localhost:5433  (yumegoji / POSTGRES_PASSWORD)
 # Tắt:     docker compose down
 # Xoá DB:  docker compose down -v
 
 services:
-  sqlserver:
-    image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: yumegoji-sql
-    hostname: yumegoji-sql
+  postgres:
+    image: postgres:16-alpine
+    container_name: yumegoji-postgres
+    hostname: yumegoji-postgres
     environment:
-      ACCEPT_EULA: "Y"
-      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:-Yumegoji_Sql_2024!}
+      POSTGRES_USER: yumegoji
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-Yumegoji_Pg_2024!}
+      POSTGRES_DB: yumegoji
     ports:
-      - "14333:1433"
+      - "5433:5432"
     volumes:
-      - yumegoji_mssql_data:/var/opt/mssql
+      - yumegoji_pg_data:/var/lib/postgresql/data
     healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -Q \"SELECT 1\" -C || exit 1",
-        ]
-      interval: 10s
+      test: ["CMD-SHELL", "pg_isready -U yumegoji -d yumegoji"]
+      interval: 5s
       timeout: 5s
       retries: 12
-      start_period: 35s
+      start_period: 10s
 
   db-init:
     build:
@@ -38,11 +35,13 @@ services:
       dockerfile: Dockerfile
     container_name: yumegoji-db-init
     depends_on:
-      sqlserver:
+      postgres:
         condition: service_healthy
     environment:
-      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:-Yumegoji_Sql_2024!}
-      SQL_HOST: yumegoji-sql
+      PGHOST: yumegoji-postgres
+      PGUSER: yumegoji
+      PGPASSWORD: ${POSTGRES_PASSWORD:-Yumegoji_Pg_2024!}
+      PGDATABASE: yumegoji
       SQL_DIR: /sql
     volumes:
       - ./backend/doc/sql:/sql:ro
@@ -60,7 +59,7 @@ services:
       - "${API_HOST_PORT:-5056}:8080"
     environment:
       ASPNETCORE_ENVIRONMENT: Docker
-      ConnectionStrings__DefaultConnection: Server=yumegoji-sql,1433;Database=YumegojiDB;User Id=sa;Password=${MSSQL_SA_PASSWORD:-Yumegoji_Sql_2024!};TrustServerCertificate=True;
+      ConnectionStrings__DefaultConnection: Host=yumegoji-postgres;Port=5432;Database=yumegoji;Username=yumegoji;Password=${POSTGRES_PASSWORD:-Yumegoji_Pg_2024!};
       Jwt__Key: ${JWT_KEY:-change-this-docker-jwt-key-minimum-32-characters-long}
       Frontend__PublicBaseUrl: http://localhost:8080
     volumes:
@@ -68,5 +67,5 @@ services:
     restart: unless-stopped
 
 volumes:
-  yumegoji_mssql_data:
+  yumegoji_pg_data:
   yumegoji_uploads:
