@@ -764,6 +764,31 @@
   justify-content: center !important;
 }
 
+/* Pill "Google" cố định; iframe GIS trong suốt phía trên — bấm thật, không hiện tên tài khoản */
+.auth-google-fallback-pill--decor {
+  pointer-events: none;
+  user-select: none;
+}
+
+.auth-google-mount--overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.01;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.auth-google-mount--overlay > div,
+.auth-google-mount--overlay iframe {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 3.25rem;
+}
+
 .auth-google-pill-wrap--disabled {
   pointer-events: none;
   opacity: 0.65;

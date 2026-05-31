@@ -39,7 +39,7 @@ function buttonWidthFor(mountEl) {
 }
 
 /**
- * Nút Google GIS hiển thị trực tiếp — user bấm iframe thật (tránh FedCM AbortError khi click ẩn).
+ * GIS iframe trong suốt trên pill "Google" — user bấm iframe thật (không programmatic click).
  */
 export function useGoogleIdentityButton(onCredential, options = {}) {
   const { text = 'signin_with' } = options;

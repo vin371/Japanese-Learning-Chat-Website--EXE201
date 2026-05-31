@@ -37,7 +37,7 @@ const MISSING_CONFIG_MSG =
   'Chưa cấu hình Google OAuth: thêm VITE_GOOGLE_CLIENT_ID vào frontend/.env (xem .env.example).';
 
 /**
- * Nút Google chính thức từ GIS (iframe) — bấm trực tiếp, ổn định trên Vercel/Cốc Cốc.
+ * Luôn hiện pill "Google" — iframe GIS trong suốt phía trên (user bấm trực tiếp, không hiện tên tài khoản).
  */
 export function GoogleAuthPill({
   onCredential,
@@ -82,11 +82,17 @@ export function GoogleAuthPill({
             <span>Đang tải…</span>
           </Motion.button>
         ) : (
-          <div
-            ref={mountRef}
-            className="auth-google-mount auth-google-mount--visible"
-            aria-label={`${buttonLabel} — đăng nhập`}
-          />
+          <>
+            <div className="auth-google-fallback-pill auth-google-fallback-pill--decor" aria-hidden="true">
+              <IconGoogleG />
+              <span>{buttonLabel}</span>
+            </div>
+            <div
+              ref={mountRef}
+              className="auth-google-mount auth-google-mount--overlay"
+              aria-label={`${buttonLabel} — đăng nhập`}
+            />
+          </>
         )}
       </div>
     </div>
