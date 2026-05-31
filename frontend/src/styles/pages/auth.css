@@ -750,6 +750,25 @@
   border: 0;
 }
 
+.auth-google-mount--visible {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  min-height: 3.25rem;
+}
+
+.auth-google-mount--visible > div {
+  width: 100% !important;
+  display: flex !important;
+  justify-content: center !important;
+}
+
+.auth-google-pill-wrap--disabled {
+  pointer-events: none;
+  opacity: 0.65;
+}
+
 .auth-form-error-slot {
   min-height: 3.25rem;
   margin: 0 0 0.75rem;
