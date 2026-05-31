@@ -84,6 +84,9 @@ export function useGoogleIdentityButton(onCredential, options = {}) {
           },
           auto_select: false,
           cancel_on_tap_outside: true,
+          // Coc Coc / Chrome chặn FedCM → NetworkError khi bấm Google trên production
+          use_fedcm_for_prompt: false,
+          use_fedcm_for_button: false,
         });
         gsiInitialized = true;
       }
