@@ -1,25 +1,33 @@
 # Dừng backend đang chiếm port 5056 / khóa backend.exe
 $port = 5056
+$procIds = [System.Collections.Generic.List[int]]::new()
+
 $lines = netstat -ano | Select-String ":$port\s"
-$pids = $lines | ForEach-Object {
-    if ($_ -match '\s+(\d+)\s*$') { [int]$Matches[1] }
-} | Where-Object { $_ -gt 0 } | Select-Object -Unique
+foreach ($line in $lines) {
+    if ($line -match '\s+(\d+)\s*$') {
+        $id = [int]$Matches[1]
+        if ($id -gt 0) { $procIds.Add($id) }
+    }
+}
 
 Get-Process -Name backend -ErrorAction SilentlyContinue | ForEach-Object {
-    $pids += $_.Id
+    $procIds.Add($_.Id)
 }
-$pids = $pids | Select-Object -Unique
 
-if (-not $pids) {
-    Write-Host "Không có backend đang chạy trên port $port."
+$unique = $procIds | Select-Object -Unique
+
+if (-not $unique) {
+    Write-Host "Khong co backend dang chay (port $port)."
     exit 0
 }
 
-foreach ($pid in $pids) {
-    $p = Get-Process -Id $pid -ErrorAction SilentlyContinue
+foreach ($procId in $unique) {
+    $p = Get-Process -Id $procId -ErrorAction SilentlyContinue
     if ($p) {
-        Write-Host "Dừng PID $pid ($($p.ProcessName))..."
-        Stop-Process -Id $pid -Force
+        Write-Host "Dung PID $procId ($($p.ProcessName))..."
+        Stop-Process -Id $procId -Force -ErrorAction SilentlyContinue
     }
 }
-Write-Host "Xong. Chạy: dotnet run"
+
+Start-Sleep -Seconds 1
+Write-Host "Xong. Chay: dotnet run --launch-profile http"

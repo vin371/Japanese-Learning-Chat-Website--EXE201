@@ -13,6 +13,10 @@ namespace backend.Controllers;
 [AllowAnonymous]
 public class PublicController : ControllerBase
 {
+    /// <summary>Health check cho Railway / monitoring (không cần DB).</summary>
+    [HttpGet("health")]
+    public IActionResult Health() => Ok(new { status = "ok", service = "yumegoji-api" });
+
     /// <summary>Thông báo đã xuất bản mới nhất (hoặc announcement = null).</summary>
     [HttpGet("system-announcements/latest")]
     public async Task<ActionResult<object>> GetLatestSystemAnnouncement([FromServices] IAdminService admin)
