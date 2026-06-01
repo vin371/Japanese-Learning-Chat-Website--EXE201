@@ -35,6 +35,11 @@ namespace backend
             // OpenAI ApiKey: đặt trong appsettings.Secrets.json (đã .gitignore) hoặc User Secrets — xem OPENAI-CAU-HINH.txt
             builder.Configuration.AddJsonFile("appsettings.Secrets.json", optional: true, reloadOnChange: true);
 
+            // Railway Variables: JWT_KEY (không tự map sang Jwt:Key)
+            var jwtEnv = Environment.GetEnvironmentVariable("JWT_KEY");
+            if (!string.IsNullOrWhiteSpace(jwtEnv))
+                builder.Configuration["Jwt:Key"] = jwtEnv;
+
             // Upload multipart (PDF/DOCX/PPTX) — đồng bộ với [RequestSizeLimit] trên controller import
             builder.WebHost.ConfigureKestrel(o =>
             {
@@ -188,7 +193,14 @@ namespace backend
                         .SetIsOriginAllowed(origin =>
                         {
                             if (string.IsNullOrWhiteSpace(origin)) return false;
+                            if (origin.Equals("https://yumegoji.vercel.app", StringComparison.OrdinalIgnoreCase))
+                                return true;
                             if (origin == "https://japanese-learning-chat-website.vercel.app") return true;
+
+                            var configuredFront = builder.Configuration["Frontend:PublicBaseUrl"];
+                            if (!string.IsNullOrWhiteSpace(configuredFront)
+                                && origin.Equals(configuredFront.TrimEnd('/'), StringComparison.OrdinalIgnoreCase))
+                                return true;
 
                             if (Uri.TryCreate(origin, UriKind.Absolute, out var uri))
                             {
@@ -211,6 +223,30 @@ namespace backend
             });
 
             var app = builder.Build();
+
+            // CORS sớm — phản hồi lỗi 500 vẫn có Access-Control-Allow-Origin (tránh trình duyệt báo CORS sai)
+            app.UseCors("FrontendDev");
+
+            if (!app.Environment.IsDevelopment())
+            {
+                app.UseExceptionHandler(errorApp =>
+                {
+                    errorApp.Run(async context =>
+                    {
+                        var log = context.RequestServices.GetRequiredService<ILogger<Program>>();
+                        var feat = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
+                        if (feat?.Error != null)
+                            log.LogError(feat.Error, "Unhandled error {Path}", context.Request.Path);
+
+                        if (!context.Response.HasStarted)
+                        {
+                            context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                            context.Response.ContentType = "application/json";
+                            await context.Response.WriteAsJsonAsync(new { message = "Lỗi máy chủ." });
+                        }
+                    });
+                });
+            }
 
             // Kiểm tra kết nối Supabase khi khởi động (mật khẩu trong appsettings.Secrets.json)
             using (var scope = app.Services.CreateScope())
@@ -243,7 +279,6 @@ namespace backend
             }
 
             app.UseRouting();
-            app.UseCors("FrontendDev");
 
             // Phục vụ file tĩnh từ wwwroot (vd: /uploads/ảnh đã upload)
             app.UseStaticFiles();

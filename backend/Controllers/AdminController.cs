@@ -49,7 +49,13 @@ public class AdminController : ControllerBase
         }
         catch (Exception ex) when (DbExceptionHelper.IsConnectionError(ex))
         {
+            _logger.LogError(ex, "Admin overview: database connection failed");
             return StatusCode(503, new { message = "Không kết nối được cơ sở dữ liệu." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Admin overview failed");
+            return StatusCode(500, new { message = "Không tải được tổng quan. Thử lại sau." });
         }
     }
 

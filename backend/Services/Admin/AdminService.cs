@@ -16,7 +16,7 @@ namespace backend.Services.Admin;
 
 public class AdminService : IAdminService
 {
-    private const string OverviewCacheKey = "admin:overview:v1";
+    private const string OverviewCacheKey = "admin:overview:v2";
     private static readonly TimeSpan OverviewCacheTtl = TimeSpan.FromSeconds(45);
 
     private readonly ApplicationDbContext _db;
@@ -28,9 +28,13 @@ public class AdminService : IAdminService
         _cache = cache;
     }
 
-    /// <summary>PostgreSQL timestamp without time zone — không gửi Kind=UTC.</summary>
-    private static DateTime PgTimestamp(DateTime dt) =>
-        dt.Kind == DateTimeKind.Utc ? DateTime.SpecifyKind(dt, DateTimeKind.Unspecified) : dt;
+    private static DateTime PgTs(DateTime dt) => PgDateTime.ToUnspecifiedUtc(dt);
+
+    private static bool IsOverviewQueryError(Exception ex) =>
+        ex is PostgresException or ArgumentException or InvalidCastException or InvalidOperationException
+        || DbExceptionHelper.IsMissingRelation(ex)
+        || DbExceptionHelper.IsMissingColumn(ex)
+        || DbExceptionHelper.IsConnectionError(ex);
 
     public async Task<AdminOverviewDto> GetOverviewAsync()
     {
@@ -54,17 +58,16 @@ public class AdminService : IAdminService
         var d30SignupChart = dayStart.AddDays(-29);
         var msgSince = now.AddHours(-24);
 
-        var userAggTask = QueryUserAggregateAsync(connStr, d7, d30);
-        var signupTask = QuerySignupsPerDayAsync(connStr, d30SignupChart, dayStart);
-        var levelTask = QueryUsersByLevelAsync(connStr);
-        var paymentTask = QueryPaymentBundleAsync(connStr, dayStart, now);
-        var learningTask = QueryLearningActivityAsync(connStr, now);
-        var msgTask = QueryMessagesCountAsync(connStr, msgSince);
+        // Một kết nối tuần tự — ổn định trên Supabase pooler / Railway (tránh 6 kết nối song song).
+        await using var conn = new NpgsqlConnection(connStr);
+        await conn.OpenAsync();
 
-        await Task.WhenAll(userAggTask, signupTask, levelTask, paymentTask, learningTask, msgTask);
-
-        var users = await userAggTask;
-        var payment = await paymentTask;
+        var users = await QueryUserAggregateAsync(conn, d7, d30);
+        var signupTask = QuerySignupsPerDayAsync(conn, d30SignupChart, dayStart);
+        var levelTask = QueryUsersByLevelAsync(conn);
+        var payment = await QueryPaymentBundleAsync(conn, dayStart, now);
+        var learningTask = QueryLearningActivityAsync(conn, now);
+        var msgTask = QueryMessagesCountAsync(conn, msgSince);
         var premium = users.PremiumUsers;
         var academyUsers = users.AcademyUsers;
         var freeUsers = Math.Max(0, academyUsers - premium);
@@ -129,9 +132,10 @@ public class AdminService : IAdminService
         public int CompletedLessonsLast30Days { get; set; }
     }
 
-    private static async Task<UserAggregateRow> QueryUserAggregateAsync(string connStr, DateTime d7, DateTime d30)
+    private static async Task<UserAggregateRow> QueryUserAggregateAsync(NpgsqlConnection conn, DateTime d7, DateTime d30)
     {
-        await using var conn = new NpgsqlConnection(connStr);
+        try
+        {
         return await conn.QueryFirstAsync<UserAggregateRow>(
             """
             SELECT
@@ -150,13 +154,19 @@ public class AdminService : IAdminService
             FROM users
             WHERE deleted_at IS NULL
             """,
-            new { d7 = PgTimestamp(d7), d30 = PgTimestamp(d30) });
+            new { d7 = PgTs(d7), d30 = PgTs(d30) });
+        }
+        catch (Exception ex) when (IsOverviewQueryError(ex))
+        {
+            return new UserAggregateRow();
+        }
     }
 
     private static async Task<List<DailyCountDto>> QuerySignupsPerDayAsync(
-        string connStr, DateTime from, DateTime dayStart)
+        NpgsqlConnection conn, DateTime from, DateTime dayStart)
     {
-        await using var conn = new NpgsqlConnection(connStr);
+        try
+        {
         var rows = (await conn.QueryAsync<(DateTime Day, int Count)>(
             """
             SELECT DATE(created_at) AS Day, COUNT(*)::int AS Count
@@ -165,7 +175,7 @@ public class AdminService : IAdminService
             GROUP BY 1
             ORDER BY 1
             """,
-            new { from = PgTimestamp(from) })).ToList();
+            new { from = PgTs(from) })).ToList();
         var byDay = rows.ToDictionary(r => r.Day.Date, r => r.Count);
 
         var perDay = new List<DailyCountDto>();
@@ -176,11 +186,17 @@ public class AdminService : IAdminService
         }
 
         return perDay;
+        }
+        catch (Exception ex) when (IsOverviewQueryError(ex))
+        {
+            return new List<DailyCountDto>();
+        }
     }
 
-    private static async Task<List<LevelCountDto>> QueryUsersByLevelAsync(string connStr)
+    private static async Task<List<LevelCountDto>> QueryUsersByLevelAsync(NpgsqlConnection conn)
     {
-        await using var conn = new NpgsqlConnection(connStr);
+        try
+        {
         var rows = await conn.QueryAsync<(int? LevelId, int Cnt)>(
             """
             SELECT level_id AS LevelId, COUNT(*)::int AS Cnt
@@ -195,28 +211,32 @@ public class AdminService : IAdminService
             Label = LevelLabel(x.LevelId),
             Count = x.Cnt
         }).ToList();
+        }
+        catch (Exception ex) when (IsOverviewQueryError(ex))
+        {
+            return new List<LevelCountDto>();
+        }
     }
 
-    private static async Task<int> QueryMessagesCountAsync(string connStr, DateTime since)
+    private static async Task<int> QueryMessagesCountAsync(NpgsqlConnection conn, DateTime since)
     {
         try
         {
-            await using var conn = new NpgsqlConnection(connStr);
             return await conn.ExecuteScalarAsync<int>(
                 """
                 SELECT COUNT(*)::int FROM messages
                 WHERE NOT is_deleted AND created_at >= @since
                 """,
-                new { since = PgTimestamp(since) });
+                new { since = PgTs(since) });
         }
-        catch (PostgresException)
+        catch (Exception ex) when (IsOverviewQueryError(ex))
         {
             return 0;
         }
     }
 
     private static async Task<PaymentBundle> QueryPaymentBundleAsync(
-        string connStr, DateTime dayStart, DateTime nowUtc)
+        NpgsqlConnection conn, DateTime dayStart, DateTime nowUtc)
     {
         var monthStart = new DateTime(nowUtc.Year, nowUtc.Month, 1, 0, 0, 0, DateTimeKind.Utc);
         var nextMonth = monthStart.AddMonths(1);
@@ -237,7 +257,6 @@ public class AdminService : IAdminService
 
         try
         {
-            await using var conn = new NpgsqlConnection(connStr);
             var summary = await conn.QueryFirstOrDefaultAsync<PaymentBundle>(
                 """
                 SELECT
@@ -251,9 +270,9 @@ public class AdminService : IAdminService
                 """,
                 new
                 {
-                    dayStart = PgTimestamp(dayStart),
-                    monthStart = PgTimestamp(monthStart),
-                    nextMonth = PgTimestamp(nextMonth)
+                    dayStart = PgTs(dayStart),
+                    monthStart = PgTs(monthStart),
+                    nextMonth = PgTs(nextMonth)
                 });
             if (summary != null)
             {
@@ -276,8 +295,8 @@ public class AdminService : IAdminService
                 """,
                 new
                 {
-                    start = PgTimestamp(firstMonth),
-                    endEx = PgTimestamp(rangeEndExclusive)
+                    start = PgTs(firstMonth),
+                    endEx = PgTs(rangeEndExclusive)
                 });
 
             var byKey = result.RevenueLast8Months.ToDictionary(b => b.MonthKey, b => b, StringComparer.Ordinal);
@@ -288,25 +307,20 @@ public class AdminService : IAdminService
                     bucket.AmountVnd = row.Total;
             }
         }
-        catch (PostgresException)
+        catch (Exception ex) when (IsOverviewQueryError(ex))
         {
-            /* bảng payment chưa có */
-        }
-        catch (ArgumentException)
-        {
-            /* timestamp */
+            /* bảng payment / timestamp */
         }
 
         return result;
     }
 
-    private static async Task<LearningActivityStatsDto> QueryLearningActivityAsync(string connStr, DateTime nowUtc)
+    private static async Task<LearningActivityStatsDto> QueryLearningActivityAsync(NpgsqlConnection conn, DateTime nowUtc)
     {
-        var from30 = PgTimestamp(nowUtc.AddDays(-30));
+        var from30 = PgTs(nowUtc.AddDays(-30));
         var dto = new LearningActivityStatsDto();
         try
         {
-            await using var conn = new NpgsqlConnection(connStr);
             var row = await conn.QueryFirstOrDefaultAsync<LearningRow>(
                 """
                 SELECT
@@ -320,9 +334,9 @@ public class AdminService : IAdminService
             dto.GameSessionsEndedLast30Days = row.GameSessionsEndedLast30Days;
             dto.CompletedLessonsLast30Days = row.CompletedLessonsLast30Days;
         }
-        catch (PostgresException)
+        catch (Exception ex) when (IsOverviewQueryError(ex))
         {
-            /* bảng chưa migrate */
+            /* bảng game / lesson chưa migrate */
         }
 
         return dto;
