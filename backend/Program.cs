@@ -35,8 +35,9 @@ namespace backend
             // OpenAI ApiKey: đặt trong appsettings.Secrets.json (đã .gitignore) hoặc User Secrets — xem OPENAI-CAU-HINH.txt
             builder.Configuration.AddJsonFile("appsettings.Secrets.json", optional: true, reloadOnChange: true);
 
-            // Railway Variables: JWT_KEY (không tự map sang Jwt:Key)
-            var jwtEnv = Environment.GetEnvironmentVariable("JWT_KEY");
+            // Railway Variables: JWT_KEY hoặc Jwt__Key
+            var jwtEnv = Environment.GetEnvironmentVariable("JWT_KEY")
+                ?? Environment.GetEnvironmentVariable("Jwt__Key");
             if (!string.IsNullOrWhiteSpace(jwtEnv))
                 builder.Configuration["Jwt:Key"] = jwtEnv;
 
@@ -224,8 +225,25 @@ namespace backend
 
             var app = builder.Build();
 
-            // CORS sớm — phản hồi lỗi 500 vẫn có Access-Control-Allow-Origin (tránh trình duyệt báo CORS sai)
+            // CORS sớm + đảm bảo header CORS cả khi 500 (tránh Vercel báo CORS thay vì lỗi thật)
             app.UseCors("FrontendDev");
+            app.Use(async (context, next) =>
+            {
+                var origin = context.Request.Headers.Origin.ToString();
+                if (!string.IsNullOrEmpty(origin))
+                {
+                    context.Response.OnStarting(() =>
+                    {
+                        if (!context.Response.Headers.ContainsKey("Access-Control-Allow-Origin"))
+                            context.Response.Headers.Append("Access-Control-Allow-Origin", origin);
+                        if (!context.Response.Headers.ContainsKey("Access-Control-Allow-Credentials"))
+                            context.Response.Headers.Append("Access-Control-Allow-Credentials", "true");
+                        return Task.CompletedTask;
+                    });
+                }
+
+                await next();
+            });
 
             if (!app.Environment.IsDevelopment())
             {

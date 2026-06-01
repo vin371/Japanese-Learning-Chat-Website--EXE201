@@ -56,3 +56,17 @@ File mật khẩu DB: `backend/appsettings.Secrets.json` (copy từ `appsettings
 
 - `GET https://<railway-url>/api/Public/health` → `200` `{ "status": "ok" }`
 - Đăng nhập admin trên Vercel → `/admin` không còn 500
+
+## 6. Vercel — bắt buộc Redeploy sau khi đổi biến
+
+`VITE_API_URL` = `https://japanese-learning-chat-website-exe201-production.up.railway.app` (không slash cuối)
+
+Sau khi sửa biến trên Vercel → **Deployments → Redeploy** (build cũ vẫn trỏ URL sai).
+
+## 7. Lỗi thường gặp
+
+| Triệu chứng | Nguyên nhân |
+|-------------|-------------|
+| CORS trên Vercel | Backend 500, không phải thiếu CORS — sửa `/api/Admin/overview` |
+| Local OK, Vercel 500 | Railway chưa deploy commit mới hoặc `ASPNETCORE_ENVIRONMENT` ≠ Production |
+| Login OK, overview 500 | Đã fix: Production dùng EF cho admin overview (commit v4 cache) |

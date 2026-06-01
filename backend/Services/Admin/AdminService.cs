@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
+using backend.Authorization;
 using backend.Data;
 using backend.DTOs.Admin;
 using backend.Models.Admin;
@@ -10,22 +11,25 @@ using backend.Models.Moderation;
 using Dapper;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Hosting;
 using Npgsql;
 
 namespace backend.Services.Admin;
 
 public class AdminService : IAdminService
 {
-    private const string OverviewCacheKey = "admin:overview:v3";
+    private const string OverviewCacheKey = "admin:overview:v4";
     private static readonly TimeSpan OverviewCacheTtl = TimeSpan.FromSeconds(45);
 
     private readonly ApplicationDbContext _db;
     private readonly IMemoryCache _cache;
+    private readonly IHostEnvironment _env;
 
-    public AdminService(ApplicationDbContext db, IMemoryCache cache)
+    public AdminService(ApplicationDbContext db, IMemoryCache cache, IHostEnvironment env)
     {
         _db = db;
         _cache = cache;
+        _env = env;
     }
 
     private static DateTime PgTs(DateTime dt) => PgDateTime.ToUnspecifiedUtc(dt);
@@ -41,15 +45,173 @@ public class AdminService : IAdminService
         if (_cache.TryGetValue(OverviewCacheKey, out AdminOverviewDto? cached) && cached != null)
             return cached;
 
-        var dto = await BuildOverviewAsync();
+        AdminOverviewDto dto;
+        try
+        {
+            // Production (Railway): EF tuần tự — ổn định như Moderation API (Dapper dễ 500 trên pooler).
+            dto = _env.IsProduction()
+                ? await BuildOverviewFromEfAsync()
+                : await BuildOverviewAsync();
+
+            if (!_env.IsProduction() && dto.TotalUsers == 0)
+                dto = await BuildOverviewFromEfAsync();
+        }
+        catch (Exception)
+        {
+            dto = await BuildOverviewFromEfAsync();
+        }
+
         _cache.Set(OverviewCacheKey, dto, OverviewCacheTtl);
         return dto;
     }
 
+    /// <summary>Tổng quan admin qua EF — dùng trên Production / fallback.</summary>
+    private async Task<AdminOverviewDto> BuildOverviewFromEfAsync()
+    {
+        var now = DateTime.UtcNow;
+        var dayStart = now.Date;
+        var d7 = dayStart.AddDays(-7);
+        var d30 = dayStart.AddDays(-30);
+        var d30SignupChart = dayStart.AddDays(-29);
+        var msgSince = now.AddHours(-24);
+        var from30 = now.AddDays(-30);
+
+        var allQ = _db.Users.AsNoTracking().Where(u => u.DeletedAt == null);
+        var academyQ = allQ.Where(u => u.Role == AppRoles.User);
+
+        var totalUsers = await allQ.CountAsync();
+        var academyUsers = await academyQ.CountAsync();
+        var activeUsers = await academyQ.CountAsync(u => !u.IsLocked);
+        var lockedUsers = await academyQ.CountAsync(u => u.IsLocked);
+        var premiumUsers = await academyQ.CountAsync(u => u.IsPremium);
+        var new7 = await academyQ.CountAsync(u => u.CreatedAt >= d7);
+        var new30 = await academyQ.CountAsync(u => u.CreatedAt >= d30);
+        var cohortSize = await academyQ.CountAsync(u => u.CreatedAt < d30);
+        var retained = await academyQ.CountAsync(u =>
+            u.CreatedAt < d30 && u.LastLoginAt != null && u.LastLoginAt >= d30);
+
+        var signupRows = await academyQ
+            .Where(u => u.CreatedAt >= d30SignupChart)
+            .Select(u => u.CreatedAt)
+            .ToListAsync();
+        var signupByDay = signupRows.Select(t => t.Date).ToList();
+        var newUsersPerDay = new List<DailyCountDto>();
+        for (var d = d30SignupChart; d <= dayStart; d = d.AddDays(1))
+        {
+            newUsersPerDay.Add(new DailyCountDto
+            {
+                Date = d.ToString("yyyy-MM-dd"),
+                Count = signupByDay.Count(x => x == d.Date)
+            });
+        }
+
+        var levelGroups = await academyQ
+            .GroupBy(u => u.LevelId)
+            .Select(g => new { LevelId = g.Key, Cnt = g.Count() })
+            .ToListAsync();
+        var usersByLevel = levelGroups
+            .OrderBy(x => x.LevelId ?? 99)
+            .Select(x => new LevelCountDto
+            {
+                LevelId = x.LevelId,
+                Label = LevelLabel(x.LevelId),
+                Count = x.Cnt
+            })
+            .ToList();
+
+        var payment = new PaymentBundle();
+        var connPay = _db.Database.GetConnectionString();
+        if (!string.IsNullOrWhiteSpace(connPay))
+        {
+            try
+            {
+                await using var connPayOpen = new NpgsqlConnection(connPay);
+                await connPayOpen.OpenAsync();
+                payment = await QueryPaymentBundleAsync(connPayOpen, dayStart, now);
+            }
+            catch (Exception ex) when (IsOverviewQueryError(ex))
+            {
+                /* payment tables */
+            }
+        }
+
+        var learning = new LearningActivityStatsDto();
+        try
+        {
+            learning.CompletedLessonsLast30Days = await _db.UserLessonProgresses
+                .CountAsync(p => p.CompletedAt != null && p.CompletedAt >= from30);
+        }
+        catch (Exception ex) when (IsOverviewQueryError(ex))
+        {
+            /* bảng lesson progress */
+        }
+
+        if (!string.IsNullOrWhiteSpace(connPay))
+        {
+            try
+            {
+                await using var connLearn = new NpgsqlConnection(connPay);
+                await connLearn.OpenAsync();
+                var row = await QueryLearningActivityAsync(connLearn, now);
+                learning.GameSessionsStartedLast30Days = row.GameSessionsStartedLast30Days;
+                learning.GameSessionsEndedLast30Days = row.GameSessionsEndedLast30Days;
+                if (learning.CompletedLessonsLast30Days == 0)
+                    learning.CompletedLessonsLast30Days = row.CompletedLessonsLast30Days;
+            }
+            catch (Exception ex) when (IsOverviewQueryError(ex))
+            {
+                /* game_sessions qua Dapper */
+            }
+        }
+
+        var msgCount = 0;
+        try
+        {
+            msgCount = await _db.Messages
+                .CountAsync(m => !m.IsDeleted && m.CreatedAt >= msgSince);
+        }
+        catch (PostgresException)
+        {
+            /* bảng messages */
+        }
+
+        var freeUsers = Math.Max(0, academyUsers - premiumUsers);
+        var conversion = academyUsers == 0 ? 0 : Math.Round(100.0 * premiumUsers / academyUsers, 2);
+        var retention = cohortSize == 0 ? 0 : Math.Round(100.0 * retained / cohortSize, 1);
+
+        return new AdminOverviewDto
+        {
+            AcademyUsers = academyUsers,
+            FreeUsers = freeUsers,
+            TotalUsers = totalUsers,
+            ActiveUsers = activeUsers,
+            LockedUsers = lockedUsers,
+            PremiumUsers = premiumUsers,
+            RevenueTodayVnd = payment.RevenueToday,
+            RevenueCumulativeVnd = payment.RevenueCumulative,
+            PremiumConversionRatePercent = conversion,
+            PremiumUpgradesThisMonth = payment.UpgradesThisMonth,
+            NewUsersLast7Days = new7,
+            NewUsersLast30Days = new30,
+            RetentionRatePercent = retention,
+            UsersByLevel = usersByLevel,
+            MessagesLast24Hours = msgCount,
+            NewUsersPerDay = newUsersPerDay,
+            RevenueLast8Months = payment.RevenueLast8Months,
+            LearningActivity = learning,
+            UsersByPackage = new List<PackageSliceDto>
+            {
+                new() { Name = "Miễn phí", Count = freeUsers, Color = "#94a3b8" },
+                new() { Name = "Premium", Count = premiumUsers, Color = "#7c3aed" }
+            }
+        };
+    }
+
     private async Task<AdminOverviewDto> BuildOverviewAsync()
     {
-        var connStr = _db.Database.GetConnectionString()
-            ?? throw new InvalidOperationException("ConnectionStrings:DefaultConnection chưa cấu hình.");
+        var connStr = _db.Database.GetConnectionString();
+        if (string.IsNullOrWhiteSpace(connStr))
+            return await BuildOverviewFromEfAsync();
 
         try
         {
@@ -105,9 +267,9 @@ public class AdminService : IAdminService
             ]
         };
         }
-        catch (Exception ex) when (IsOverviewQueryError(ex))
+        catch (Exception)
         {
-            return new AdminOverviewDto();
+            return await BuildOverviewFromEfAsync();
         }
     }
 
