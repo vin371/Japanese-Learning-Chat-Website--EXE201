@@ -21,8 +21,12 @@
 ### Connection string mẫu (pooler IPv4)
 
 ```
-Host=aws-1-ap-southeast-2.pooler.supabase.com;Port=5432;Database=postgres;Username=postgres.jvdghkjkgrdogpymnwpu;Password=MAT_KHAU_THAT;SSL Mode=Require;Trust Server Certificate=true
+Host=aws-1-ap-southeast-2.pooler.supabase.com;Port=5432;Database=postgres;Username=postgres.jvdghkjkgrdogpymnwpu;Password="MAT_KHAU_THAT";SSL Mode=Require;Trust Server Certificate=true
 ```
+
+Mật khẩu có ký tự `@` hoặc `!` → **bọc trong dấu ngoặc kép** quanh `Password="..."`.
+
+**Sau khi sửa biến trên Railway → bấm nút tím Deploy** (góc trên). Chỉ Save chưa đủ — phải thấy "1 Change" biến mất và deployment mới chạy.
 
 Lấy host/username từ Supabase → **Connect** → **Session pooler**.
 
