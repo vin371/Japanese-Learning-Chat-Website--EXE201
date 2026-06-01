@@ -32,6 +32,11 @@ namespace backend
             AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
             var builder = WebApplication.CreateBuilder(args);
+
+            // Railway / Docker: bắt buộc lắng nghe $PORT trên 0.0.0.0 (proxy không tới được localhost)
+            var listenPort = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+            builder.WebHost.UseUrls($"http://0.0.0.0:{listenPort}");
+
             // OpenAI ApiKey: đặt trong appsettings.Secrets.json (đã .gitignore) hoặc User Secrets — xem OPENAI-CAU-HINH.txt
             builder.Configuration.AddJsonFile("appsettings.Secrets.json", optional: true, reloadOnChange: true);
 
@@ -266,23 +271,27 @@ namespace backend
                 });
             }
 
-            // Kiểm tra kết nối Supabase khi khởi động (mật khẩu trong appsettings.Secrets.json)
-            using (var scope = app.Services.CreateScope())
+            // Kiểm tra DB nền — không chặn lắng nghe PORT (Railway 502 nếu CanConnect treo/retry lâu)
+            _ = Task.Run(async () =>
             {
-                var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                var log = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
                 try
                 {
-                    if (db.Database.CanConnect())
+                    await Task.Delay(500);
+                    using var scope = app.Services.CreateScope();
+                    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                    var log = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+                    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+                    if (await db.Database.CanConnectAsync(cts.Token))
                         log.LogInformation("Đã kết nối PostgreSQL (Supabase) thành công.");
                     else
-                        log.LogWarning("Không kết nối được database — kiểm tra ConnectionStrings trong appsettings.Secrets.json.");
+                        log.LogWarning("Không kết nối được database — kiểm tra ConnectionStrings__DefaultConnection trên Railway.");
                 }
                 catch (Exception ex)
                 {
-                    log.LogError(ex, "Lỗi kết nối Supabase — dùng Session pooler (aws-1-<region>.pooler.supabase.com) trong appsettings.Secrets.json.");
+                    var log = app.Services.GetRequiredService<ILogger<Program>>();
+                    log.LogError(ex, "Lỗi kết nối Supabase khi khởi động (pooler + Password trong dấu ngoặc kép nếu có @ !).");
                 }
-            }
+            });
 
             if (app.Environment.IsDevelopment())
             {
@@ -290,11 +299,10 @@ namespace backend
                 app.UseSwaggerUI();
             }
 
-            // Avoid dev surprises when frontend calls http://localhost:5056
-            if (!app.Environment.IsDevelopment())
-            {
+            // Railway: TLS ở edge, container chỉ HTTP — redirect HTTPS làm health check / proxy lỗi
+            var onRailway = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("PORT"));
+            if (!app.Environment.IsDevelopment() && !onRailway)
                 app.UseHttpsRedirection();
-            }
 
             app.UseRouting();
 
@@ -303,6 +311,16 @@ namespace backend
 
             app.UseAuthentication();
             app.UseAuthorization();
+
+            app.MapGet("/", () => Results.Ok(new
+            {
+                service = "yumegoji-api",
+                status = "ok",
+                health = "/health",
+                api = "/api",
+                swagger = "/swagger"
+            }));
+            app.MapGet("/health", () => Results.Ok(new { status = "ok", service = "yumegoji-api" }));
 
             app.MapControllers();
             app.MapHub<ChatHub>("/hubs/chat");

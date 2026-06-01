@@ -16,5 +16,5 @@ COPY --from=build /publish .
 RUN chown -R app:app /app
 USER app
 EXPOSE 8080
-# Railway gán biến PORT lúc runtime; local không có PORT thì dùng 8080
-CMD ["/bin/sh", "-c", "exec dotnet backend.dll --urls http://0.0.0.0:${PORT:-8080}"]
+# PORT do Railway gán lúc runtime; Program.cs: UseUrls http://0.0.0.0:{PORT}
+CMD ["dotnet", "backend.dll"]
