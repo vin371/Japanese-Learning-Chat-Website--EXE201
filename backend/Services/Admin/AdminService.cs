@@ -16,7 +16,7 @@ namespace backend.Services.Admin;
 
 public class AdminService : IAdminService
 {
-    private const string OverviewCacheKey = "admin:overview:v2";
+    private const string OverviewCacheKey = "admin:overview:v3";
     private static readonly TimeSpan OverviewCacheTtl = TimeSpan.FromSeconds(45);
 
     private readonly ApplicationDbContext _db;
@@ -51,6 +51,8 @@ public class AdminService : IAdminService
         var connStr = _db.Database.GetConnectionString()
             ?? throw new InvalidOperationException("ConnectionStrings:DefaultConnection chưa cấu hình.");
 
+        try
+        {
         var now = DateTime.UtcNow;
         var dayStart = now.Date;
         var d7 = dayStart.AddDays(-7);
@@ -63,11 +65,11 @@ public class AdminService : IAdminService
         await conn.OpenAsync();
 
         var users = await QueryUserAggregateAsync(conn, d7, d30);
-        var signupTask = QuerySignupsPerDayAsync(conn, d30SignupChart, dayStart);
-        var levelTask = QueryUsersByLevelAsync(conn);
+        var signup = await QuerySignupsPerDayAsync(conn, d30SignupChart, dayStart);
+        var levels = await QueryUsersByLevelAsync(conn);
         var payment = await QueryPaymentBundleAsync(conn, dayStart, now);
-        var learningTask = QueryLearningActivityAsync(conn, now);
-        var msgTask = QueryMessagesCountAsync(conn, msgSince);
+        var learning = await QueryLearningActivityAsync(conn, now);
+        var msgCount = await QueryMessagesCountAsync(conn, msgSince);
         var premium = users.PremiumUsers;
         var academyUsers = users.AcademyUsers;
         var freeUsers = Math.Max(0, academyUsers - premium);
@@ -91,17 +93,22 @@ public class AdminService : IAdminService
             NewUsersLast7Days = users.NewUsersLast7Days,
             NewUsersLast30Days = users.NewUsersLast30Days,
             RetentionRatePercent = retention,
-            UsersByLevel = await levelTask,
-            MessagesLast24Hours = await msgTask,
-            NewUsersPerDay = await signupTask,
+            UsersByLevel = levels,
+            MessagesLast24Hours = msgCount,
+            NewUsersPerDay = signup,
             RevenueLast8Months = payment.RevenueLast8Months,
-            LearningActivity = await learningTask,
+            LearningActivity = learning,
             UsersByPackage =
             [
                 new PackageSliceDto { Name = "Miễn phí", Count = freeUsers, Color = "#94a3b8" },
                 new PackageSliceDto { Name = "Premium", Count = premium, Color = "#7c3aed" }
             ]
         };
+        }
+        catch (Exception ex) when (IsOverviewQueryError(ex))
+        {
+            return new AdminOverviewDto();
+        }
     }
 
     private sealed class UserAggregateRow
