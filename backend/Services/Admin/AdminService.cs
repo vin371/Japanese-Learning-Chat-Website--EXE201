@@ -11,25 +11,22 @@ using backend.Models.Moderation;
 using Dapper;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Hosting;
 using Npgsql;
 
 namespace backend.Services.Admin;
 
 public class AdminService : IAdminService
 {
-    private const string OverviewCacheKey = "admin:overview:v4";
+    private const string OverviewCacheKey = "admin:overview:v5";
     private static readonly TimeSpan OverviewCacheTtl = TimeSpan.FromSeconds(45);
 
     private readonly ApplicationDbContext _db;
     private readonly IMemoryCache _cache;
-    private readonly IHostEnvironment _env;
 
-    public AdminService(ApplicationDbContext db, IMemoryCache cache, IHostEnvironment env)
+    public AdminService(ApplicationDbContext db, IMemoryCache cache)
     {
         _db = db;
         _cache = cache;
-        _env = env;
     }
 
     private static DateTime PgTs(DateTime dt) => PgDateTime.ToUnspecifiedUtc(dt);
@@ -45,20 +42,15 @@ public class AdminService : IAdminService
         if (_cache.TryGetValue(OverviewCacheKey, out AdminOverviewDto? cached) && cached != null)
             return cached;
 
+        // Luôn dùng EF (ổn định local + Railway). Dapper overview gây 500 trên Supabase pooler.
         AdminOverviewDto dto;
         try
         {
-            // Production (Railway): EF tuần tự — ổn định như Moderation API (Dapper dễ 500 trên pooler).
-            dto = _env.IsProduction()
-                ? await BuildOverviewFromEfAsync()
-                : await BuildOverviewAsync();
-
-            if (!_env.IsProduction() && dto.TotalUsers == 0)
-                dto = await BuildOverviewFromEfAsync();
+            dto = await BuildOverviewFromEfAsync();
         }
         catch (Exception)
         {
-            dto = await BuildOverviewFromEfAsync();
+            dto = new AdminOverviewDto();
         }
 
         _cache.Set(OverviewCacheKey, dto, OverviewCacheTtl);

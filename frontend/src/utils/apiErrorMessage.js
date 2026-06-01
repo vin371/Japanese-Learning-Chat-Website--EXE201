@@ -60,7 +60,9 @@ export function getErrorMessageForUser(err, fallbackVi = 'Đã có lỗi xảy r
     return 'Không tìm thấy dữ liệu.';
   }
   if (status === 500) {
-    return 'Lỗi máy chủ (500). Vui lòng thử lại sau.';
+    return ENV.PROD
+      ? 'Lỗi máy chủ API (500). Đợi Railway deploy xong hoặc kiểm tra biến ConnectionStrings trên Railway.'
+      : 'Lỗi máy chủ (500). Kiểm tra log dotnet run trong thư mục backend.';
   }
 
   if (err?.code === 'ECONNABORTED') {
