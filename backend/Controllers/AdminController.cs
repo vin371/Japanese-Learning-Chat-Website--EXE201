@@ -2,6 +2,7 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using backend.Authorization;
 using backend.DTOs.Admin;
+using backend.Data;
 using backend.Services.Admin;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -41,8 +42,15 @@ public class AdminController : ControllerBase
     [HttpGet("overview")]
     public async Task<IActionResult> Overview()
     {
-        var dto = await _admin.GetOverviewAsync();
-        return Ok(dto);
+        try
+        {
+            var dto = await _admin.GetOverviewAsync();
+            return Ok(dto);
+        }
+        catch (Exception ex) when (DbExceptionHelper.IsConnectionError(ex))
+        {
+            return StatusCode(503, new { message = "Không kết nối được cơ sở dữ liệu." });
+        }
     }
 
     [HttpGet("sensitive-keywords")]

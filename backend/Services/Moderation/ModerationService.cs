@@ -229,13 +229,16 @@ public class ModerationService : IModerationService
     {
         trendDays = Math.Clamp(trendDays, 1, 90);
         var todayUtc = DateTime.UtcNow.Date;
+        var todayEnd = todayUtc.AddDays(1);
         var from = todayUtc.AddDays(-(trendDays - 1));
 
         var pending = await _db.Reports.CountAsync(r => r.Status == "pending");
         var resolvedToday = await _db.Reports.CountAsync(r =>
-            r.Status == "resolved" && r.ResolvedAt.HasValue && r.ResolvedAt.Value.Date == todayUtc);
+            r.Status == "resolved" && r.ResolvedAt.HasValue &&
+            r.ResolvedAt.Value >= todayUtc && r.ResolvedAt.Value < todayEnd);
         var dismissedToday = await _db.Reports.CountAsync(r =>
-            r.Status == "dismissed" && r.ResolvedAt.HasValue && r.ResolvedAt.Value.Date == todayUtc);
+            r.Status == "dismissed" && r.ResolvedAt.HasValue &&
+            r.ResolvedAt.Value >= todayUtc && r.ResolvedAt.Value < todayEnd);
         var yesterday = todayUtc.AddDays(-1);
         var newSinceYesterday = await _db.Reports.CountAsync(r => r.CreatedAt >= yesterday && r.Status == "pending");
 
@@ -243,12 +246,15 @@ public class ModerationService : IModerationService
 
         var createdInRange = await _db.Reports.AsNoTracking()
             .Where(r => r.CreatedAt >= from)
-            .Select(r => r.CreatedAt.Date)
+            .Select(r => r.CreatedAt)
             .ToListAsync();
         var resolvedInRange = await _db.Reports.AsNoTracking()
             .Where(r => r.ResolvedAt.HasValue && r.ResolvedAt!.Value >= from && (r.Status == "resolved" || r.Status == "dismissed"))
-            .Select(r => r.ResolvedAt!.Value.Date)
+            .Select(r => r.ResolvedAt!.Value)
             .ToListAsync();
+
+        var createdDates = createdInRange.Select(d => d.Date).ToList();
+        var resolvedDates = resolvedInRange.Select(d => d.Date).ToList();
 
         var trend = new List<ModerationDailyBucketDto>();
         for (var d = from; d <= todayUtc; d = d.AddDays(1))
@@ -256,8 +262,8 @@ public class ModerationService : IModerationService
             trend.Add(new ModerationDailyBucketDto
             {
                 Date = d.ToString("yyyy-MM-dd"),
-                ReportsCreated = createdInRange.Count(x => x == d),
-                ReportsResolved = resolvedInRange.Count(x => x == d)
+                ReportsCreated = createdDates.Count(x => x == d),
+                ReportsResolved = resolvedDates.Count(x => x == d)
             });
         }
 

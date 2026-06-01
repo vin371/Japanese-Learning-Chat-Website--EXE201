@@ -43,7 +43,7 @@ public class PaymentService : IPaymentService
             throw new InvalidOperationException("Gói Premium hiện đang tạm khóa.");
 
         var token = await CreateUniqueTokenAsync(db);
-        var now = DateTime.UtcNow;
+        var now = PgDateTime.ToUnspecifiedUtc(DateTime.UtcNow);
 
         var requestId = await db.ExecuteScalarAsync<int>(
             """
@@ -190,7 +190,7 @@ public class PaymentService : IPaymentService
             return true;
         }
 
-        var now = DateTime.UtcNow;
+        var now = PgDateTime.ToUnspecifiedUtc(DateTime.UtcNow);
         var expires = now.AddDays(Math.Max(1, row.Value.DurationDays));
 
         await db.ExecuteAsync(
