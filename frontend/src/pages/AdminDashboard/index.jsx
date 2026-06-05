@@ -65,7 +65,7 @@ export default function AdminDashboard() {
         footerNode={
           <div className="admin-dash__status-pill admin-dash__status-pill--sidebar" title="Trạng thái hệ thống">
             <span className="admin-dash__pulse" aria-hidden />
-            Hệ thống hoạt động bình thường
+            Bình thường
           </div>
         }
       />
