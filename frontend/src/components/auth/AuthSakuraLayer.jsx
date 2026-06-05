@@ -6,7 +6,7 @@ const Motion = FM.motion;
 function SakuraPetal({ petal: p }) {
   return (
     <Motion.span
-      className="auth-sakura-petal"
+      className="absolute -top-[12vh] rounded-[140%_0_160%_0] bg-gradient-to-br from-pink-300/80 to-rose-400/40 shadow-[0_0_14px_rgba(251,113,133,0.22)] will-change-[transform,opacity]"
       style={{
         left: p.left,
         width: p.w,
@@ -55,7 +55,7 @@ export function AuthSakuraLayer({ count = 26 }) {
   }
 
   return (
-    <div className="auth-sakura-layer" aria-hidden="true">
+    <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
       {nodes}
     </div>
   );

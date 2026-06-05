@@ -1,4 +1,12 @@
 /* ========== Chat lobby + room – The Shokunin / Guild Hall ========== */
+
+/* Ẩn scrollbar khu vực tin nhắn (giữ cuộn bằng chuột/trackpad/touch) */
+.chat-feed-no-scrollbar::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 .forge-chat {
   --forge-red: #8b1538;
   --forge-red-hover: #6d0f2b;
@@ -6896,4 +6904,146 @@ html[data-theme='dark'] .chat-app-shell__toolbar {
 .chat-app-shell .moji-chat__discover-search--pro input {
   width: 100%;
   max-width: none;
+}
+/* ========== CHAT SIDEBAR REFACTOR (Added for Custom Layout) ========== */
+.moji-chat__sidebar-unified .moji-chat__panel2-title--unified {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+  text-transform: uppercase !important;
+  font-size: 1.25rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.05em !important;
+  margin-bottom: 1rem !important;
+}
+
+.moji-chat__sidebar-unified .moji-chat__list-search-field {
+  display: flex !important;
+  align-items: center !important;
+  border-radius: 999px !important; /* pill-shaped */
+  padding: 0 1rem !important;
+  height: 42px !important;
+  background: var(--surface-2, rgba(15, 23, 42, 0.04)) !important;
+  border: 1px solid rgba(15, 23, 42, 0.08) !important;
+  margin-bottom: 1rem !important;
+}
+
+html[data-theme='dark'] .moji-chat__sidebar-unified .moji-chat__list-search-field {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.moji-chat__sidebar-unified .moji-chat__list-search-icon {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin-right: 0.5rem !important;
+}
+
+.moji-chat__sidebar-unified .moji-chat__list-search {
+  flex: 1 !important;
+  height: 100% !important;
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.moji-chat__sidebar-unified .moji-chat__conv-row {
+  position: relative !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  width: 100% !important;
+  padding: 0.85rem 1rem !important;
+  gap: 0.85rem !important;
+  text-align: left !important;
+  border-radius: 12px !important;
+}
+
+.moji-chat__sidebar-unified .moji-chat__conv-indicator {
+  position: absolute !important;
+  left: 0 !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  width: 4px !important;
+  height: 24px !important;
+  border-radius: 0 4px 4px 0 !important;
+  background: var(--moji-red, #dc143c) !important;
+}
+
+html[data-theme='dark'] .moji-chat__sidebar-unified .moji-chat__conv-indicator {
+  background: #ff4d6d !important;
+}
+
+.moji-chat__sidebar-unified .moji-chat__avatar-stack {
+  position: relative !important;
+  display: flex !important;
+  flex-shrink: 0 !important;
+}
+
+.moji-chat__sidebar-unified .moji-chat__avatar-ring {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 44px !important;
+  height: 44px !important;
+  border-radius: 50% !important;
+}
+
+.moji-chat__sidebar-unified .moji-chat__avatar-online-dot {
+  position: absolute !important;
+  bottom: 0px !important;
+  right: 0px !important;
+  width: 12px !important;
+  height: 12px !important;
+  border-radius: 50% !important;
+  z-index: 2 !important;
+  border: 2.5px solid var(--panel-bg, #ffffff) !important;
+}
+
+html[data-theme='dark'] .moji-chat__sidebar-unified .moji-chat__avatar-online-dot {
+  border-color: #1e293b !important;
+}
+
+.moji-chat__sidebar-unified .moji-chat__conv-body {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  min-width: 0 !important;
+  gap: 0.25rem !important;
+}
+
+.moji-chat__sidebar-unified .moji-chat__conv-title-row {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: baseline !important;
+  width: 100% !important;
+}
+
+.moji-chat__sidebar-unified .moji-chat__conv-name {
+  font-weight: 700 !important;
+  font-size: 0.95rem !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.moji-chat__sidebar-unified .moji-chat__conv-time {
+  font-size: 0.72rem !important;
+  flex-shrink: 0 !important;
+  margin-left: 0.5rem !important;
+}
+
+.moji-chat__sidebar-unified .moji-chat__conv-snippet-row {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  width: 100% !important;
+}
+
+.moji-chat__sidebar-unified .moji-chat__conv-snippet {
+  font-size: 0.85rem !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  flex: 1 !important;
 }

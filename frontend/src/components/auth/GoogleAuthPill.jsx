@@ -43,7 +43,6 @@ export function GoogleAuthPill({
   onCredential,
   text = 'signin_with',
   disabled = false,
-  label = 'Đăng nhập với',
   buttonLabel = 'Google',
   onConfigError,
   className = '',
@@ -54,13 +53,13 @@ export function GoogleAuthPill({
   });
 
   return (
-    <div className={`auth-google-only ${className}`.trim()}>
-      {showLabel && <p className="auth-google-only__label">{label}</p>}
-      <div className={`auth-google-pill-wrap${disabled ? ' auth-google-pill-wrap--disabled' : ''}`}>
+    <div className={`flex flex-col items-center justify-center my-2 w-full max-w-[400px] mx-auto ${className}`.trim()}>
+      {showLabel}
+      <div className={`group relative block w-full h-[3.25rem] min-h-[3.25rem] m-0 overflow-hidden rounded-xl ${disabled ? 'pointer-events-none opacity-60' : ''}`}>
         {!clientIdConfigured ? (
           <Motion.button
             type="button"
-            className="auth-google-fallback-pill"
+            className="w-full min-h-[3.25rem] px-5 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-semibold text-sm shadow-sm flex items-center justify-center gap-2.5 transition-all"
             disabled={disabled}
             onClick={() => onConfigError?.(MISSING_CONFIG_MSG)}
             aria-label={`${buttonLabel} — cần cấu hình Client ID`}
@@ -74,7 +73,7 @@ export function GoogleAuthPill({
         ) : !gsiReady ? (
           <Motion.button
             type="button"
-            className="auth-google-fallback-pill auth-google-fallback-pill--loading"
+            className="w-full min-h-[3.25rem] px-5 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 text-slate-400 dark:text-slate-500 font-semibold text-sm shadow-sm flex items-center justify-center gap-2.5 opacity-60 cursor-not-allowed"
             disabled
             aria-busy="true"
           >
@@ -83,13 +82,13 @@ export function GoogleAuthPill({
           </Motion.button>
         ) : (
           <>
-            <div className="auth-google-fallback-pill auth-google-fallback-pill--decor" aria-hidden="true">
+            <div className="w-full min-h-[3.25rem] px-5 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 text-slate-700 dark:text-slate-200 font-semibold text-sm shadow-sm flex items-center justify-center gap-2.5 pointer-events-none select-none transition-all duration-200 group-hover:bg-slate-100 dark:group-hover:bg-slate-800/80 group-hover:border-slate-300 dark:group-hover:border-slate-700" aria-hidden="true">
               <IconGoogleG />
               <span>{buttonLabel}</span>
             </div>
             <div
               ref={mountRef}
-              className="auth-google-mount auth-google-mount--overlay"
+              className="absolute inset-0 z-20 flex items-center justify-center opacity-[0.01] overflow-hidden cursor-pointer w-full h-full [&>div]:!w-full [&>div]:!h-full [&_iframe]:!w-full [&_iframe]:!h-full"
               aria-label={`${buttonLabel} — đăng nhập`}
             />
           </>
