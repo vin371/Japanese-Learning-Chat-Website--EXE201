@@ -111,11 +111,9 @@
 
 .play-kurenai-summary__headline {
   margin: 0 0 0.65rem;
-  font-family: Georgia, 'Times New Roman', Times, serif;
   font-size: clamp(1.55rem, 4.2vw, 2.1rem);
   font-weight: 700;
   color: var(--kn-ink);
-  letter-spacing: -0.02em;
   line-height: 1.15;
 }
 

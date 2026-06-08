@@ -2,13 +2,13 @@
 
 /* Ghi đè .yume-page — lưới Learn rộng; theme đỏ đậm kiểu mẫu ảnh 4–10 */
 .learn-layout.yume-page {
-  max-width: 1180px;
-  margin: 0 auto;
+  max-width: 100%;
+  margin: 0;
   padding: 1.25rem 1.25rem 3rem;
 }
 
 .learn-layout.learn-layout--shodo.yume-page {
-  max-width: 1320px;
+  max-width: 100%;
   --learn-shodo-red: #b72025;
   --learn-shodo-red-hover: #9a1a1f;
   --learn-shodo-surface: #f0f1f4;
@@ -18,7 +18,7 @@
   /* Mẫu Hanami — ảnh người dùng: sakura (thử thách), phố đêm (banner AI) */
   --learn-mock-sakura: url('https://lh3.googleusercontent.com/aida-public/AB6AXuB4WKozbJYJS9by2WBFo4jNdgEthYC_gAHmodPfFAe-RoejSdCYxqvx0S3nEehhqqRP8V89AIwauH1P5cBQTJtA60iCDLngrmEoCtSNRqMiUTvwN-zAByL_NAdFeBUwzzfGehjce4Zmpuaf1ePNJZjKO9pA5R6Lxr4A2TtF9rJiDhk5wAobtbYqTPyyoQFYGpDjUUwTgi09jScWeTSjIc_r7vceDf48o6qI-PfM0OqJdq8NlRx05O0PLKmxd2Qr5ZW-D8wVCT1M8ys');
   --learn-mock-tokyo: url('https://lh3.googleusercontent.com/aida-public/AB6AXuC5xEerck-FjHkBApyT_MlgEtkeiLTnECkAsvor9cGy9uXM7poaGN1G3uxf9LSQlvLVq87Mq900ousniDUNrsxFMe-0c5Gl58kZfGeLl_zP0tzVXfqYZ5b8bIkUCwyBzNkbY_4m4PvRC4dTJ2IaJU_E8B_4PtvNNNoCqVU3E1-jSAozaTeGOZzr_dbP-j6ApaXpqmlqaNL3D8C6y2MJtO0oObwo2fGxe_bJduyeE-ED1vduP5J2IEYCsd26rAEHKDHC8MSHzr-lpXU');
-  margin: 0 auto;
+  margin: 0;
   padding: 1rem 1.25rem 2.5rem;
   border-radius: 0;
   background: var(--learn-shodo-surface);
@@ -4030,3 +4030,4 @@ html[data-theme='dark'] .learn-shell-roadmap--active {
     min-height: 100px;
   }
 }
+

@@ -9,6 +9,7 @@ import { isStaffUser } from '../../utils/roles';
 import { getJlptLevelCodeFromUser } from '../../utils/learnLevelCode';
 import { LearnProgressRing } from './components/LearnProgressRing';
 import { LearnImageCarousel } from './components/LearnImageCarousel';
+import LearnAlphabet from './components/LearnAlphabet';
 
 /** Ảnh minh họa banner «Kiểm tra trình độ» — luân phiên (crossfade) */
 const LEARN_PROMO_ART_CAROUSEL_URLS = [
@@ -269,6 +270,19 @@ export default function LearnIndex() {
     const p = progressByLessonId.get(lessonId);
     if (!p) return null;
     return Number(p.progressPercent ?? p.ProgressPercent ?? 0);
+  }
+
+  if (filterKey === 'alphabet') {
+    return (
+      <Motion.div
+        className="learn-dashboard"
+        variants={learnRoot}
+        initial={reduceMotion ? false : 'hidden'}
+        animate="show"
+      >
+        <LearnAlphabet />
+      </Motion.div>
+    );
   }
 
   return (
