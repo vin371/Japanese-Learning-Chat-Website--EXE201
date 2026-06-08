@@ -11,6 +11,7 @@ import { OverviewTab } from './tabs/OverviewTab';
 import { ReportsTab } from './tabs/ReportsTab';
 import { StudentsTab } from './tabs/StudentsTab';
 import { ChartColumn, Flag, GraduationCap, NotebookPen, MessageCircleMore, MessageSquareWarning, BookText, Pin, Check, ShieldUser } from 'lucide-react';
+import { DashboardSidebar } from '../../components/system/DashboardSidebar';
 
 const Motion = motion;
 
@@ -78,40 +79,16 @@ export default function ModeratorDashboard() {
 
   return (
     <div className="mod-dash mod-dash--kurenai" lang="vi">
-      <aside className={`mod-dash__k-side ${isCollapsed ? 'mod-dash__k-side--collapsed' : ''}`} aria-label="Điều hướng điều hành">
-        <div className="mod-dash__k-brand">
-          <button
-            type="button"
-            className="mod-dash__k-brand-mark"
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            title={isCollapsed ? 'Mở rộng' : 'Thu gọn'}
-          >
-            🌸
-          </button>
-          <div className="mod-dash__k-brand-text">
-            <span className="mod-dash__k-brand-title">YumeGo-ji</span>
-            <span className="mod-dash__k-brand-sub">Moderator Dojo</span>
-          </div>
-        </div>
-        <nav className="mod-dash__k-nav">
-          {tabs.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              className={`mod-dash__k-link ${tab === t.id ? 'mod-dash__k-link--active' : ''}`}
-              onClick={() => setTab(t.id)}
-            >
-              <span className="mod-dash__k-link-ico" aria-hidden>
-                {t.icon}
-              </span>
-              <span className="mod-dash__k-link-label">
-                {t.label}
-              </span>
-              {tabBadge(t) != null ? <span className="mod-dash__k-badge">{tabBadge(t)}</span> : null}
-            </button>
-          ))}
-        </nav>
-        <div className="mod-dash__k-foot">
+      <DashboardSidebar
+        variant="moderator"
+        isCollapsed={isCollapsed}
+        onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
+        brandTitle="YumeGo-ji"
+        brandSub="Moderator Dojo"
+        tabs={tabs.map((t) => ({ ...t, badge: tabBadge(t) }))}
+        activeTab={tab}
+        onTabChange={setTab}
+        footerNode={
           <div className="mod-dash__k-user">
             <span className="mod-dash__k-user-av" aria-hidden>
               {initials}
@@ -121,8 +98,8 @@ export default function ModeratorDashboard() {
               <div className="mod-dash__k-user-role">Điều hành viên</div>
             </div>
           </div>
-        </div>
-      </aside>
+        }
+      />
 
       <div className="mod-dash__k-main">
         <header className="mod-dash__k-head">

@@ -6,6 +6,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { paymentService } from '../../services/paymentService';
 import { SakuraRainLayer } from '../../components/effects/SakuraRainLayer';
 import { getErrorMessageForUser } from '../../utils/apiErrorMessage';
+import { Check } from 'lucide-react';
 
 /** Alias để ESLint nhận diện biến dùng qua JSX. */
 const Motion = motion;
@@ -181,26 +182,24 @@ export default function UpgradePage() {
           className={`upgrade-card upgrade-card--free ${!isPremium ? 'upgrade-card--current' : ''}`}
           variants={reduceMotion ? undefined : planCard}
         >
-          <div className="upgrade-card__ribbon">Gói Miễn phí</div>
-          <h2 className="upgrade-card__name">Free</h2>
+          <div className="upgrade-card__ribbon">Free</div>
+          <h2 className="upgrade-card__name">Miễn phí</h2>
           <p className="upgrade-card__price">
-            Miễn phí <span className="upgrade-card__price-sub">/ dùng lâu dài</span>
+            0 VND
           </p>
-          <ul className="upgrade-card__features">
-            {FREE_FEATURES.map((t) => (
-              <li key={t}>
-                <span className="upgrade-card__check" aria-hidden>
-                  ✓
-                </span>
-                <span>{t}</span>
-              </li>
-            ))}
-          </ul>
           <Motion.div className="upgrade-card__btn-touch" whileHover={btnHoverLift} whileTap={btnTap}>
             <button type="button" className="upgrade-card__btn" disabled>
               {!isPremium ? 'Gói hiện tại' : 'Không phải gói này'}
             </button>
           </Motion.div>
+          <ul className="upgrade-card__features">
+            {FREE_FEATURES.map((t) => (
+              <li key={t}>
+                <Check />
+                <span>{t}</span>
+              </li>
+            ))}
+          </ul>
         </Motion.article>
 
         <Motion.article
@@ -236,23 +235,13 @@ export default function UpgradePage() {
             )}
           </div>
           <div className="upgrade-card__badge">Ưu đãi nhất</div>
-          <div className="upgrade-card__ribbon upgrade-card__ribbon--gold">Gói Cao cấp (Premium)</div>
-          <h2 className="upgrade-card__name upgrade-card__name--gold">Premium</h2>
+          <div className="upgrade-card__ribbon upgrade-card__ribbon--gold">Premium</div>
+          <h2 className="upgrade-card__name upgrade-card__name--gold">Cao cấp</h2>
           <p className="upgrade-card__price upgrade-card__price--gold">
             {fmtVnd(premiumPrice)} VND
             <span className="upgrade-card__price-sub"> / {durationDays} ngày</span>
           </p>
           <p className="upgrade-card__billing-note">Tính phí theo gói đang cấu hình — thanh toán &amp; kích hoạt sau khi admin duyệt.</p>
-          <ul className="upgrade-card__features upgrade-card__features--gold">
-            {PREMIUM_FEATURES.map((t) => (
-              <li key={t}>
-                <span className="upgrade-card__check upgrade-card__check--gold" aria-hidden>
-                  ✓
-                </span>
-                <span>{t}</span>
-              </li>
-            ))}
-          </ul>
           <Motion.div className="upgrade-card__btn-touch" whileHover={btnHoverLift} whileTap={btnTap}>
             <button
               type="button"
@@ -260,9 +249,17 @@ export default function UpgradePage() {
               onClick={onCreateIntent}
               disabled={!canBuy || creating}
             >
-              {isPremium ? 'Gói hiện tại' : creating ? 'Đang tạo mã…' : 'Nâng cấp Premium'}
+              {isPremium ? 'Gói hiện tại' : creating ? 'Đang tạo mã…' : 'Nâng cấp lên Premium'}
             </button>
           </Motion.div>
+          <ul className="upgrade-card__features upgrade-card__features--gold">
+            {PREMIUM_FEATURES.map((t) => (
+              <li key={t}>
+                <Check />
+                <span>{t}</span>
+              </li>
+            ))}
+          </ul>
         </Motion.article>
       </Motion.section>
 

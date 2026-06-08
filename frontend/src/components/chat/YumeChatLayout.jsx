@@ -911,37 +911,38 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
       const rowBtn = (
         <button
           type="button"
-          className={`moji-chat__conv-row ${g.isDirect ? 'moji-chat__conv-row--direct' : ''} ${active ? 'moji-chat__conv-row--active' : ''}`}
+          className={`relative flex flex-row items-center w-full px-4 py-[0.85rem] gap-[0.85rem] text-left rounded-xl transition-colors hover:bg-rose-600/5 dark:hover:bg-rose-500/10 ${active ? 'bg-rose-50/50 dark:bg-rose-900/10' : ''}`}
           onClick={() => goRoom(g.id)}
           disabled={g.isPlaceholder}
           title={g.isPlaceholder ? 'Tham gia phòng từ server để mở chat' : undefined}
         >
-          <div className={g.isDirect ? 'moji-chat__avatar-stack moji-chat__avatar-stack--single' : 'moji-chat__avatar-stack'} aria-hidden>
+          {active && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r bg-[#dc143c] dark:bg-[#ff4d6d]" aria-hidden="true" />}
+          <div className="relative flex shrink-0" aria-hidden>
             {g.isDirect ? (
               <>
-                <span className="moji-chat__avatar-ring">{g.initials[0]}</span>
-                {g.isOnline ? <span className="moji-chat__avatar-online-dot" title="Đang hoạt động" /> : null}
+                <span className="flex items-center justify-center w-[44px] h-[44px] rounded-full bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-100 font-bold">{g.initials[0]}</span>
+                {g.isOnline ? <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-green-500 border-[2.5px] border-white dark:border-slate-900 z-10" title="Đang hoạt động" /> : null}
               </>
             ) : (
               g.initials.slice(0, 3).map((ch, i) => (
-                <span key={`${g.id}-av-${i}`} className="moji-chat__avatar-ring">
+                <span key={`${g.id}-av-${i}`} className="flex items-center justify-center w-[44px] h-[44px] rounded-full bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-100 font-bold -ml-2 first:ml-0 ring-2 ring-white dark:ring-slate-900">
                   {ch}
                 </span>
               ))
             )}
           </div>
-          <div className="moji-chat__conv-body">
-            <div className="moji-chat__conv-title-row">
-              <span className="moji-chat__conv-name">{g.name}</span>
-              <span className="moji-chat__conv-time">{g.timeLabel}</span>
+          <div className="flex-1 flex flex-col min-w-0 gap-1">
+            <div className="flex justify-between items-baseline w-full">
+              <span className="font-bold text-[0.95rem] text-slate-800 dark:text-slate-100 truncate">{g.name}</span>
+              <span className="text-[0.72rem] shrink-0 ml-2 text-slate-500 dark:text-slate-400">{g.timeLabel}</span>
             </div>
-            <div className="moji-chat__conv-snippet-row">
-              <span className="moji-chat__conv-snippet">
+            <div className="flex justify-between items-center w-full">
+              <span className="text-[0.85rem] text-slate-500 dark:text-slate-400 truncate flex-1">
                 {g.snippet ||
                   (typeof g.memberCount === 'number' ? `${g.memberCount} thành viên` : `${g.memberCount ?? '—'} thành viên`)}
               </span>
               {g.unreadCount > 0 && (
-                <span className="moji-chat__conv-unread" title={`${g.unreadCount} chưa đọc`}>
+                <span className="bg-[#dc143c] text-white text-[0.68rem] font-bold px-1.5 rounded-full ml-2" title={`${g.unreadCount} chưa đọc`}>
                   {g.unreadCount > 99 ? '99+' : g.unreadCount}
                 </span>
               )}
@@ -1036,127 +1037,116 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
     <div className={`moji-chat ${isLobbySolo ? 'moji-chat--lobby-solo' : 'moji-chat--sakura-3col'}`}>
       {!isLobbySolo ? (
         <>
-          <aside className="moji-chat__sidebar-unified" aria-label="Điều hướng và hội thoại">
-            <div className="moji-chat__sidebar-unified__top">
-              <div className="moji-chat__primary-brand-head moji-chat__primary-brand-head--path moji-chat__primary-brand-head--unified">
-                <div className="moji-chat__path-brand-row">
-                  <img src={yumeLogo} alt="" className="moji-chat__path-brand-logo" width={40} height={40} />
-                  <div className="moji-chat__path-brand-text">
-                    <span className="moji-chat__path-brand-title">YumeGo-ji</span>
-                    <span className="moji-chat__path-brand-sub">MODERN HANAMI LEARNING</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+          <aside className="flex flex-col shrink-0 w-[min(300px,100%)] h-full bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800" aria-label="Điều hướng và hội thoại">
 
-            <div className="moji-chat__sidebar-unified__body-scroll">
+            <div className="flex-1 overflow-y-auto overflow-x-hidden flex flex-col">
               <AnimatePresence mode="wait">
                 <Motion.div
                   key="nav-messages"
-                  className="moji-chat__sidebar-unified__pane moji-chat__sidebar-unified__pane--messages"
+                  className="flex flex-col p-4 gap-4"
                   initial={reduceMotion ? false : { opacity: 0, x: -14 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={reduceMotion ? undefined : { opacity: 0, x: -12 }}
                   transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
                 >
-                  <div className="moji-chat__sidebar-unified__shortcuts-stack">
-                    <div className="moji-chat__primary-scroll moji-chat__primary-scroll--unified">
-                      <ul className="moji-chat__primary-list">
+                  <div className="flex flex-col gap-1 pb-4 border-b border-slate-200 dark:border-slate-800">
+                    <div className="overflow-x-hidden overflow-y-visible">
+                      <ul className="flex flex-col gap-1">
                         <li>
                           <button
                             type="button"
-                            className={`moji-chat__primary-item ${primaryLobbyActive() ? 'moji-chat__primary-item--active' : ''}`}
+                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors font-semibold text-sm ${primaryLobbyActive() ? 'bg-gradient-to-r from-[#c41e4a] to-[#7f1430] text-white shadow-md shadow-rose-900/20' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/50'}`}
                             onClick={goChatLobbyPreservePath}
                           >
-                            <span className="moji-chat__primary-item-ico" aria-hidden>
-                              <House />
+                            <span className="opacity-70" aria-hidden>
+                              <House size={18} />
                             </span>
-                            <span className="moji-chat__primary-item-label">Sảnh chat</span>
+                            <span>Sảnh chat</span>
                           </button>
                         </li>
                         <li>
                           <button
                             type="button"
-                            className={`moji-chat__primary-item ${primaryItemActive(shortcutRooms.n5) ? 'moji-chat__primary-item--active' : ''}`}
+                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors font-semibold text-sm ${primaryItemActive(shortcutRooms.n5) ? 'bg-gradient-to-r from-[#c41e4a] to-[#7f1430] text-white shadow-md shadow-rose-900/20' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/50'}`}
                             onClick={() => goShortcutKind('n5')}
                             disabled={shortcutBusyKey != null}
                             aria-busy={shortcutBusyKey === 'n5'}
                           >
-                            <span className="moji-chat__primary-lvl" aria-hidden>
+                            <span className="font-bold text-xs tracking-wider opacity-70" aria-hidden>
                               N5
                             </span>
-                            <span className="moji-chat__primary-item-label">Phòng N5</span>
+                            <span>Phòng N5</span>
                             {primaryUnreadPill(shortcutRooms.n5)}
                           </button>
                         </li>
                         <li>
                           <button
                             type="button"
-                            className={`moji-chat__primary-item ${primaryItemActive(shortcutRooms.n4) ? 'moji-chat__primary-item--active' : ''}`}
+                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors font-semibold text-sm ${primaryItemActive(shortcutRooms.n4) ? 'bg-gradient-to-r from-[#c41e4a] to-[#7f1430] text-white shadow-md shadow-rose-900/20' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/50'}`}
                             onClick={() => goShortcutKind('n4')}
                             disabled={shortcutBusyKey != null}
                             aria-busy={shortcutBusyKey === 'n4'}
                           >
-                            <span className="moji-chat__primary-lvl" aria-hidden>
+                            <span className="font-bold text-xs tracking-wider opacity-70" aria-hidden>
                               N4
                             </span>
-                            <span className="moji-chat__primary-item-label">Phòng N4</span>
+                            <span>Phòng N4</span>
                             {primaryUnreadPill(shortcutRooms.n4)}
                           </button>
                         </li>
                         <li>
                           <button
                             type="button"
-                            className={`moji-chat__primary-item ${primaryItemActive(shortcutRooms.n3) ? 'moji-chat__primary-item--active' : ''}`}
+                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors font-semibold text-sm ${primaryItemActive(shortcutRooms.n3) ? 'bg-gradient-to-r from-[#c41e4a] to-[#7f1430] text-white shadow-md shadow-rose-900/20' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/50'}`}
                             onClick={() => goShortcutKind('n3')}
                             disabled={shortcutBusyKey != null}
                             aria-busy={shortcutBusyKey === 'n3'}
                           >
-                            <span className="moji-chat__primary-lvl" aria-hidden>
+                            <span className="font-bold text-xs tracking-wider opacity-70" aria-hidden>
                               N3
                             </span>
-                            <span className="moji-chat__primary-item-label">Phòng N3</span>
+                            <span>Phòng N3</span>
                             {primaryUnreadPill(shortcutRooms.n3)}
                           </button>
                         </li>
                         <li>
                           <button
                             type="button"
-                            className={`moji-chat__primary-item ${primaryItemActive(shortcutRooms.general) ? 'moji-chat__primary-item--active' : ''}`}
+                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors font-semibold text-sm ${primaryItemActive(shortcutRooms.general) ? 'bg-gradient-to-r from-[#c41e4a] to-[#7f1430] text-white shadow-md shadow-rose-900/20' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/50'}`}
                             onClick={() => goShortcutKind('general')}
                             disabled={shortcutBusyKey != null}
                             aria-busy={shortcutBusyKey === 'general'}
                           >
-                            <span className="moji-chat__primary-item-ico" aria-hidden>
-                              <MessageSquare />
+                            <span className="opacity-70" aria-hidden>
+                              <MessageSquare size={18} />
                             </span>
-                            <span className="moji-chat__primary-item-label">Phòng chung</span>
+                            <span>Phòng chung</span>
                             {primaryUnreadPill(shortcutRooms.general)}
                           </button>
                         </li>
                       </ul>
                     </div>
-                    <div className="moji-chat__primary-cta-block moji-chat__primary-cta-block--compact">
-                      <button type="button" className="moji-chat__primary-new-link" onClick={handleCreateChat}>
+                    <div className="mt-2 shrink-0">
+                      <button type="button" className="w-full py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm rounded-xl transition-colors" onClick={handleCreateChat}>
                         + Tin nhắn mới
                       </button>
                     </div>
                   </div>
 
-                  <h2 className="moji-chat__panel2-title moji-chat__panel2-title--unified">Tin nhắn</h2>
+                  <h2 className="font-sans font-bold text-[1.25rem] tracking-[0.05em] uppercase mt-2 mb-4 text-slate-800 dark:text-slate-200">Tin nhắn</h2>
                   {sidebarNotice ? (
-                    <div className="moji-chat__sidebar-notice moji-chat__sidebar-notice--unified" role="status">
+                    <div className="p-3 mb-4 text-sm font-semibold text-rose-800 bg-rose-50 rounded-xl dark:bg-rose-900/20 dark:text-rose-200" role="status">
                       {sidebarNotice}
                     </div>
                   ) : null}
-                  <div className="moji-chat__list-search-wrap">
-                    <div className="moji-chat__list-search-field">
-                      <span className="moji-chat__list-search-icon" aria-hidden>
-                        <Search />
+                  <div className="mb-4">
+                    <div className="flex items-center h-[42px] px-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-full transition-colors focus-within:border-rose-500/50 focus-within:ring-2 focus-within:ring-rose-500/20">
+                      <span className="flex items-center justify-center text-slate-400 mr-2" aria-hidden>
+                        <Search size={18} />
                       </span>
                       <input
                         type="search"
-                        className="moji-chat__list-search moji-chat__list-search--with-icon"
+                        className="flex-1 bg-transparent border-none outline-none text-[0.9rem] text-slate-800 dark:text-slate-200 placeholder-slate-400"
                         placeholder="Tìm hội thoại…"
                         value={listSearch}
                         onChange={(e) => setListSearch(e.target.value)}
@@ -1164,12 +1154,12 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
                       />
                     </div>
                   </div>
-                  <div className="moji-chat__list-tabs" role="tablist">
+                  <div className="flex gap-2 mb-4" role="tablist">
                     <button
                       type="button"
                       role="tab"
                       aria-selected={inboxTab === 'all'}
-                      className={`moji-chat__list-tab ${inboxTab === 'all' ? 'moji-chat__list-tab--active' : ''}`}
+                      className={`px-4 py-1.5 rounded-full text-[0.8rem] font-bold tracking-wide transition-colors border ${inboxTab === 'all' ? 'bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-900 border-transparent' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
                       onClick={() => setInboxTab('all')}
                     >
                       Tất cả
@@ -1178,36 +1168,36 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
                       type="button"
                       role="tab"
                       aria-selected={inboxTab === 'unread'}
-                      className={`moji-chat__list-tab ${inboxTab === 'unread' ? 'moji-chat__list-tab--active' : ''}`}
+                      className={`px-4 py-1.5 rounded-full text-[0.8rem] font-bold tracking-wide transition-colors border ${inboxTab === 'unread' ? 'bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-900 border-transparent' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
                       onClick={() => setInboxTab('unread')}
                     >
                       Chưa đọc
                     </button>
                   </div>
-                  <div ref={sidebarListRef} className="moji-chat__list-scroll moji-chat__list-scroll--sections moji-chat__list-scroll--unified-natural">
+                  <div ref={sidebarListRef} className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar">
                     {roomsLoading ? (
-                      <ul className="moji-chat__sidebar-skeleton" aria-hidden>
+                      <ul className="flex flex-col gap-0.5" aria-hidden>
                         {[1, 2, 3, 4].map((k) => (
-                          <li key={k} className="moji-chat__sidebar-skeleton-row">
-                            <span className="moji-chat__sidebar-skeleton-av" />
-                            <span className="moji-chat__sidebar-skeleton-text">
-                              <span className="moji-chat__sidebar-skeleton-line" />
-                              <span className="moji-chat__sidebar-skeleton-line moji-chat__sidebar-skeleton-line--short" />
+                          <li key={k} className="flex gap-3 px-4 py-3 items-center w-full animate-pulse opacity-60">
+                            <span className="w-[44px] h-[44px] rounded-full bg-slate-200 dark:bg-slate-700/50 shrink-0" />
+                            <span className="flex-1 flex flex-col gap-2">
+                              <span className="h-3.5 bg-slate-200 dark:bg-slate-700/50 rounded w-full" />
+                              <span className="h-3 bg-slate-200 dark:bg-slate-700/50 rounded w-2/3" />
                             </span>
                           </li>
                         ))}
                       </ul>
                     ) : (
-                      <>
+                      <div className="flex flex-col gap-6">
                         {assistantRowForList ? (
-                          <section className="moji-chat__conv-section" aria-labelledby="moji-sec-assistant">
-                            <div className="moji-chat__section-head">
-                              <h3 className="moji-chat__section-title" id="moji-sec-assistant">
+                          <section className="flex flex-col" aria-labelledby="moji-sec-assistant">
+                            <div className="flex justify-between items-center px-4 py-1 mb-1">
+                              <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider" id="moji-sec-assistant">
                                 TRỢ LÝ
                               </h3>
                             </div>
                             <Motion.ul
-                              className="moji-chat__conv-list"
+                              className="flex flex-col gap-0.5"
                               variants={convListContainerVariants}
                               initial={reduceMotion ? false : 'hidden'}
                               animate={reduceMotion ? false : 'visible'}
@@ -1216,58 +1206,28 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
                             </Motion.ul>
                           </section>
                         ) : null}
-                        <section className="moji-chat__conv-section" aria-labelledby="moji-sec-groups">
-                          <div className="moji-chat__section-head">
-                            <h3 className="moji-chat__section-title" id="moji-sec-groups">
-                              PHÒNG
-                            </h3>
-                            <button
-                              type="button"
-                              className="moji-chat__section-icon-btn"
-                              title="Tạo nhóm chat mới"
-                              aria-label="Tạo nhóm chat mới"
-                              onClick={openGroupModal}
-                            >
-                              <IconUsersGroupPlus />
-                            </button>
-                          </div>
-                          {groupChatsRoomsOnly.length === 0 ? (
-                            <p className="moji-chat__muted moji-chat__section-empty">
-                              {inboxTab === 'unread' ? 'Không có phòng chưa đọc.' : 'Chưa có phòng nhóm.'}
-                            </p>
-                          ) : (
-                            <Motion.ul
-                              className="moji-chat__conv-list"
-                              variants={convListContainerVariants}
-                              initial={reduceMotion ? false : 'hidden'}
-                              animate={reduceMotion ? false : 'visible'}
-                            >
-                              {renderConvListItems(groupChatsRoomsOnly, { showMenu: true })}
-                            </Motion.ul>
-                          )}
-                        </section>
-                        <section className="moji-chat__conv-section" aria-labelledby="moji-sec-friends">
-                          <div className="moji-chat__section-head">
-                            <h3 className="moji-chat__section-title" id="moji-sec-friends">
+                        <section className="flex flex-col" aria-labelledby="moji-sec-friends">
+                          <div className="flex justify-between items-center px-4 py-1 mb-1">
+                            <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider" id="moji-sec-friends">
                               BẠN BÈ
                             </h3>
                             <button
                               type="button"
-                              className="moji-chat__section-icon-btn"
+                              className="text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors p-1.5 rounded-md hover:bg-rose-50 dark:hover:bg-rose-900/20"
                               title="Lời mời kết bạn"
                               aria-label="Lời mời kết bạn"
                               onClick={() => setInvitesModalOpen(true)}
                             >
-                              <IconUserPlus />
+                              <IconUserPlus size={16} />
                             </button>
                           </div>
                           {directChats.length === 0 ? (
-                            <p className="moji-chat__muted moji-chat__section-empty">
+                            <p className="text-sm text-slate-500 dark:text-slate-400 px-4 py-3 italic text-center bg-slate-50 dark:bg-slate-800/20 rounded-xl mx-2 border border-dashed border-slate-200 dark:border-slate-800">
                               {inboxTab === 'unread' ? 'Không có chat riêng chưa đọc.' : 'Chưa có cuộc trò chuyện riêng.'}
                             </p>
                           ) : (
                             <Motion.ul
-                              className="moji-chat__conv-list"
+                              className="flex flex-col gap-0.5"
                               variants={convListContainerVariants}
                               initial={reduceMotion ? false : 'hidden'}
                               animate={reduceMotion ? false : 'visible'}
@@ -1276,74 +1236,75 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
                             </Motion.ul>
                           )}
                         </section>
-                      </>
+                      </div>
                     )}
                   </div>
                 </Motion.div>
               </AnimatePresence>
             </div>
 
-            <div className="moji-chat__primary-foot">
+            <div className="flex justify-between items-center p-2 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
               <button
                 type="button"
-                className="moji-chat__primary-foot-btn moji-chat__primary-foot-btn--active"
+                className="flex flex-col items-center justify-center w-[4.5rem] h-14 rounded-xl transition-colors text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/20"
                 onClick={goChatLobbyPreservePath}
               >
-                <span className="moji-chat__primary-foot-ico" aria-hidden>
+                <span className="mb-0.5 opacity-90" aria-hidden>
                   <MessageCircle size={20} />
                 </span>
-                <span>Tin nhắn</span>
+                <span className="text-[0.65rem] font-bold">Tin nhắn</span>
               </button>
               <AnimatedThemeToggler
-                className="moji-chat__primary-foot-btn"
+                className="flex flex-col items-center justify-center w-[4.5rem] h-14 rounded-xl transition-colors text-slate-500 hover:text-slate-800 hover:bg-slate-200/50 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800"
                 title={theme === 'dark' ? 'Chế độ sáng' : 'Chế độ tối'}
                 aria-label="Chuyển sáng/tối"
               >
-                <span className="moji-chat__primary-foot-ico" aria-hidden>
+                <span className="mb-0.5 opacity-80" aria-hidden>
                   {theme === 'dark' ? <Moon size={20} /> : <Sun size={20} />}
                 </span>
-                <span>Giao diện</span>
+                <span className="text-[0.65rem] font-medium">Giao diện</span>
               </AnimatedThemeToggler>
-              <div className="moji-chat__primary-foot-settings" ref={menuRef}>
-                <button type="button" className="moji-chat__primary-foot-btn" title="Cài đặt" onClick={() => setUserMenuOpen((o) => !o)}>
-                  <span className="moji-chat__primary-foot-ico" aria-hidden>
+              <div className="relative" ref={menuRef}>
+                <button type="button" className="flex flex-col items-center justify-center w-[4.5rem] h-14 rounded-xl transition-colors text-slate-500 hover:text-slate-800 hover:bg-slate-200/50 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800" title="Cài đặt" onClick={() => setUserMenuOpen((o) => !o)}>
+                  <span className="mb-0.5 opacity-80" aria-hidden>
                     <Settings size={20} />
                   </span>
-                  <span>Cài đặt</span>
+                  <span className="text-[0.65rem] font-medium">Cài đặt</span>
                 </button>
                 {userMenuOpen && (
-                  <div className="moji-chat__user-menu moji-chat__user-menu--rail" role="menu">
-                    <div className="moji-chat__user-menu-head">
-                      <span className="moji-chat__user-avatar">{avatarLetter}</span>
-                      <div>
-                        <div className="moji-chat__user-name">{displayName}</div>
-                        <div className="moji-chat__user-handle">@{handle}</div>
+                  <div className="absolute bottom-[4.5rem] right-0 w-64 bg-white dark:bg-slate-800 rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-200 dark:border-slate-700 p-2 z-50 flex flex-col origin-bottom-right animate-in fade-in zoom-in-95 duration-150" role="menu">
+                    <div className="flex items-center gap-3 p-3 border-b border-slate-100 dark:border-slate-700 mb-2">
+                      <span className="w-10 h-10 rounded-full bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 flex items-center justify-center font-bold text-lg shrink-0">{avatarLetter}</span>
+                      <div className="min-w-0">
+                        <div className="font-bold text-slate-800 dark:text-slate-200 text-sm truncate">{displayName}</div>
+                        <div className="text-xs text-slate-500 dark:text-slate-400 truncate">@{handle}</div>
                       </div>
                     </div>
-                    <button type="button" className="moji-chat__user-menu-item" role="menuitem">
-                      <span className="moji-chat__menu-ico" aria-hidden>
-                        <User size={20} />
+                    <button type="button" className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors" role="menuitem">
+                      <span className="opacity-70" aria-hidden>
+                        <User size={18} />
                       </span>
                       Tài khoản
                     </button>
                     <button
                       type="button"
-                      className="moji-chat__user-menu-item"
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
                       role="menuitem"
                       onClick={() => {
                         setUserMenuOpen(false);
                         setInvitesModalOpen(true);
                       }}
                     >
-                      <span className="moji-chat__menu-ico" aria-hidden>
-                        <BellPlus size={20} />
+                      <span className="opacity-70 relative" aria-hidden>
+                        <BellPlus size={18} />
+                        {incomingRequests.length > 0 && <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-rose-500" />}
                       </span>
                       Lời mời kết bạn
                       {incomingRequests.length > 0 ? ` (${incomingRequests.length})` : ''}
                     </button>
                     <button
                       type="button"
-                      className="moji-chat__user-menu-item moji-chat__user-menu-item--danger"
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors mt-1"
                       role="menuitem"
                       onClick={() => {
                         setUserMenuOpen(false);
@@ -1351,8 +1312,8 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
                         navigate(ROUTES.LOGIN);
                       }}
                     >
-                      <span className="moji-chat__menu-ico" aria-hidden>
-                        <LogOut size={20} />
+                      <span className="opacity-70" aria-hidden>
+                        <LogOut size={18} />
                       </span>
                       Đăng xuất
                     </button>
@@ -1360,14 +1321,14 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
                 )}
               </div>
             </div>
-            <div className="moji-chat__primary-foot-external">
-              <button type="button" className="moji-chat__primary-foot-link" onClick={() => navigate(ROUTES.LEARN)}>
+            <div className="flex justify-center items-center gap-2 py-2.5 text-[0.75rem] text-slate-500 dark:text-slate-400 border-t border-slate-200 dark:border-slate-800 bg-slate-100/50 dark:bg-slate-950/50">
+              <button type="button" className="hover:text-slate-800 dark:hover:text-slate-200 hover:underline transition-colors" onClick={() => navigate(ROUTES.LEARN)}>
                 Học tập
               </button>
-              <span className="moji-chat__primary-foot-dot" aria-hidden>
+              <span className="opacity-50" aria-hidden>
                 ·
               </span>
-              <button type="button" className="moji-chat__primary-foot-link" onClick={() => navigate(ROUTES.ACCOUNT)}>
+              <button type="button" className="hover:text-slate-800 dark:hover:text-slate-200 hover:underline transition-colors" onClick={() => navigate(ROUTES.ACCOUNT)}>
                 Tài khoản
               </button>
             </div>

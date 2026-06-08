@@ -12,6 +12,7 @@ import { SuggestionsTab } from './tabs/SuggestionsTab';
 import { SystemAdminTab } from './tabs/SystemAdminTab';
 import { UsersTab } from './tabs/UsersTab';
 import { ChartColumn, GamepadDirectional, Banknote, ScrollText, UserRoundCog, Settings, ShieldCogCorner, Lightbulb } from 'lucide-react';
+import { DashboardSidebar } from '../../components/system/DashboardSidebar';
 
 /** Alias để ESLint nhận diện biến dùng qua JSX. */
 const Motion = motion;
@@ -53,50 +54,22 @@ export default function AdminDashboard() {
 
   return (
     <div className="admin-dash admin-dash--kurenai" lang="vi">
-      <aside className={`admin-dash__sidebar ${isCollapsed ? 'admin-dash__sidebar--collapsed' : ''}`} aria-label="Điều hướng quản trị">
-        <div className="admin-dash__sidebar-brand">
-          <button
-            type="button"
-            className="admin-dash__sidebar-brand-mark"
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            title={isCollapsed ? 'Mở rộng' : 'Thu gọn'}
-          >
-            🌸
-          </button>
-          <span className="admin-dash__sidebar-brand-title">Admin</span>
-        </div>
-
-        <nav className="admin-dash__sidebar-nav">
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              className={`admin-dash__sidebar-link ${tab === t.id ? 'admin-dash__sidebar-link--active' : ''}`}
-              onClick={() => setTab(t.id)}
-            >
-              <span className="admin-dash__sidebar-link-ico" aria-hidden>
-                {t.icon}
-              </span>
-              <span className="admin-dash__sidebar-link-label">
-                {t.id === 'system' ? (
-                  <span className="admin-dash__sidebar-link-text-nowrap">Hệ Thống</span>
-                ) : t.id === 'suggestions' ? (
-                  'Đề xuất'
-                ) : (
-                  t.label
-                )}
-              </span>
-            </button>
-          ))}
-        </nav>
-
-        <div className="admin-dash__sidebar-foot">
+      <DashboardSidebar
+        variant="admin"
+        isCollapsed={isCollapsed}
+        onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
+        brandTitle="Admin"
+        tabs={TABS}
+        activeTab={tab}
+        onTabChange={setTab}
+        footerNode={
           <div className="admin-dash__status-pill admin-dash__status-pill--sidebar" title="Trạng thái hệ thống">
             <span className="admin-dash__pulse" aria-hidden />
-            Hệ thống hoạt động bình thường
+            Bình thường
           </div>
-        </div>
-      </aside>
+        }
+      />
+
 
       <div className="admin-dash__main-col">
         <header className="admin-dash__main-head">
