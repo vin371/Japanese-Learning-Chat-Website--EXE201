@@ -2,7 +2,7 @@ import { Fragment } from 'react';
 import { NavLink, Link } from 'react-router-dom';
 import { ROUTES } from '../../../data/routes';
 import { getJlptLevelCodeFromUser, jlptRank } from '../../../utils/learnLevelCode';
-import { BookUp, SpellCheck, Languages, MessageSquareText, Layers } from 'lucide-react';
+import { BookUp, SpellCheck, Languages, MessageSquareText, Layers, BookA } from 'lucide-react';
 
 function IconRoadmap({ className }) {
   return (
@@ -240,6 +240,10 @@ export function LearnSidebarShell({
         <ShellCard variant="filters">
           <div className="learn-shell-cats-label">Phân loại học tập</div>
           <nav className="learn-shell-cats" aria-label="Lọc theo dạng bài">
+            <button type="button" className={`learn-shell-cats__btn${sectionFilter === 'alphabet' ? ' learn-shell-cats__btn--active' : ''}`} onClick={() => goFilter('alphabet')}>
+              <BookA size={20} />
+              Bảng chữ cái
+            </button>
             <button
               type="button"
               className={`learn-shell-cats__btn${sectionFilter === 'vocab' ? ' learn-shell-cats__btn--active' : ''}`}

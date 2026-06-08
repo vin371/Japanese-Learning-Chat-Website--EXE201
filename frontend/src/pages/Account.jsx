@@ -618,57 +618,58 @@ export default function AccountPage() {
   const streakUi = Number(pick(progressSummary, 'streakDays', 'StreakDays') ?? 0) || 0;
 
   return (
-    <div className="yume-dashboard yume-account-page yume-account-page--sakura yume-account-page--hanami">
-      <div className="yume-account-hanami-sakura" aria-hidden>
-        <SakuraRainLayer petalCount={24} buoyant />
+    <div className="w-full max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8 lg:py-10 relative z-10">
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden" aria-hidden>
+        <SakuraRainLayer petalCount={28} buoyant />
       </div>
       <Motion.div
-        className="yume-account-hanami-grid"
+        className="grid grid-cols-1 lg:grid-cols-[280px_1fr] xl:grid-cols-[320px_1fr] gap-6 xl:gap-8 items-start relative z-10"
         variants={hanamiV.root}
         initial={reduceMotion ? false : 'hidden'}
         animate="show"
       >
-        <Motion.aside className="yume-account-hanami-side" variants={hanamiV.block} aria-label="Tiến độ học">
-          <div className="yume-account-hanami-side__card">
-            <div className="yume-account-hanami-ring-wrap">
+        <Motion.aside className="flex flex-col gap-6" variants={hanamiV.block} aria-label="Tiến độ học">
+          <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-3xl border border-slate-200/50 dark:border-slate-700/50 p-5 lg:p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.2)]">
+            <div className="flex flex-col items-center mb-5">
               <div
-                className="yume-account-hanami-ring-outer"
+                className="relative w-32 h-32 rounded-full flex items-center justify-center mb-3"
                 style={{
                   background: `conic-gradient(#be123c ${levelCompletionPct}%, rgba(15, 23, 42, 0.08) 0)`,
                 }}
                 aria-hidden
               >
-                <div className="yume-account-hanami-ring-inner" />
+                <div className="absolute inset-2 bg-white dark:bg-slate-900 rounded-full flex flex-col items-center justify-center shadow-inner">
+                  <span className="text-2xl font-black text-rose-700 dark:text-rose-400 leading-none">{progressLoading ? '…' : `${levelCompletionPct}%`}</span>
+                  <span className="text-[0.62rem] font-bold text-slate-500 uppercase tracking-widest mt-1 text-center leading-tight">Lộ trình<br/>{levelCode}</span>
+                </div>
               </div>
-              <div className="yume-account-hanami-ring__label">
-                <span className="yume-account-hanami-ring__pct">{progressLoading ? '…' : `${levelCompletionPct}%`}</span>
-                <span className="yume-account-hanami-ring__sub">Lộ trình {levelCode}</span>
-              </div>
+              <p className="text-center text-[0.88rem] text-slate-600 dark:text-slate-300 leading-relaxed max-w-[200px] m-0">
+                {progressLoading
+                  ? 'Đang tải tiến độ…'
+                  : journeyAgg.total > 0
+                    ? `${formatIntVi(journeyAgg.completed)} / ${formatIntVi(journeyAgg.total)} bài đã xuất bản`
+                    : 'Chưa có bài trên lộ trình — vào Học tập để bắt đầu.'}
+              </p>
             </div>
-            <p className="yume-account-hanami-journey">
-              {progressLoading
-                ? 'Đang tải tiến độ…'
-                : journeyAgg.total > 0
-                  ? `${formatIntVi(journeyAgg.completed)} / ${formatIntVi(journeyAgg.total)} bài đã xuất bản`
-                  : 'Chưa có bài trên lộ trình — vào Học tập để bắt đầu.'}
-            </p>
-            <div className="yume-account-hanami-meta">
-              <span className="yume-account-hanami-meta__row">
-                <span aria-hidden>🔥</span> Streak: <strong>{formatIntVi(streakUi)}</strong> ngày
-              </span>
-              <span className="yume-account-hanami-meta__row">
-                <span aria-hidden>✨</span> EXP: <strong>{formatIntVi(accountExp)}</strong>
-              </span>
+            <div className="grid grid-cols-2 gap-3 pt-4 border-t border-slate-200 dark:border-slate-700/60">
+              <div className="flex flex-col items-center justify-center p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50">
+                <span className="text-xl font-black text-rose-600 dark:text-rose-400 leading-none mb-1.5">{formatIntVi(streakUi)}</span>
+                <span className="text-[0.66rem] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1"><span aria-hidden>🔥</span> Streak</span>
+              </div>
+              <div className="flex flex-col items-center justify-center p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50">
+                <span className="text-xl font-black text-indigo-600 dark:text-indigo-400 leading-none mb-1.5">{formatIntVi(accountExp)}</span>
+                <span className="text-[0.66rem] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1"><span aria-hidden>✨</span> EXP</span>
+              </div>
             </div>
           </div>
-          <div className="yume-account-hanami-side__card yume-account-hanami-side__card--lane">
-            <div className="yume-account-hanami-lane-head">
-              <span className="yume-account-hanami-lane-title">Kỷ niệm học tập</span>
-              <a href="#yume-account-feed-title" className="yume-account-hanami-lane-link">
+          <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-3xl border border-slate-200/50 dark:border-slate-700/50 p-5 lg:p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.2)]">
+            <div className="flex items-center justify-between mb-4">
+              <span className="font-extrabold text-[0.95rem] text-slate-900 dark:text-slate-100">Kỷ niệm học tập</span>
+              <a href="#yume-account-feed-title" className="text-[0.8rem] font-bold text-rose-600 dark:text-rose-400 hover:underline">
                 Xem tất cả
               </a>
             </div>
-            <div className="yume-account-hanami-lane-grid" role="list" aria-label="Ảnh từ bài đăng và hồ sơ của bạn">
+            <div className="grid grid-cols-2 gap-2" role="list" aria-label="Ảnh từ bài đăng và hồ sơ của bạn">
               {Array.from({ length: 4 }, (_, i) => {
                 const cell = memoryLaneCells[i];
                 if (cell) {
@@ -682,7 +683,7 @@ export default function AccountPage() {
                     <div
                       key={`m-${i}-${cell.kind}-${cell.postId ?? 'profile'}`}
                       role="listitem"
-                      className="yume-account-hanami-lane-cell yume-account-hanami-lane-cell--img"
+                      className="aspect-square rounded-2xl bg-cover bg-center shadow-sm"
                       style={{ backgroundImage: `url(${cell.src})` }}
                       title={label}
                     />
@@ -692,31 +693,43 @@ export default function AccountPage() {
                   <div
                     key={`mem-ph-${i}`}
                     role="presentation"
-                    className="yume-account-hanami-lane-cell yume-account-hanami-lane-cell--placeholder"
+                    className="aspect-square rounded-2xl opacity-50 dark:opacity-30"
                     style={{ background: HANAMI_MEMORY_SWATCHES[i] }}
                   />
                 );
               })}
             </div>
             {memoryLaneCells.length === 0 && !loadingPosts ? (
-              <p className="yume-account-hanami-lane-hint">Đăng bài kèm ảnh hoặc thêm ảnh bìa — ảnh sẽ hiện ở đây.</p>
+              <p className="mt-4 m-0 text-center text-[0.8rem] leading-relaxed text-slate-500 dark:text-slate-400 italic">Đăng bài kèm ảnh hoặc thêm ảnh bìa — ảnh sẽ hiện ở đây.</p>
             ) : null}
           </div>
         </Motion.aside>
 
-        <Motion.div className="yume-account-hanami-main" variants={hanamiV.main}>
+        <Motion.div className="flex flex-col gap-6 lg:gap-8 min-w-0" variants={hanamiV.main}>
           <Motion.header
-            className={`yume-account-profile yume-account-profile--sakura${isPremium ? ' yume-account-profile--premium' : ''}`}
+            className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.2)] overflow-hidden"
             variants={hanamiV.block}
           >
-            <div className="yume-account-profile__cover yume-account-profile__cover--sakura" role="region" aria-label="Ảnh bìa hồ sơ">
+            <div className="relative h-48 sm:h-64 md:h-72 w-full bg-slate-100 dark:bg-slate-800" role="region" aria-label="Ảnh bìa hồ sơ">
               {coverPreview ? (
-                <img src={coverPreview} alt="" className="yume-account-profile__cover-img" />
-              ) : null}
-              <div className="yume-account-profile__cover-toolbar">
+                <img src={coverPreview} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-rose-100 to-indigo-100 dark:from-rose-950/40 dark:to-indigo-950/40" />
+              )}
+              <div className="absolute top-4 right-4 flex gap-2">
+                {coverPreview ? (
+                  <button
+                    type="button"
+                    className="px-3 py-1.5 rounded-xl bg-black/40 hover:bg-black/60 backdrop-blur-md text-white text-xs font-bold transition-colors"
+                    disabled={coverUploading}
+                    onClick={() => void handleRemoveCover()}
+                  >
+                    Nền mặc định
+                  </button>
+                ) : null}
                 <label
                   htmlFor="cover-file"
-                  className={`yume-account-profile__cover-btn${coverUploading ? ' yume-account-profile__cover-btn--disabled' : ''}`}
+                  className={`px-3 py-1.5 rounded-xl bg-white/80 hover:bg-white backdrop-blur-md text-slate-800 text-xs font-bold transition-colors cursor-pointer shadow-sm ${coverUploading ? 'opacity-50 pointer-events-none' : ''}`}
                 >
                   {coverUploading ? 'Đang tải…' : coverPreview ? 'Đổi ảnh bìa' : 'Thêm ảnh bìa'}
                 </label>
@@ -724,226 +737,209 @@ export default function AccountPage() {
                   id="cover-file"
                   type="file"
                   accept="image/*"
-                  className="yume-account-profile__visually-hidden"
+                  className="hidden"
                   disabled={coverUploading}
                   onChange={(ev) => void handleCoverFileChange(ev)}
                 />
-                {coverPreview ? (
-                  <button
-                    type="button"
-                    className="yume-account-profile__cover-btn yume-account-profile__cover-btn--ghost"
-                    disabled={coverUploading}
-                    onClick={() => void handleRemoveCover()}
-                  >
-                    Nền mặc định
-                  </button>
-                ) : null}
               </div>
-              {coverFileError ? <p className="yume-account-profile__cover-err">{coverFileError}</p> : null}
+              {coverFileError ? <p className="absolute bottom-4 right-4 bg-rose-500/90 text-white text-xs px-3 py-1.5 rounded-lg backdrop-blur-md m-0 shadow-lg">{coverFileError}</p> : null}
             </div>
 
-            <div className="yume-account-profile__body yume-account-profile__body--sakura">
-              <div className="sakura-profile__identity">
-                <div className="sakura-profile__avatar-wrap">
+            <div className="px-5 sm:px-8 pb-6">
+              <div className="relative flex flex-col items-center sm:items-start -mt-16 sm:-mt-20 mb-4 sm:mb-6">
+                <div className="relative inline-block mb-3 sm:mb-0">
                   <div
-                    className={`yume-account-profile__avatar-ring sakura-profile__avatar-ring${isPremium ? ' yume-account-profile__avatar-ring--premium' : ''}`}
+                    className={`w-32 h-32 sm:w-40 sm:h-40 rounded-full flex items-center justify-center bg-white dark:bg-slate-800 ring-4 ring-white dark:ring-slate-900 shadow-xl overflow-hidden ${isPremium ? 'ring-rose-400 dark:ring-rose-600 shadow-[0_0_20px_rgba(225,29,72,0.4)]' : ''}`}
                   >
-                    <div className="yume-account-profile__avatar-face sakura-profile__avatar-face">
-                      {avatarPreview ? <img src={avatarPreview} alt="" /> : avatarInitial}
-                    </div>
+                    {avatarPreview ? (
+                      <img src={avatarPreview} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-4xl sm:text-5xl font-black text-slate-300 dark:text-slate-600">{avatarInitial}</span>
+                    )}
                   </div>
+                  <label htmlFor="avatar-file" className="absolute bottom-1 right-1 sm:bottom-2 sm:right-2 w-9 h-9 bg-white dark:bg-slate-700 rounded-full flex items-center justify-center shadow-lg border border-slate-200 dark:border-slate-600 cursor-pointer hover:scale-105 transition-transform" title="Đổi ảnh đại diện">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-slate-600 dark:text-slate-300"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                  </label>
+                  <input
+                    id="avatar-file"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleAvatarFileChange}
+                  />
+                  {avatarFileError ? <p className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-max bg-rose-500 text-white text-[0.7rem] px-2 py-1 rounded shadow-md z-10 m-0">{avatarFileError}</p> : null}
                 </div>
-                <label htmlFor="avatar-file" className="yume-account-profile__avatar-btn sakura-profile__avatar-link">
-                  Đổi ảnh đại diện
-                </label>
-                <input
-                  id="avatar-file"
-                  type="file"
-                  accept="image/*"
-                  className="yume-account-profile__visually-hidden"
-                  onChange={handleAvatarFileChange}
-                />
-                {avatarFileError ? <p className="yume-account-profile__avatar-err">{avatarFileError}</p> : null}
 
-                <h1 className="yume-account-profile__name sakura-profile__name">{displayName}</h1>
-                <div className="sakura-profile__badge-row">
-                  {isPremium ? <PremiumBadge variant="large" /> : null}
+                <div className="flex flex-col items-center sm:items-start sm:ml-48 mt-4 sm:-mt-12 w-full">
+                  <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 mb-2">
+                    <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-50 m-0">{displayName}</h1>
+                    {isPremium ? <PremiumBadge variant="large" /> : null}
+                  </div>
+                  <p className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-bold text-slate-600 dark:text-slate-300 m-0 shadow-sm">
+                    {levelTitle}
+                    {isPremium ? <span className="text-rose-600 dark:text-rose-400 ml-1">— Gói Premium</span> : ''}
+                  </p>
                 </div>
-                <p className="sakura-profile__level-pill">
-                  {levelTitle}
-                  {isPremium ? ' — Gói Premium' : ''}
-                </p>
               </div>
 
-              <nav className="sakura-profile__tabs" aria-label="Hồ sơ">
+              <nav className="flex items-center gap-2 sm:gap-6 border-b border-slate-200 dark:border-slate-700/60 pb-0" aria-label="Hồ sơ">
                 <button
                   type="button"
                   role="tab"
                   aria-selected={profileTab === 'info'}
-                  className={`sakura-profile__tab${profileTab === 'info' ? ' sakura-profile__tab--active' : ''}`}
+                  className={`relative px-2 sm:px-4 py-3 text-sm font-bold transition-colors outline-none focus-visible:ring-2 focus-visible:ring-rose-500 rounded-t-lg ${profileTab === 'info' ? 'text-rose-700 dark:text-rose-400' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}
                   onClick={() => setProfileTab('info')}
                 >
                   Thông tin tài khoản
+                  {profileTab === 'info' && <motionFr.div layoutId="profileTabIndicator" className="absolute bottom-0 left-0 right-0 h-1 bg-rose-600 dark:bg-rose-500 rounded-t-md" />}
                 </button>
                 <button
                   type="button"
                   role="tab"
                   aria-selected={profileTab === 'settings'}
-                  className={`sakura-profile__tab${profileTab === 'settings' ? ' sakura-profile__tab--active' : ''}`}
+                  className={`relative px-2 sm:px-4 py-3 text-sm font-bold transition-colors outline-none focus-visible:ring-2 focus-visible:ring-rose-500 rounded-t-lg ${profileTab === 'settings' ? 'text-rose-700 dark:text-rose-400' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}
                   onClick={() => setProfileTab('settings')}
                 >
                   Cài đặt
+                  {profileTab === 'settings' && <motionFr.div layoutId="profileTabIndicator" className="absolute bottom-0 left-0 right-0 h-1 bg-rose-600 dark:bg-rose-500 rounded-t-md" />}
                 </button>
               </nav>
 
-              {profileTab === 'info' ? (
-                <div className="yume-account-profile__stats sakura-profile__stats">
-                  <Motion.article
-                    className="yume-account-stat-card sakura-stat-card"
-                    variants={hanamiV.block}
-                    whileHover={reduceMotion ? undefined : { y: -4, scale: 1.02 }}
-                    transition={{ type: 'spring', stiffness: 400, damping: 24 }}
-                  >
-                    <div className="sakura-stat-card__icon sakura-stat-card__icon--trophy" aria-hidden>
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path
-                          d="M6 4h12v2a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V4Z"
-                          stroke="currentColor"
-                          strokeWidth="1.6"
-                          strokeLinejoin="round"
-                        />
-                        <path d="M9 14h6v2H9v-2Z" fill="currentColor" opacity="0.35" />
-                        <path d="M8 20h8v2H8v-2Z" fill="currentColor" />
-                      </svg>
-                    </div>
-                    <div className="yume-account-stat-card__label">Cấp độ</div>
-                    <div className="yume-account-stat-card__value">{levelCode}</div>
-                    <div
-                      className="yume-account-stat-card__bar"
-                      role="progressbar"
-                      aria-valuenow={levelCompletionPct}
-                      aria-valuemin={0}
-                      aria-valuemax={100}
+              <div className="pt-6">
+                {profileTab === 'info' ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <Motion.article
+                      className="bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-5 border border-slate-200 dark:border-slate-700/60 shadow-sm flex flex-col relative overflow-hidden"
+                      variants={hanamiV.block}
+                      whileHover={reduceMotion ? undefined : { y: -4, scale: 1.02 }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 24 }}
                     >
-                      <div className="yume-account-stat-card__bar-fill" style={{ width: `${levelCompletionPct}%` }} />
-                    </div>
-                    <div className="yume-account-stat-card__hint">
-                      {progressLoading ? 'Đang tải tiến độ…' : `${levelCompletionPct}% tiến độ`}
-                    </div>
-                  </Motion.article>
-                  <Motion.article
-                    className="yume-account-stat-card sakura-stat-card"
-                    variants={hanamiV.block}
-                    whileHover={reduceMotion ? undefined : { y: -4, scale: 1.02 }}
-                    transition={{ type: 'spring', stiffness: 400, damping: 24 }}
-                  >
-                    <div className="sakura-stat-card__icon sakura-stat-card__icon--doc" aria-hidden>
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path
-                          d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"
-                          stroke="currentColor"
-                          strokeWidth="1.6"
-                          strokeLinejoin="round"
-                        />
-                        <path d="M14 3v5h5" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
-                      </svg>
-                    </div>
-                    <div className="yume-account-stat-card__label">Bài viết</div>
-                    <div className="yume-account-stat-card__value">{loadingPosts ? '…' : posts.length}</div>
-                    <div className="yume-account-stat-card__hint">Bài đăng của bạn</div>
-                  </Motion.article>
-                  <Motion.article
-                    className="yume-account-stat-card sakura-stat-card"
-                    variants={hanamiV.block}
-                    whileHover={reduceMotion ? undefined : { y: -4, scale: 1.02 }}
-                    transition={{ type: 'spring', stiffness: 400, damping: 24 }}
-                  >
-                    <div className="sakura-stat-card__icon sakura-stat-card__icon--people" aria-hidden>
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="9" cy="8" r="3" stroke="currentColor" strokeWidth="1.6" />
-                        <path d="M4 20v-1a4 4 0 0 1 4-4h2a4 4 0 0 1 4 4v1" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-                        <path
-                          d="M17 11a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z"
-                          stroke="currentColor"
-                          strokeWidth="1.6"
-                          strokeLinecap="round"
-                        />
-                        <path d="M20 20v-1a3 3 0 0 0-2.1-2.87" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-                      </svg>
-                    </div>
-                    <div className="yume-account-stat-card__label">Bạn bè</div>
-                    <div className="yume-account-stat-card__value">{friendsCount === null ? '…' : friendsCount}</div>
-                    <div className="yume-account-stat-card__hint">Danh sách kết bạn</div>
-                  </Motion.article>
-                </div>
-              ) : null}
+                      <div className="text-amber-500 bg-amber-100 dark:bg-amber-900/40 w-10 h-10 rounded-xl flex items-center justify-center mb-3">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M6 4h12v2a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V4Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+                          <path d="M9 14h6v2H9v-2Z" fill="currentColor" opacity="0.35" />
+                          <path d="M8 20h8v2H8v-2Z" fill="currentColor" />
+                        </svg>
+                      </div>
+                      <div className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Cấp độ</div>
+                      <div className="text-2xl font-black text-slate-900 dark:text-slate-100 mb-3">{levelCode}</div>
+                      <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden mb-2" role="progressbar" aria-valuenow={levelCompletionPct} aria-valuemin={0} aria-valuemax={100}>
+                        <div className="h-full bg-amber-500" style={{ width: `${levelCompletionPct}%` }} />
+                      </div>
+                      <div className="text-xs text-slate-500 font-medium">{progressLoading ? 'Đang tải tiến độ…' : `${levelCompletionPct}% tiến độ`}</div>
+                    </Motion.article>
 
-              {profileTab === 'settings' ? (
-                <div className="sakura-profile__panel">
-                  <h2 className="sakura-profile__panel-title">Thông tin đăng nhập</h2>
-                  <dl className="yume-account-profile__dl sakura-profile__dl">
-                    <div>
-                      <dt>Email</dt>
-                      <dd>{email || '—'}</dd>
-                    </div>
-                    <div>
-                      <dt>Tên đăng nhập</dt>
-                      <dd>{username || '—'}</dd>
-                    </div>
-                    <div>
-                      <dt>Cấp độ JLPT</dt>
-                      <dd>{levelCode}</dd>
-                    </div>
-                  </dl>
-                </div>
-              ) : null}
+                    <Motion.article
+                      className="bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-5 border border-slate-200 dark:border-slate-700/60 shadow-sm flex flex-col relative overflow-hidden"
+                      variants={hanamiV.block}
+                      whileHover={reduceMotion ? undefined : { y: -4, scale: 1.02 }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 24 }}
+                    >
+                      <div className="text-indigo-500 bg-indigo-100 dark:bg-indigo-900/40 w-10 h-10 rounded-xl flex items-center justify-center mb-3">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+                          <path d="M14 3v5h5" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+                        </svg>
+                      </div>
+                      <div className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Bài viết</div>
+                      <div className="text-2xl font-black text-slate-900 dark:text-slate-100 mb-2">{loadingPosts ? '…' : posts.length}</div>
+                      <div className="mt-auto text-xs text-slate-500 font-medium">Bài đăng của bạn</div>
+                    </Motion.article>
+
+                    <Motion.article
+                      className="bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-5 border border-slate-200 dark:border-slate-700/60 shadow-sm flex flex-col relative overflow-hidden"
+                      variants={hanamiV.block}
+                      whileHover={reduceMotion ? undefined : { y: -4, scale: 1.02 }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 24 }}
+                    >
+                      <div className="text-emerald-500 bg-emerald-100 dark:bg-emerald-900/40 w-10 h-10 rounded-xl flex items-center justify-center mb-3">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <circle cx="9" cy="8" r="3" stroke="currentColor" strokeWidth="1.6" />
+                          <path d="M4 20v-1a4 4 0 0 1 4-4h2a4 4 0 0 1 4 4v1" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                          <path d="M17 11a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                          <path d="M20 20v-1a3 3 0 0 0-2.1-2.87" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                        </svg>
+                      </div>
+                      <div className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Bạn bè</div>
+                      <div className="text-2xl font-black text-slate-900 dark:text-slate-100 mb-2">{friendsCount === null ? '…' : friendsCount}</div>
+                      <div className="mt-auto text-xs text-slate-500 font-medium">Danh sách kết bạn</div>
+                    </Motion.article>
+                  </div>
+                ) : null}
+
+                {profileTab === 'settings' ? (
+                  <div className="bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-5 sm:p-8 border border-slate-200 dark:border-slate-700/60 shadow-sm">
+                    <h2 className="text-[1.12rem] font-extrabold text-slate-900 dark:text-slate-100 mb-5 pb-3 border-b border-slate-200 dark:border-slate-700/60 m-0">Thông tin đăng nhập</h2>
+                    <dl className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-8 m-0">
+                      <div>
+                        <dt className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">Email</dt>
+                        <dd className="m-0 font-bold text-slate-900 dark:text-slate-100 break-all">{email || '—'}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">Tên đăng nhập</dt>
+                        <dd className="m-0 font-bold text-slate-900 dark:text-slate-100 break-all">{username || '—'}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">Cấp độ JLPT</dt>
+                        <dd className="m-0 font-bold text-slate-900 dark:text-slate-100">{levelCode}</dd>
+                      </div>
+                    </dl>
+                  </div>
+                ) : null}
+              </div>
             </div>
           </Motion.header>
 
           <Motion.section
-            className="yume-account-composer yume-panel yume-account-composer--sakura"
+            className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-3xl border border-slate-200/50 dark:border-slate-700/50 p-5 sm:p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.2)]"
             aria-label="Đăng bài mới"
             variants={hanamiV.block}
           >
-            <form onSubmit={handleCreatePost} className="yume-account-composer__form">
-              <div className="yume-account-composer__row">
-                <div className="yume-account-composer__mini-avatar" aria-hidden>
-                  {avatarPreview ? <img src={avatarPreview} alt="" /> : avatarInitial}
+            <form onSubmit={handleCreatePost} className="flex flex-col gap-4">
+              <div className="flex gap-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800" aria-hidden>
+                  {avatarPreview ? <img src={avatarPreview} alt="" className="w-full h-full object-cover" /> : <span className="w-full h-full flex items-center justify-center font-bold text-slate-400">{avatarInitial}</span>}
                 </div>
                 <textarea
-                  className="yume-account-composer__textarea"
+                  className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl p-3 sm:p-4 text-[0.95rem] text-slate-800 dark:text-slate-100 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-rose-500/50 transition-all resize-none"
                   rows={3}
                   placeholder="Chia sẻ bài học hoặc khoảnh khắc…"
                   value={postContent}
                   onChange={(e) => setPostContent(e.target.value)}
                 />
               </div>
-              <div className="yume-account-composer__toolbar">
-                <div className="yume-account-composer__emojis">
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-2 pl-14 sm:pl-16">
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 -mb-1">
                   {quickEmojis.map((em) => (
-                    <button key={em} type="button" className="yume-account-composer__emoji" onClick={() => handleAddEmoji(em)}>
+                    <button key={em} type="button" className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-lg transition-colors flex-shrink-0" onClick={() => handleAddEmoji(em)}>
                       {em}
                     </button>
                   ))}
                 </div>
-                <div className="yume-account-composer__actions">
-                  <label htmlFor="post-image-input" className="yume-account-composer__link">
-                    Ảnh
+                <div className="flex items-center gap-2 sm:gap-3 ml-auto">
+                  <label htmlFor="post-image-input" className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                    <span className="hidden sm:inline">Ảnh</span>
                   </label>
                   <input
                     id="post-image-input"
                     type="file"
                     accept="image/*"
-                    className="yume-account-profile__visually-hidden"
+                    className="hidden"
                     onChange={handlePostImageChange}
                   />
-                  <button type="submit" className="yume-account-composer__submit" disabled={creatingPost}>
+                  <button type="submit" className={`px-5 py-2 rounded-xl text-sm font-bold text-white transition-all ${creatingPost ? 'bg-slate-400 cursor-not-allowed' : 'bg-rose-600 hover:bg-rose-700 shadow-md hover:shadow-lg hover:-translate-y-0.5'}`} disabled={creatingPost}>
                     {creatingPost ? 'Đang đăng…' : 'Đăng bài'}
                   </button>
                 </div>
               </div>
               {postImagePreview ? (
-                <img src={postImagePreview} alt="" className="yume-account-composer__preview" />
+                <div className="pl-14 sm:pl-16 mt-2">
+                  <div className="relative inline-block">
+                    <img src={postImagePreview} alt="" className="max-w-full h-auto max-h-48 rounded-xl object-cover border border-slate-200 dark:border-slate-700 shadow-sm" />
+                    <button type="button" className="absolute top-2 right-2 w-7 h-7 bg-black/60 hover:bg-black text-white rounded-full flex items-center justify-center backdrop-blur-md transition-colors" onClick={() => setPostImagePreview(null)}>✕</button>
+                  </div>
+                </div>
               ) : null}
             </form>
           </Motion.section>
@@ -955,21 +951,22 @@ export default function AccountPage() {
           ) : null}
 
           <Motion.section
-            className="yume-account-feed yume-account-feed--sakura"
+            className="flex flex-col gap-6"
             aria-labelledby="yume-account-feed-title"
             variants={hanamiV.block}
           >
-            <h2 id="yume-account-feed-title" className="yume-account-feed__title sakura-feed__title">
+            <h2 id="yume-account-feed-title" className="text-xl font-black text-slate-900 dark:text-slate-100 flex items-center gap-2 m-0 px-2">
+              <span className="w-8 h-1 rounded-full bg-rose-500 inline-block"></span>
               Bài đăng
             </h2>
-            <div className="yume-account__posts-scroll yume-account__posts-scroll--feed">
+            <div className="w-full">
               {loadingPosts ? (
-                <p className="yume-account-feed__empty">Đang tải bài đăng…</p>
+                <p className="text-center text-slate-500 py-10 font-bold animate-pulse">Đang tải bài đăng…</p>
               ) : posts.length === 0 ? (
-                <p className="yume-account-feed__empty">Chưa có bài đăng. Hãy viết dòng đầu tiên!</p>
+                <p className="text-center text-slate-500 py-10 font-medium italic">Chưa có bài đăng. Hãy viết dòng đầu tiên!</p>
               ) : (
                 <Motion.ul
-                  className="yume-account-post-list"
+                  className="flex flex-col gap-5 sm:gap-6 p-0 m-0 list-none"
                   variants={hanamiV.feed}
                   initial={reduceMotion ? false : 'hidden'}
                   animate="show"
@@ -988,44 +985,46 @@ export default function AccountPage() {
                     return (
                       <Motion.li
                         key={id}
-                        className="yume-account-post-card yume-account-post-card--sakura"
+                        className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50 p-5 sm:p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.2)]"
                         variants={hanamiV.post}
                         whileHover={reduceMotion ? undefined : { y: -3, scale: 1.008 }}
                         transition={{ type: 'spring', stiffness: 420, damping: 28 }}
                       >
-                        <div className="yume-account-post-card__head">
-                          <div className="yume-account-post-card__author">
-                            <div className="yume-account-post-card__author-av" aria-hidden>
-                              {avatarPreview ? <img src={avatarPreview} alt="" /> : avatarInitial}
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800 ring-2 ring-slate-100 dark:ring-slate-800" aria-hidden>
+                              {avatarPreview ? <img src={avatarPreview} alt="" className="w-full h-full object-cover" /> : <span className="w-full h-full flex items-center justify-center font-bold text-slate-400">{avatarInitial}</span>}
                             </div>
-                            <div>
-                              <div className="yume-account-post-card__author-name">{displayName}</div>
-                              <div className="yume-account-post-card__time sakura-post__meta">
+                            <div className="flex flex-col">
+                              <div className="font-extrabold text-[0.95rem] text-slate-900 dark:text-slate-100 leading-tight">{displayName}</div>
+                              <div className="text-[0.75rem] font-medium text-slate-500 dark:text-slate-400 mt-0.5">
                                 {formatPostVisibilityLine(createdAt)}
                               </div>
                             </div>
                           </div>
-                          <button type="button" className="yume-account-post-card__delete" onClick={() => handleDeletePost(id)}>
-                            Xóa
+                          <button type="button" className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30 transition-colors" title="Xóa bài" onClick={() => handleDeletePost(id)}>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
                           </button>
                         </div>
-                        {content ? <p className="yume-account-post-card__text">{content}</p> : null}
+                        {content ? <p className="text-[0.95rem] text-slate-800 dark:text-slate-200 leading-relaxed mb-4 whitespace-pre-wrap">{content}</p> : null}
                         {imageUrl ? (
-                          <img
-                            className="yume-account-post-card__media yume-account-post-card__media--sakura"
-                            src={buildImageUrl(imageUrl)}
-                            alt=""
-                          />
+                          <div className="rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 mb-4 border border-slate-200 dark:border-slate-700/50">
+                            <img
+                              className="w-full max-h-[500px] object-cover"
+                              src={buildImageUrl(imageUrl)}
+                              alt=""
+                            />
+                          </div>
                         ) : null}
-                        <div className="sakura-post__footer" aria-label="Tương tác bài viết">
-                          <span className="sakura-post__stat" title="Lượt thích">
-                            <span aria-hidden><Heart /></span> {reactTotal}
+                        <div className="flex items-center gap-6 py-3 mb-2 border-y border-slate-100 dark:border-slate-800/80" aria-label="Tương tác bài viết">
+                          <span className="flex items-center gap-1.5 text-sm font-bold text-slate-500 dark:text-slate-400" title="Lượt thích">
+                            <Heart className="w-4 h-4 text-rose-500" /> {reactTotal}
                           </span>
-                          <span className="sakura-post__stat" title="Bình luận">
-                            <span aria-hidden><MessageSquare /></span> {comments.length}
+                          <span className="flex items-center gap-1.5 text-sm font-bold text-slate-500 dark:text-slate-400" title="Bình luận">
+                            <MessageSquare className="w-4 h-4 text-indigo-500" /> {comments.length}
                           </span>
-                          <span className="sakura-post__stat sakura-post__stat--share" aria-hidden title="Chia sẻ">
-                            ↗
+                          <span className="flex items-center gap-1.5 text-sm font-bold text-slate-500 dark:text-slate-400 ml-auto cursor-pointer hover:text-slate-700 dark:hover:text-slate-200 transition-colors" aria-hidden title="Chia sẻ">
+                            ↗ <span className="hidden sm:inline">Chia sẻ</span>
                           </span>
                         </div>
                         <div className="yume-account__post-reactions">

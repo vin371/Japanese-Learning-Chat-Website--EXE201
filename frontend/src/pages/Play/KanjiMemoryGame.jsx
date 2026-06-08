@@ -262,46 +262,46 @@ export default function KanjiMemoryGame() {
     return (
       <PlayGameSetupPro>
         <Motion.div
-          className="kanji-memory kanji-memory--setup play-setup-pro__content"
+          className="relative z-10 w-full max-w-5xl mx-auto px-4 md:px-6"
           variants={parentV}
           initial={reduceMotion ? false : 'hidden'}
           animate="show"
         >
-          <Motion.header variants={childV} className="play-setup-pro__head kanji-memory__setup-head">
-            <Link className="play-setup-pro__back" to={ROUTES.PLAY}>
+          <Motion.header variants={childV} className="mb-4">
+            <Link className="inline-block text-[0.88rem] font-bold text-rose-700 hover:underline mb-2" to={ROUTES.PLAY}>
               ← Trò chơi
             </Link>
-            <h1 className="play-setup-pro__title">
-              <span className="play-setup-pro__title-part">Kanji </span>
-              <span className="play-setup-pro__title-accent">Memory</span>
+            <h1 className="m-0 text-[clamp(1.45rem,4vw,1.85rem)] font-black tracking-tight leading-tight text-slate-900 dark:text-slate-100">
+              <span className="font-extrabold">Kanji </span>
+              <span className="text-rose-700">Memory</span>
             </h1>
           </Motion.header>
 
-          <Motion.div variants={childV} className="play-setup-pro__grid">
-            <section className="play-setup-pro__info-card">
-              <p className="play-setup-pro__lead">
+          <Motion.div variants={childV} className="grid grid-cols-1 md:grid-cols-[1.1fr_0.9fr] gap-4 lg:gap-5 items-start mb-4">
+            <section className="rounded-2xl p-4 lg:p-5 border border-slate-900/5 bg-white/72 dark:bg-slate-900/60 dark:border-slate-400/10 backdrop-blur-md">
+              <p className="m-0 mb-3 text-[0.88rem] leading-relaxed text-slate-600 dark:text-slate-300">
                 Lật thẻ và ghép <strong>Kanji / từ</strong> với <strong>nghĩa tiếng Việt</strong> từ khóa N5 trong app —
                 luyện trí nhớ và nhận diện chữ.
               </p>
-              <ul className="play-setup-pro__features">
-                <li className="play-setup-pro__feature">
-                  <span className="play-setup-pro__feature-ico" aria-hidden>
+              <ul className="m-0 p-0 list-none flex flex-col gap-3">
+                <li className="flex gap-3 items-start">
+                  <span className="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-[1.1rem] bg-rose-200/55 border border-rose-700/10 text-rose-700" aria-hidden>
                     <BookType />
                   </span>
                   <div>
-                    <div className="play-setup-pro__feature-title">Ghép cặp Kanji — nghĩa</div>
-                    <div className="play-setup-pro__feature-desc">
+                    <div className="font-extrabold text-[0.82rem] text-slate-900 dark:text-slate-100 mb-0.5">Ghép cặp Kanji — nghĩa</div>
+                    <div className="text-[0.78rem] leading-relaxed text-slate-500 dark:text-slate-400">
                       Mỗi cặp gồm 2 thẻ; mở đúng hai thẻ cùng cặp để ghi điểm.
                     </div>
                   </div>
                 </li>
-                <li className="play-setup-pro__feature">
-                  <span className="play-setup-pro__feature-ico" aria-hidden>
+                <li className="flex gap-3 items-start">
+                  <span className="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-[1.1rem] bg-rose-200/55 border border-rose-700/10 text-rose-700" aria-hidden>
                     <Star />
                   </span>
                   <div>
-                    <div className="play-setup-pro__feature-title">EXP sau phiên</div>
-                    <div className="play-setup-pro__feature-desc">
+                    <div className="font-extrabold text-[0.82rem] text-slate-900 dark:text-slate-100 mb-0.5">EXP sau phiên</div>
+                    <div className="text-[0.78rem] leading-relaxed text-slate-500 dark:text-slate-400">
                       Hoàn thành vòng để ghi nhận phần thưởng lên server (cần đăng nhập).
                     </div>
                   </div>
@@ -309,17 +309,17 @@ export default function KanjiMemoryGame() {
               </ul>
             </section>
 
-            <section className="play-setup-pro__config-card">
-              <div className="play-setup-pro__config-title">
-                <span className="play-setup-pro__config-gear" aria-hidden>
+            <section className="rounded-2xl p-4 lg:p-5 border border-slate-900/5 bg-white/72 dark:bg-slate-900/60 dark:border-slate-400/10 backdrop-blur-md">
+              <div className="flex items-center gap-2 font-extrabold text-[0.88rem] mb-3 text-slate-900 dark:text-slate-100">
+                <span className="text-[1rem] opacity-85 text-slate-700 dark:text-slate-300" aria-hidden>
                   <Settings />
                 </span>
                 Cấu hình lượt chơi
               </div>
-              <div className="kanji-memory__form play-setup-pro__kanji-form">
-                <label className="kanji-memory__field play-setup-pro__field">
-                  <span>Nguồn từ vựng</span>
-                  <select value={selectedLesson} onChange={(e) => setSelectedLesson(e.target.value)}>
+              <div className="flex flex-col gap-2">
+                <label className="flex flex-col gap-1.5 mb-2.5">
+                  <span className="font-bold text-[0.78rem] text-slate-500 dark:text-slate-400">Nguồn từ vựng</span>
+                  <select className="rounded-full px-3.5 py-2 border border-slate-900/10 bg-white font-semibold text-[0.9rem] text-slate-700 dark:bg-slate-800 dark:border-slate-400/20 dark:text-slate-100" value={selectedLesson} onChange={(e) => setSelectedLesson(e.target.value)}>
                     <option value="">Toàn bộ bài N5 (gom tất cả)</option>
                     {lessonOptions.map((o) => (
                       <option key={o.slug} value={o.slug}>
@@ -328,11 +328,12 @@ export default function KanjiMemoryGame() {
                     ))}
                   </select>
                 </label>
-                <label className="kanji-memory__field play-setup-pro__field">
-                  <span>
+                <label className="flex flex-col gap-1.5">
+                  <span className="font-bold text-[0.78rem] text-slate-500 dark:text-slate-400">
                     Số cặp (tối đa {Math.min(DEFAULT_PAIR_TARGET, Math.max(maxPairsAvailable, MIN_PAIRS))})
                   </span>
                   <select
+                    className="rounded-full px-3.5 py-2 border border-slate-900/10 bg-white font-semibold text-[0.9rem] text-slate-700 dark:bg-slate-800 dark:border-slate-400/20 dark:text-slate-100"
                     value={selectPairValue}
                     onChange={(e) => setPairTarget(Number(e.target.value))}
                     disabled={maxPairsAvailable < MIN_PAIRS}
@@ -351,20 +352,20 @@ export default function KanjiMemoryGame() {
             </section>
           </Motion.div>
 
-          <Motion.p variants={childV} className="kanji-memory__pool play-setup-pro__hint-tight">
+          <Motion.p variants={childV} className="m-0 mb-3 text-[0.88rem] text-slate-600 dark:text-slate-300">
             Đang có <strong>{poolAll.length}</strong> cặp unique trong toàn khóa; bài chọn: <strong>{maxPairsAvailable}</strong>{' '}
             cặp.
           </Motion.p>
 
           {maxPairsAvailable < MIN_PAIRS ? (
-            <Motion.p variants={childV} className="kanji-memory__err">
+            <Motion.p variants={childV} className="m-0 mb-4 text-rose-600 bg-rose-50 border border-rose-200 p-3 rounded-lg text-sm font-medium">
               Chưa đủ cặp Kanji trong bài đã chọn (cần ít nhất {MIN_PAIRS}). Thử &quot;Toàn bộ bài N5&quot;.
             </Motion.p>
           ) : (
             <Motion.div variants={childV}>
               <Motion.button
                 type="button"
-                className="play-setup-pro__start kanji-memory__start"
+                className="flex items-center justify-center gap-1.5 w-full max-w-3xl mx-auto mb-4 px-5 py-3 rounded-2xl font-black text-[1rem] text-white bg-gradient-to-br from-rose-700 to-rose-600 shadow-[0_12px_28px_rgba(190,18,60,0.28)] transition-all hover:brightness-105 border-none cursor-pointer"
                 onClick={startGame}
                 whileHover={reduceMotion ? undefined : { scale: 1.02, y: -1 }}
                 whileTap={reduceMotion ? undefined : { scale: 0.98 }}
@@ -375,9 +376,9 @@ export default function KanjiMemoryGame() {
             </Motion.div>
           )}
 
-          <Motion.section variants={childV} className="play-setup-pro__banner" aria-label="Cảm hứng học tập">
-            <div className="play-setup-pro__banner-media" />
-            <p className="play-setup-pro__banner-cap">Cảm hứng học tập từ thiên nhiên</p>
+          <Motion.section variants={childV} className="relative rounded-2xl overflow-hidden min-h-[clamp(11rem,32vw,20rem)] border border-slate-900/5 bg-rose-50 dark:bg-slate-900" aria-label="Cảm hứng học tập">
+            <div className="absolute inset-0 bg-transparent bg-[url('../../assets/images/zen-bg.jpg')] bg-cover bg-center bg-no-repeat opacity-40 mix-blend-multiply dark:mix-blend-screen dark:opacity-20 pointer-events-none" style={{ backgroundImage: `linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.22) 100%), var(--play-setup-zen-bg, none)` }} />
+            <p className="relative z-10 m-0 px-4 pt-5 pb-4 max-w-sm font-extrabold text-[0.95rem] text-slate-900 dark:text-slate-100 drop-shadow-sm dark:drop-shadow-[0_1px_8px_rgba(0,0,0,0.5)]">Cảm hứng học tập từ thiên nhiên</p>
           </Motion.section>
         </Motion.div>
       </PlayGameSetupPro>
