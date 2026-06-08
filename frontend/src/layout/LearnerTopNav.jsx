@@ -79,20 +79,20 @@ export function LearnerTopNav() {
   }, [menuOpen]);
 
   return (
-    <header className="learner-nav">
-      <div className="learner-nav__inner">
+    <header className="sticky top-0 z-50 w-full bg-white/95 dark:bg-slate-900/95 border-b border-slate-200 dark:border-slate-800 shadow-sm backdrop-blur-md">
+      <div className="w-full max-w-full flex items-center justify-between md:justify-start gap-3 px-3 sm:px-6 py-2.5 box-border flex-wrap md:flex-nowrap">
         <Link
           to={isAdminUser ? ROUTES.ADMIN : isModeratorUser ? ROUTES.MODERATOR : ROUTES.DASHBOARD}
-          className="learner-nav__brand"
+          className="flex items-center gap-2 no-underline text-inherit shrink-0 min-w-0"
           aria-label="YumeGo-ji"
         >
-          <img src={yumeLogo} alt="" className="learner-nav__brand-logo" />
-          <span className="learner-nav__brand-title">YumeGo-ji</span>
+          <img src={yumeLogo} alt="" className="h-10 w-auto block rounded-full bg-white border border-slate-100" />
+          <span className="font-extrabold text-[1.05rem] tracking-tight text-[#b72025] dark:text-purple-200 hidden min-[520px]:block">YumeGo-ji</span>
         </Link>
 
-        <div className="learner-nav__end-cluster">
+        <div className="flex items-center gap-1.5 ml-auto flex-auto min-w-0 max-w-full justify-end max-md:order-3 max-md:w-full max-md:flex-none max-md:ml-0 max-md:flex-wrap max-md:gap-1.5 max-md:gap-y-2">
           <nav
-            className="learner-nav__links"
+            className="flex items-center gap-1 flex-auto min-w-0 justify-end flex-nowrap overflow-x-auto overflow-y-visible overscroll-contain pb-1 md:pb-0"
             aria-label={staffNav ? 'Trang nghiệp vụ và trò chuyện' : 'Điều hướng chính'}
           >
             {staffNav ? (
@@ -100,19 +100,27 @@ export function LearnerTopNav() {
                 <NavLink
                   to={isAdminUser ? ROUTES.ADMIN : ROUTES.MODERATOR}
                   end
-                  className={({ isActive }) => `learner-nav__link ${isActive ? 'learner-nav__link--active' : ''}`}
+                  className={({ isActive }) => `inline-flex items-center gap-1.5 px-2.5 md:px-4 py-2 rounded-xl no-underline font-semibold text-[0.92rem] border transition-all whitespace-nowrap ${
+                    isActive 
+                      ? 'bg-rose-500/15 text-red-900 border-rose-500/30 dark:bg-purple-500/20 dark:text-yellow-100 dark:border-purple-400/40' 
+                      : 'text-slate-700 dark:text-slate-200 border-transparent hover:bg-rose-500/10 hover:text-red-700 dark:hover:text-amber-100 dark:hover:bg-orange-500/20'
+                  }`}
                 >
                   {isAdminUser ? 'Bảng điều khiển' : 'Điều hành'}
                 </NavLink>
                 <NavLink
                   to={ROUTES.CHAT}
-                  className={({ isActive }) => `learner-nav__link ${isActive ? 'learner-nav__link--active' : ''}`}
+                  className={({ isActive }) => `inline-flex items-center gap-1.5 px-2.5 md:px-4 py-2 rounded-xl no-underline font-semibold text-[0.92rem] border transition-all whitespace-nowrap ${
+                    isActive 
+                      ? 'bg-rose-500/15 text-red-900 border-rose-500/30 dark:bg-purple-500/20 dark:text-yellow-100 dark:border-purple-400/40' 
+                      : 'text-slate-700 dark:text-slate-200 border-transparent hover:bg-rose-500/10 hover:text-red-700 dark:hover:text-amber-100 dark:hover:bg-orange-500/20'
+                  }`}
                   aria-label={navChatUnread > 0 ? `Trò chuyện, ${navChatUnread} tin chưa đọc` : undefined}
                 >
-                  <span className="learner-nav__icon-badge-wrap">
+                  <span className="relative inline-flex items-center justify-center shrink-0">
                     <MessageCircleMore size={20} />
                     {navChatUnread > 0 ? (
-                      <span className="learner-nav__nav-badge" title={`${navChatUnread} tin chưa đọc ở phòng khác`}>
+                      <span className="absolute -top-1.5 -right-2.5 min-w-[18px] h-4.5 px-1 box-border rounded-full bg-red-500 text-white text-[0.62rem] font-extrabold flex items-center justify-center pointer-events-none ring-2 ring-white dark:ring-slate-900" title={`${navChatUnread} tin chưa đọc ở phòng khác`}>
                         {navChatUnread > 99 ? '99+' : navChatUnread}
                       </span>
                     ) : null}
@@ -122,23 +130,35 @@ export function LearnerTopNav() {
               </>
             ) : (
               <>
-                <NavLink to={ROUTES.LEARN} className={({ isActive }) => `learner-nav__link ${isActive ? 'learner-nav__link--active' : ''}`}>
+                <NavLink to={ROUTES.LEARN} className={({ isActive }) => `inline-flex items-center gap-1.5 px-2.5 md:px-4 py-2 rounded-xl no-underline font-semibold text-[0.92rem] border transition-all whitespace-nowrap ${
+                  isActive 
+                    ? 'bg-rose-500/15 text-red-900 border-rose-500/30 dark:bg-purple-500/20 dark:text-yellow-100 dark:border-purple-400/40' 
+                    : 'text-slate-700 dark:text-slate-200 border-transparent hover:bg-rose-500/10 hover:text-red-700 dark:hover:text-amber-100 dark:hover:bg-orange-500/20'
+                }`}>
                   <BookOpenText size={20} />
                   Học tập
                 </NavLink>
-                <NavLink to={ROUTES.PLAY} className={({ isActive }) => `learner-nav__link ${isActive ? 'learner-nav__link--active' : ''}`}>
+                <NavLink to={ROUTES.PLAY} className={({ isActive }) => `inline-flex items-center gap-1.5 px-2.5 md:px-4 py-2 rounded-xl no-underline font-semibold text-[0.92rem] border transition-all whitespace-nowrap ${
+                  isActive 
+                    ? 'bg-rose-500/15 text-red-900 border-rose-500/30 dark:bg-purple-500/20 dark:text-yellow-100 dark:border-purple-400/40' 
+                    : 'text-slate-700 dark:text-slate-200 border-transparent hover:bg-rose-500/10 hover:text-red-700 dark:hover:text-amber-100 dark:hover:bg-orange-500/20'
+                }`}>
                   <Gamepad2 size={20} />
                   Trò chơi
                 </NavLink>
                 <NavLink
                   to={ROUTES.CHAT}
-                  className={({ isActive }) => `learner-nav__link ${isActive ? 'learner-nav__link--active' : ''}`}
+                  className={({ isActive }) => `inline-flex items-center gap-1.5 px-2.5 md:px-4 py-2 rounded-xl no-underline font-semibold text-[0.92rem] border transition-all whitespace-nowrap ${
+                    isActive 
+                      ? 'bg-rose-500/15 text-red-900 border-rose-500/30 dark:bg-purple-500/20 dark:text-yellow-100 dark:border-purple-400/40' 
+                      : 'text-slate-700 dark:text-slate-200 border-transparent hover:bg-rose-500/10 hover:text-red-700 dark:hover:text-amber-100 dark:hover:bg-orange-500/20'
+                  }`}
                   aria-label={navChatUnread > 0 ? `Trò chuyện, ${navChatUnread} tin chưa đọc` : undefined}
                 >
-                  <span className="learner-nav__icon-badge-wrap">
+                  <span className="relative inline-flex items-center justify-center shrink-0">
                     <MessageCircleMore size={20} />
                     {navChatUnread > 0 ? (
-                      <span className="learner-nav__nav-badge" title={`${navChatUnread} tin chưa đọc ở phòng khác`}>
+                      <span className="absolute -top-1.5 -right-2.5 min-w-[18px] h-4.5 px-1 box-border rounded-full bg-red-500 text-white text-[0.62rem] font-extrabold flex items-center justify-center pointer-events-none ring-2 ring-white dark:ring-slate-900" title={`${navChatUnread} tin chưa đọc ở phòng khác`}>
                         {navChatUnread > 99 ? '99+' : navChatUnread}
                       </span>
                     ) : null}
@@ -147,7 +167,11 @@ export function LearnerTopNav() {
                 </NavLink>
                 <NavLink
                   to={ROUTES.UPGRADE}
-                  className={({ isActive }) => `learner-nav__link ${isActive ? 'learner-nav__link--active' : ''}`}
+                  className={({ isActive }) => `inline-flex items-center gap-1.5 px-2.5 md:px-4 py-2 rounded-xl no-underline font-semibold text-[0.92rem] border transition-all whitespace-nowrap ${
+                    isActive 
+                      ? 'bg-rose-500/15 text-red-900 border-rose-500/30 dark:bg-purple-500/20 dark:text-yellow-100 dark:border-purple-400/40' 
+                      : 'text-slate-700 dark:text-slate-200 border-transparent hover:bg-rose-500/10 hover:text-red-700 dark:hover:text-amber-100 dark:hover:bg-orange-500/20'
+                  }`}
                 >
                   <ShoppingCart size={20} />
                   Nâng cấp
@@ -156,14 +180,14 @@ export function LearnerTopNav() {
             )}
           </nav>
 
-          <div className="learner-nav__right">
+          <div className="flex items-center gap-1.5 shrink-0 min-w-0">
             <AnimatedThemeToggler
-              className="learner-nav__theme"
-              iconClassName="learner-nav__theme-icon"
+              className="w-[38px] h-[38px] shrink-0 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 cursor-pointer inline-flex items-center justify-center relative overflow-hidden transition-colors hover:border-red-500/35 dark:hover:border-purple-400/40"
+              iconClassName="absolute inset-0 m-auto w-5 h-5 transition-transform duration-500"
               aria-label={theme === 'dark' ? 'Chế độ sáng' : 'Chế độ tối'}
             />
 
-            <div className="learner-nav__user-wrap" ref={wrapRef}>
+            <div className="relative min-w-0 shrink-0" ref={wrapRef}>
               <UserProfileDropdown
                 user={user}
                 displayName={displayName}

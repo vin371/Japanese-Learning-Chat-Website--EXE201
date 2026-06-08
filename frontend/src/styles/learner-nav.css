@@ -282,14 +282,19 @@ html[data-theme='dark'] .learner-nav__theme-icon--moon {
   width: 36px;
   height: 36px;
   border-radius: 999px;
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
-  color: #fff;
+  background: #f1f5f9;
+  color: #64748b;
   font-weight: 800;
   font-size: 0.8rem;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+}
+
+html[data-theme='dark'] .learner-nav__avatar {
+  background: #1e293b;
+  color: #94a3b8;
 }
 
 .learner-nav__avatar--img {
@@ -450,11 +455,16 @@ html[data-theme='dark'] .learner-nav__user-role {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #60a5fa, #c084fc);
-  /* Avatar gradient */
-  color: white;
+  background: #f1f5f9;
+  color: #64748b;
   font-weight: bold;
   font-size: 14px;
+}
+
+html[data-theme='dark'] .up-trigger-avatar,
+html[data-theme='dark'] .up-header-avatar {
+  background: #1e293b;
+  color: #94a3b8;
 }
 
 .up-avatar-img {
