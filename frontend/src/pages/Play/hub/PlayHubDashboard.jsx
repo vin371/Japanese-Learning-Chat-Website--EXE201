@@ -158,12 +158,12 @@ export function PlayHubDashboard({
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden" aria-hidden>
         <SakuraRainLayer petalCount={28} buoyant />
       </div>
-      <div 
-        className="fixed inset-0 z-0 backdrop-blur-md phd-glass-layer-tw" 
+      <div
+        className="fixed inset-0 z-0 backdrop-blur-md phd-glass-layer-tw"
         style={{
           background: 'radial-gradient(900px 420px at 12% 8%, rgba(255, 228, 235, 0.55), transparent 62%), radial-gradient(720px 380px at 88% 18%, rgba(224, 231, 255, 0.45), transparent 58%), linear-gradient(165deg, rgba(255, 255, 255, 0.72) 0%, rgba(248, 250, 252, 0.55) 45%, rgba(255, 241, 246, 0.5) 100%)'
-        }} 
-        aria-hidden 
+        }}
+        aria-hidden
       />
       <style>{`
         html[data-theme='dark'] .phd-glass-layer-tw {
@@ -189,11 +189,11 @@ export function PlayHubDashboard({
           }}
           transition={{ duration: 5.5, repeat: Infinity, ease: 'easeInOut' }}
         >
-          <p className="inline-flex mb-2 px-2.5 py-1 rounded-full text-[0.72rem] font-extrabold tracking-wide text-rose-700 bg-rose-200/55 border border-rose-400/35">CHÀO MỪNG TRỞ LẠI!</p>
+          <p className="inline-flex mb-2 px-2.5 py-1 rounded-full text-[0.72rem] font-extrabold tracking-wide text-rose-700 bg-rose-200/55 border border-rose-400/35 dark:text-rose-400 dark:bg-rose-950/40 dark:border-rose-900/50">CHÀO MỪNG TRỞ LẠI!</p>
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <h1 className="m-0 mb-2 text-[clamp(1.35rem,2.8vw,1.85rem)] font-extrabold text-slate-900 dark:text-slate-100">
-                Xin chào, <strong className="text-rose-700">{displayName}</strong>!
+                Xin chào, <strong className="text-rose-700 dark:text-rose-400">{displayName}</strong>!
               </h1>
               <p className="m-0 max-w-xl leading-relaxed text-slate-500 text-[0.95rem]">
                 Hôm nay bạn đã sẵn sàng chinh phục tiếng Nhật chưa? Daily Challenge đang chờ bạn!
@@ -268,7 +268,7 @@ export function PlayHubDashboard({
                     <p className="m-0 mb-1.5 text-[0.72rem] uppercase tracking-wide text-slate-500 dark:text-slate-400">{g.skillType || 'Luyện tập'}</p>
                     <p className="m-0 mb-3 text-[0.82rem] text-slate-600 dark:text-slate-300 flex-1 leading-relaxed">{g.description || '—'}</p>
                     <Link
-                      className="block text-center p-2 rounded-lg font-extrabold text-[0.78rem] tracking-wide text-white bg-slate-900 hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 transition-colors"
+                      className="block text-center py-2 rounded-xl border border-[#e9b7cf] bg-[#FBDAEB] text-[#d42f7a] font-extrabold text-[0.78rem] tracking-[0.15em] hover:bg-[#f3e4eb] transition-colors dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-400 dark:hover:bg-rose-900/60"
                       to={g.isPvp ? `${ROUTES.PLAY}/pvp` : `${ROUTES.PLAY}/${g.slug}`}
                     >
                       PLAY NOW
@@ -394,6 +394,9 @@ export function PlayHubDashboard({
                         className={`flex items-center gap-3 px-3 py-2 rounded-xl text-[0.88rem] ${me ? 'bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-500/20 shadow-sm' : 'bg-slate-50 dark:bg-slate-900/50'}`}
                       >
                         <span className="font-extrabold text-slate-400 dark:text-slate-500 w-6">#{label}</span>
+                        <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center font-bold text-[0.72rem] text-slate-600 dark:text-slate-400 overflow-hidden dark:border dark:border-slate-700">
+                          {r.avatarUrl ? <img src={r.avatarUrl} alt="" className="w-full h-full object-cover" /> : name.slice(0, 2).toUpperCase()}
+                        </div>
                         <span className="flex-1 font-bold text-slate-700 dark:text-slate-200 truncate">
                           {name}
                           {me ? <span className="font-semibold text-indigo-600 dark:text-indigo-400"> (bạn)</span> : null}
