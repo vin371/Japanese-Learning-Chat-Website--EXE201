@@ -10,6 +10,9 @@ import { getJlptLevelCodeFromUser } from '../../utils/learnLevelCode';
 import { LearnProgressRing } from './components/LearnProgressRing';
 import { LearnImageCarousel } from './components/LearnImageCarousel';
 import LearnAlphabet from './components/LearnAlphabet';
+import LearnVocab from './components/LearnVocab';
+import LearnGrammar from './components/LearnGrammar';
+import LearnKanji from './components/LearnKanji';
 
 /** Ảnh minh họa banner «Kiểm tra trình độ» — luân phiên (crossfade) */
 const LEARN_PROMO_ART_CAROUSEL_URLS = [
@@ -281,6 +284,45 @@ export default function LearnIndex() {
         animate="show"
       >
         <LearnAlphabet />
+      </Motion.div>
+    );
+  }
+
+  if (filterKey === 'vocab') {
+    return (
+      <Motion.div
+        className="learn-dashboard"
+        variants={learnRoot}
+        initial={reduceMotion ? false : 'hidden'}
+        animate="show"
+      >
+        <LearnVocab />
+      </Motion.div>
+    );
+  }
+
+  if (filterKey === 'grammar') {
+    return (
+      <Motion.div
+        className="learn-dashboard"
+        variants={learnRoot}
+        initial={reduceMotion ? false : 'hidden'}
+        animate="show"
+      >
+        <LearnGrammar />
+      </Motion.div>
+    );
+  }
+
+  if (filterKey === 'kanji') {
+    return (
+      <Motion.div
+        className="learn-dashboard"
+        variants={learnRoot}
+        initial={reduceMotion ? false : 'hidden'}
+        animate="show"
+      >
+        <LearnKanji />
       </Motion.div>
     );
   }
