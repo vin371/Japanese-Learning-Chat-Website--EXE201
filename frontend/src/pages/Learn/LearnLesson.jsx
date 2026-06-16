@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { motion } from 'framer-motion';
 import { Link, Navigate, useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import SpeakJaButton from '../../components/learn/SpeakJaButton';
 import ScrollReveal from '../../components/learn/ScrollReveal';
@@ -19,7 +20,18 @@ import {
   tryBuildParagraphDeckFromHtml,
 } from '../../utils/lessonParagraphDeck';
 import { augmentVocabNumbers1To10 } from '../../utils/lessonVocabFallback';
+import { learnPageItem } from '../../utils/learnMotion';
+import {
+  canMarkLessonProgress,
+  learnRouteWithJlpt,
+} from '../../utils/learnLevelAccess';
+import { LearnLevelLocked } from './components/LearnLevelLocked';
 import { writeN5DoneSlug } from '../../utils/learnProgressStorage';
+import VocabFlashcardPlayer from './components/VocabFlashcardPlayer';
+import GrammarFlashcardPlayer from './components/GrammarFlashcardPlayer';
+import ApiKanjiTable from './components/ApiKanjiTableInline';
+
+const Motion = motion;
 
 function phraseMoodFromLabel(labelVi) {
   const s = String(labelVi || '').toLowerCase();
@@ -330,14 +342,69 @@ function renderBlock(block, index) {
 
 const JP_IN_STRING = /[\u3000-\u303f\u3040-\u309f\u30a0-\u30ff\u4e00-\u9faf\uff66-\uff9f]/;
 
+function ApiVocabTable({ items }) {
+  return (
+    <div className="learn-vocab-table-wrap">
+      <table className="learn-vocab-table">
+        <thead>
+          <tr>
+            <th className="learn-vocab-table__col-no">#</th>
+            <th className="learn-vocab-table__col-word">Từ / Kanji</th>
+            <th className="learn-vocab-table__col-read">Cách đọc</th>
+            <th className="learn-vocab-table__col-mean">Nghĩa</th>
+            <th className="learn-vocab-table__col-audio">
+              <span className="sr-only">Phát âm</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((v, idx) => {
+            const w = v.wordJp ?? v.WordJp ?? '';
+            const reading = String(v.reading ?? v.Reading ?? '').trim();
+            const meaning = String(v.meaningVi ?? v.MeaningVi ?? '').trim();
+            const speakText = (reading || w).trim();
+            return (
+              <tr key={v.id ?? v.Id ?? `${w}-${idx}`} className="learn-vocab-table__row">
+                <td className="learn-vocab-table__no">{idx + 1}</td>
+                <td className="learn-vocab-table__word" lang="ja">
+                  {w}
+                </td>
+                <td className="learn-vocab-table__reading" lang="ja">
+                  {reading}
+                </td>
+                <td className="learn-vocab-table__mean">{meaning}</td>
+                <td className="learn-vocab-table__audio">
+                  {speakText ? (
+                    <SpeakJaButton text={speakText} label={`Nghe: ${speakText}`} />
+                  ) : null}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 /** Bài lưu trong DB (moderator import / create-from-draft), đã publish. */
 function ApiLessonView({ data }) {
   const { isAuthenticated } = useAuth();
-  const { reloadSidebarProgress } = useOutletContext() || {};
+  const {
+    reloadSidebarProgress,
+    lessonNavList,
+    activeLevelCode,
+    activeLevelId,
+    activeAccessMode,
+    userLevelCode,
+    levelProgressMap,
+    staffBypass,
+  } = useOutletContext() || {};
   const htmlRef = useRef(null);
   const lessonHtmlRef = useRef(null);
   const L = data.lesson ?? data.Lesson;
   const lessonId = L?.id ?? L?.Id;
+  const lessonLevelId = Number(L?.levelId ?? L?.LevelId ?? 0);
   const title = L?.title ?? L?.Title ?? '';
   const slug = L?.slug ?? L?.Slug ?? '';
   const categoryName = L?.categoryName ?? L?.CategoryName ?? 'Bài học';
@@ -399,6 +466,16 @@ function ApiLessonView({ data }) {
     (useHiraganaDeck || vocab.length === 0) &&
     !contentParts.hideSegmentDeckDuplicate;
   const grammar = data.grammar ?? data.Grammar ?? [];
+  const kanjiRaw = data.kanji ?? data.Kanji ?? [];
+  const kanjiCards = kanjiRaw.map((k) => ({
+    id: k.id ?? k.Id,
+    wordJp: k.character ?? k.Character ?? k.kanjiChar ?? '',
+    reading: [k.readingsKun ?? k.ReadingsKun, k.readingsOn ?? k.ReadingsOn].filter(Boolean).join(' · '),
+    meaningVi: k.meaningVi ?? k.MeaningVi ?? '',
+  }));
+  const hasFlashdeck = vocab.length > 0 || grammar.length > 0 || kanjiCards.length > 0;
+  const hasStructuredContent = vocab.length > 0 || grammar.length > 0 || kanjiRaw.length > 0;
+  const showIntroHtml = !hasStructuredContent && Boolean(mainLessonHtml);
   const quiz = data.quiz ?? data.Quiz ?? [];
   const [saving, setSaving] = useState(false);
   const [markedDone, setMarkedDone] = useState(false);
@@ -427,7 +504,7 @@ function ApiLessonView({ data }) {
   /** Fade-in + slide-up cho từng khối HTML chính (nội dung inject). */
   useEffect(() => {
     const root = lessonHtmlRef.current;
-    if (!root || !mainLessonHtml) return undefined;
+    if (!root || !showIntroHtml || !mainLessonHtml) return undefined;
 
     const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
     const sel =
@@ -464,14 +541,33 @@ function ApiLessonView({ data }) {
         el.classList.remove('learn-scroll-reveal', 'learn-scroll-reveal--visible');
       });
     };
-  }, [mainLessonHtml]);
+  }, [showIntroHtml, mainLessonHtml]);
 
   if (!L) {
-    return <Navigate to={ROUTES.LEARN} replace />;
+    return <Navigate to={learnRouteWithJlpt(ROUTES.LEARN, activeLevelCode || userLevelCode)} replace />;
   }
 
+  if (!staffBypass && activeAccessMode === 'locked') {
+    return (
+      <LearnLevelLocked
+        targetCode={activeLevelCode}
+        userCode={userLevelCode}
+        message={`Hoàn thành toàn bộ bài học ${userLevelCode} để mở khóa cấp tiếp theo.`}
+      />
+    );
+  }
+
+  if (activeLevelId && lessonLevelId && lessonLevelId !== Number(activeLevelId)) {
+    return <Navigate to={learnRouteWithJlpt(ROUTES.LEARN, activeLevelCode || userLevelCode)} replace />;
+  }
+
+  const canMarkProgress =
+    staffBypass ||
+    (isAuthenticated && canMarkLessonProgress(activeLevelCode, userLevelCode, levelProgressMap || {}));
+  const isReviewMode = activeAccessMode === 'review';
+
   const markComplete = async () => {
-    if (!lessonId || !isAuthenticated) return;
+    if (!lessonId || !isAuthenticated || !canMarkProgress) return;
     setSaving(true);
     try {
       await http.post(`/api/lessons/${lessonId}/progress`, {
@@ -490,20 +586,45 @@ function ApiLessonView({ data }) {
   const scrollReadingLayout =
     Boolean(mainLessonHtml) && !useParagraphDeck && !showHtmlSegmentDeck;
 
+  const navIdx = lessonNavList?.findIndex((l) => l.slug === slug) ?? -1;
+  const prevLesson = navIdx > 0 ? lessonNavList[navIdx - 1] : null;
+  const nextLesson =
+    navIdx >= 0 && lessonNavList && navIdx < lessonNavList.length - 1
+      ? lessonNavList[navIdx + 1]
+      : null;
+
+  const isGrammarOnly = grammar.length > 0 && vocab.length === 0 && kanjiCards.length === 0;
+  const isVocabOnly = vocab.length > 0 && grammar.length === 0 && kanjiCards.length === 0;
+  const isKanjiOnly = kanjiCards.length > 0 && vocab.length === 0 && grammar.length === 0;
+
   return (
     <article
-      className={`learn-lesson learn-lesson--from-api${scrollReadingLayout ? ' learn-lesson--scroll-reading' : ''}`}
+      className={`learn-lesson learn-lesson--from-api${isGrammarOnly ? ' learn-lesson--grammar-only' : ''}${isVocabOnly ? ' learn-lesson--vocab-only' : ''}${isKanjiOnly ? ' learn-lesson--kanji-only' : ''}${scrollReadingLayout && showIntroHtml ? ' learn-lesson--scroll-reading' : ''}`}
     >
-      <header className="learn-lesson__header learn-lesson__header--lesson">
-        <span className="learn-lesson__badge">{categoryName}</span>
+      <Motion.header
+        className="learn-lesson__header learn-lesson__header--lesson learn-lesson__header--api"
+        variants={learnPageItem}
+        initial="hidden"
+        animate="show"
+      >
+        <div className="learn-lesson__header-row">
+          <span className="learn-lesson__badge">{categoryName}</span>
+          {vocab.length > 0 ? (
+            <span className="learn-lesson__chip">{vocab.length} từ vựng</span>
+          ) : null}
+          {grammar.length > 0 ? (
+            <span className="learn-lesson__chip">{grammar.length} mẫu ngữ pháp</span>
+          ) : null}
+          {kanjiRaw.length > 0 ? (
+            <span className="learn-lesson__chip">{kanjiRaw.length} hán tự</span>
+          ) : null}
+        </div>
         <h2 className="learn-lesson__title">{title}</h2>
-      </header>
-      {japaneseSpeechSupported() ? (
-        <div className="learn-lesson__audio-bar">
+      </Motion.header>
+      {japaneseSpeechSupported() && !hasFlashdeck ? (
+        <div className="learn-lesson__audio-bar learn-lesson__audio-bar--compact">
           <p className="learn-lesson__audio-bar__text">
-            {scrollReadingLayout
-              ? '«Nghe nội dung» đọc văn bản trong bài (tiếng Nhật — giọng máy, tùy trình duyệt).'
-              : 'Nút loa trên từng thẻ: nghe từ đó. «Nghe nội dung» đọc cả phần bài + danh sách ôn (giọng máy, tùy trình duyệt).'}
+            Nút loa trên từng mục. «Nghe tất cả» đọc nội dung tiếng Nhật trong bài.
           </p>
           <div className="learn-lesson__audio-bar__actions">
             <button
@@ -511,69 +632,34 @@ function ApiLessonView({ data }) {
               className="learn-lesson__audio-bar__btn learn-lesson__audio-bar__btn--play"
               onClick={() => speakJapaneseFromElement(htmlRef.current)}
             >
-              Nghe nội dung (tiếng Nhật)
+              Nghe tất cả
             </button>
             <button type="button" className="learn-lesson__audio-bar__btn" onClick={() => stopJapaneseSpeech()}>
               Dừng
             </button>
           </div>
         </div>
-      ) : (
+      ) : !japaneseSpeechSupported() && !hasFlashdeck ? (
         <p className="learn-lesson__audio-hint">
           Trình duyệt không hỗ trợ đọc tiếng Nhật (Web Speech). Thử Chrome hoặc Edge để có nút loa.
         </p>
-      )}
-      <div ref={htmlRef} className="learn-lesson__readable-stack">
+      ) : null}
+      <Motion.div
+        ref={htmlRef}
+        className="learn-lesson__readable-stack"
+        variants={learnPageItem}
+        initial="hidden"
+        animate="show"
+      >
         {vocab.length > 0 ? (
-          <section className="learn-block learn-block--api-extra learn-block--vocab-structured">
-            <h3 className="learn-block__h3">Từ vựng</h3>
-            <p className="learn-lesson__segments-lead learn-lesson__segments-lead--compact">
-              Dữ liệu từ API (từ — phiên âm — nghĩa). Nên bổ sung khi import bài để học viên thấy đúng cấu trúc thẻ,
-              thay vì chỉ dựa vào HTML nhiều thẻ p.
-            </p>
-            <div className="learn-paragraph-deck-grid learn-paragraph-deck-grid--vocab-api" role="list">
-              {vocab.map((v) => {
-                const w = v.wordJp ?? v.WordJp ?? '';
-                const reading = String(v.reading ?? v.Reading ?? '').trim();
-                const meaning = String(v.meaningVi ?? v.MeaningVi ?? '').trim();
-                const speakText = (reading || w).trim();
-                return (
-                  <ScrollReveal
-                    key={v.id ?? v.Id ?? w}
-                    className="learn-vocab-card learn-vocab-card--paragraph-deck"
-                    role="listitem"
-                  >
-                    <div className="learn-vocab-card__paragraph-inner">
-                      <div className="learn-vocab-card__text-stack">
-                        {w ? (
-                          <span className="learn-vocab-card__word learn-vocab-card__word--paragraph" lang="ja">
-                            {w}
-                          </span>
-                        ) : null}
-                        {reading ? (
-                          <span className="learn-vocab-card__reading learn-vocab-card__reading--paragraph" lang="ja">
-                            {reading}
-                          </span>
-                        ) : null}
-                        {meaning ? (
-                          <p className="learn-vocab-card__mean learn-vocab-card__mean--paragraph">{meaning}</p>
-                        ) : null}
-                      </div>
-                      {speakText ? (
-                        <SpeakJaButton
-                          text={speakText}
-                          label={`Nghe: ${speakText}`}
-                          className="learn-speak-btn--paragraph"
-                        />
-                      ) : null}
-                    </div>
-                  </ScrollReveal>
-                );
-              })}
-            </div>
-          </section>
+          <VocabFlashcardPlayer
+            items={vocab}
+            lessonTitle={title}
+            lessonSlug={slug}
+            lessonId={lessonId}
+          />
         ) : null}
-        {mainLessonHtml ? (
+        {showIntroHtml ? (
           <div
             ref={lessonHtmlRef}
             className="learn-lesson__body learn-lesson__html"
@@ -681,28 +767,21 @@ function ApiLessonView({ data }) {
             </div>
           </section>
         ) : null}
-      </div>
-      {grammar.length > 0 ? (
-        <section className="learn-block learn-block--api-extra">
-          <h3 className="learn-block__h3">Ngữ pháp</h3>
-          <ul className="learn-api-grammar">
-            {grammar.map((g) => {
-              const pat = g.pattern ?? g.Pattern ?? '';
-              return (
-                <ScrollReveal as="li" key={g.id ?? g.Id ?? pat}>
-                  <span className="learn-api-grammar__row">
-                    <strong lang="ja">{pat}</strong>
-                    {pat ? <SpeakJaButton text={pat} label={`Nghe: ${pat}`} /> : null}
-                    {g.meaningVi ?? g.MeaningVi ? (
-                      <span className="learn-api-grammar__mean"> — {g.meaningVi ?? g.MeaningVi}</span>
-                    ) : null}
-                  </span>
-                </ScrollReveal>
-              );
-            })}
-          </ul>
-        </section>
-      ) : null}
+        {grammar.length > 0 ? (
+          <GrammarFlashcardPlayer items={grammar} />
+        ) : null}
+        {kanjiCards.length > 0 ? (
+          <VocabFlashcardPlayer
+            items={kanjiCards}
+            lessonTitle={title}
+            lessonSlug={slug}
+            lessonId={lessonId}
+            starStoragePrefix="kanji"
+            TableComponent={ApiKanjiTable}
+            cardKind="kanji"
+          />
+        ) : null}
+      </Motion.div>
       {quiz.length > 0 ? (
         <section className="learn-block learn-block--api-extra">
           <h3 className="learn-block__h3">Ôn tập</h3>
@@ -741,7 +820,12 @@ function ApiLessonView({ data }) {
         </section>
       ) : null}
       <footer className="learn-lesson__footer">
-        {isAuthenticated && lessonId ? (
+        {isReviewMode ? (
+          <p className="learn-lesson__review-hint" role="status">
+            Chế độ ôn tập — tiến độ chỉ cập nhật khi học ở cấp <strong>{userLevelCode}</strong>.
+          </p>
+        ) : null}
+        {isAuthenticated && lessonId && canMarkProgress ? (
           <div className="learn-lesson__progress-actions">
             {markedDone ? (
               <p className="learn-lesson__done-msg">Đã hoàn thành — có thể ôn tập từ lộ trình.</p>
@@ -757,7 +841,29 @@ function ApiLessonView({ data }) {
             )}
           </div>
         ) : null}
-        <Link className="learn-lesson__all" to={ROUTES.LEARN}>
+        {prevLesson || nextLesson ? (
+          <nav className="learn-lesson__pager" aria-label="Bài trước / sau">
+            {prevLesson ? (
+              <Link
+                className="learn-lesson__pager-link"
+                to={learnRouteWithJlpt(`${ROUTES.LEARN}/${prevLesson.slug}`, activeLevelCode)}
+              >
+                ← {prevLesson.navTitle}
+              </Link>
+            ) : (
+              <span />
+            )}
+            {nextLesson ? (
+              <Link
+                className="learn-lesson__pager-link learn-lesson__pager-link--next"
+                to={learnRouteWithJlpt(`${ROUTES.LEARN}/${nextLesson.slug}`, activeLevelCode)}
+              >
+                {nextLesson.navTitle} →
+              </Link>
+            ) : null}
+          </nav>
+        ) : null}
+        <Link className="learn-lesson__all" to={learnRouteWithJlpt(ROUTES.LEARN, activeLevelCode)}>
           Về lộ trình học
         </Link>
       </footer>
@@ -768,6 +874,12 @@ function ApiLessonView({ data }) {
 export default function LearnLesson() {
   const navigate = useNavigate();
   const { slug } = useParams();
+  const {
+    activeLevelCode,
+    activeAccessMode,
+    userLevelCode,
+    staffBypass,
+  } = useOutletContext() || {};
   const [remote, setRemote] = useState(undefined);
   const [premiumBlock, setPremiumBlock] = useState(null);
 
@@ -804,7 +916,7 @@ export default function LearnLesson() {
   }, [slug]);
 
   if (!slug) {
-    return <Navigate to={ROUTES.LEARN} replace />;
+    return <Navigate to={learnRouteWithJlpt(ROUTES.LEARN, activeLevelCode || userLevelCode || 'N5')} replace />;
   }
 
   if (premiumBlock) {
@@ -818,7 +930,7 @@ export default function LearnLesson() {
         <p className="learn-lesson__upgrade-hint">
           <Link to={ROUTES.UPGRADE}>Nâng cấp Premium</Link>
           {' · '}
-          <Link to={ROUTES.LEARN}>Về lộ trình học</Link>
+          <Link to={learnRouteWithJlpt(ROUTES.LEARN, activeLevelCode || userLevelCode)}>Về lộ trình học</Link>
         </p>
       </article>
     );
@@ -832,12 +944,22 @@ export default function LearnLesson() {
     );
   }
 
+  if (!staffBypass && activeAccessMode === 'locked') {
+    return (
+      <LearnLevelLocked
+        targetCode={activeLevelCode}
+        userCode={userLevelCode}
+        message={`Hoàn thành toàn bộ bài học ${userLevelCode} để mở khóa cấp tiếp theo.`}
+      />
+    );
+  }
+
   if (remote && typeof remote === 'object') {
     return <ApiLessonView data={remote} />;
   }
 
   if (!staticLesson) {
-    return <Navigate to={ROUTES.LEARN} replace />;
+    return <Navigate to={learnRouteWithJlpt(ROUTES.LEARN, activeLevelCode || userLevelCode || 'N5')} replace />;
   }
 
   const lesson = staticLesson;
@@ -863,7 +985,7 @@ export default function LearnLesson() {
       <footer className="learn-lesson__footer">
         <div className="learn-lesson__pager">
           {prev ? (
-            <Link className="learn-lesson__pager-link" to={`${ROUTES.LEARN}/${prev.slug}`}>
+            <Link className="learn-lesson__pager-link" to={learnRouteWithJlpt(`${ROUTES.LEARN}/${prev.slug}`, activeLevelCode || 'N5')}>
               ← {prev.navTitle}
             </Link>
           ) : (
@@ -872,7 +994,7 @@ export default function LearnLesson() {
           {next ? (
             <Link
               className="learn-lesson__pager-link learn-lesson__pager-link--next"
-              to={`${ROUTES.LEARN}/${next.slug}`}
+              to={learnRouteWithJlpt(`${ROUTES.LEARN}/${next.slug}`, activeLevelCode || 'N5')}
             >
               {next.navTitle} →
             </Link>
@@ -884,13 +1006,13 @@ export default function LearnLesson() {
             className="learn-lesson__complete-btn learn-lesson__complete-btn--outline"
             onClick={() => {
               writeN5DoneSlug(lesson.slug);
-              navigate(ROUTES.LEARN);
+              navigate(learnRouteWithJlpt(ROUTES.LEARN, activeLevelCode || 'N5'));
             }}
           >
             Đánh dấu xong (N5) — về lộ trình
           </button>
         </div>
-        <Link className="learn-lesson__all" to={ROUTES.LEARN}>
+        <Link className="learn-lesson__all" to={learnRouteWithJlpt(ROUTES.LEARN, activeLevelCode || 'N5')}>
           Về lộ trình học
         </Link>
       </footer>

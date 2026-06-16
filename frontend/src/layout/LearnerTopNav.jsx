@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { NavLink, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { ENV } from '../api/client';
-import { PremiumBadge } from '../components/profile/PremiumBadge';
 import { userIsPremium } from '../utils/userPremium';
 import { useChatUnreadTotal } from '../hooks/useChatUnreadTotal';
 import { useTheme } from '../hooks/useTheme';

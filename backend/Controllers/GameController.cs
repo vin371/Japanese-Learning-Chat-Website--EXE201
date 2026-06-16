@@ -252,6 +252,14 @@ public class GameController : ControllerBase
         return Ok(await _game.GetExpLeaderboardAsync(limit));
     }
 
+    /// <summary>Top người chơi theo xu tích lũy (bảng users.xu).</summary>
+    [HttpGet("xu-leaderboard")]
+    [AllowAnonymous]
+    public async Task<ActionResult<IReadOnlyList<XuLeaderboardEntryDto>>> GetXuLeaderboard([FromQuery] int limit = 20)
+    {
+        return Ok(await _game.GetXuLeaderboardAsync(limit));
+    }
+
     [HttpGet("daily-challenge")]
     [Authorize(Policy = AuthPolicies.Member)]
     public async Task<ActionResult<DailyChallengeDto>> GetDailyChallenge()

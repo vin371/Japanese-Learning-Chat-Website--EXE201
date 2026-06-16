@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, ReactNode } from "react";
 import { Link } from "react-router-dom";
+import { Star } from "lucide-react";
 
 const UserIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
@@ -140,13 +141,23 @@ export default function UserProfileDropdown({
 
     return (
         <DropdownMenu isOpen={menuOpen} setIsOpen={setMenuOpen} trigger={
-            <button type="button" className="flex items-center gap-3 py-1.5 pl-1.5 pr-3.5 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-800 dark:text-slate-100 transition-all outline-none" aria-expanded={menuOpen} aria-haspopup="menu">
-                <div className="w-[38px] h-[38px] rounded-full overflow-hidden flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shrink-0">
-                    {avatarContent}
+            <button type="button" className={`yume-nav-profile-trigger flex items-center gap-3 py-1.5 pl-1.5 pr-3.5 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-800 dark:text-slate-100 transition-all outline-none${showPremiumBadge ? ' yume-nav-profile-trigger--premium' : ''}`} aria-expanded={menuOpen} aria-haspopup="menu">
+                <div className={`yume-nav-avatar-wrap${showPremiumBadge ? ' yume-nav-avatar-wrap--premium' : ''}`}>
+                    <div className="yume-nav-avatar-inner w-[38px] h-[38px] rounded-full overflow-hidden flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shrink-0">
+                        {avatarContent}
+                    </div>
+                    {showPremiumBadge ? (
+                        <span className="yume-nav-avatar-premium" title="Tài khoản Premium" aria-label="Premium">
+                            <Star size={11} fill="currentColor" strokeWidth={0} />
+                        </span>
+                    ) : null}
                 </div>
                 <div className="hidden md:flex flex-col items-start text-left min-w-0">
                     <div className="text-sm font-semibold leading-tight text-slate-800 dark:text-slate-100 whitespace-nowrap truncate max-w-[120px]">
                         {displayName}
+                        {showPremiumBadge ? (
+                            <span className="yume-nav-profile-premium-label">Premium</span>
+                        ) : null}
                     </div>
                     {email && (
                         <div className="text-xs text-slate-500 dark:text-slate-400 leading-tight mt-0.5 whitespace-nowrap truncate max-w-[140px]">

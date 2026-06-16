@@ -864,39 +864,91 @@ public partial class GameService : IGameService
     public async Task<IReadOnlyList<ExpLeaderboardEntryDto>> GetExpLeaderboardAsync(int limit = 20)
     {
         limit = Math.Clamp(limit, 1, 100);
-        const string sql = """
-            SELECT TOP (@lim)
-                   0 AS Rank,
-                   u.id AS UserId,
-                   ISNULL(NULLIF(LTRIM(RTRIM(up.display_name)), N''), u.username) AS DisplayName,
-                   up.avatar_url AS AvatarUrl,
-                   ISNULL(u.exp, 0) AS Exp,
-                   lv.code AS LevelCode
-            FROM dbo.users u
-            LEFT JOIN dbo.user_profiles up ON up.user_id = u.id
-            LEFT JOIN dbo.levels lv ON lv.id = u.level_id
-            WHERE u.deleted_at IS NULL
-              AND ISNULL(LTRIM(RTRIM(LOWER(u.role))), N'user') = N'user'
-              AND ISNULL(u.is_locked, 0) = 0
-              AND LOWER(ISNULL(u.username, N'')) NOT LIKE N'admin%'
-              AND LOWER(ISNULL(u.username, N'')) NOT LIKE N'staff%'
-              AND LOWER(ISNULL(u.username, N'')) NOT LIKE N'moderator%'
-              AND LOWER(ISNULL(u.username, N'')) NOT LIKE N'demo%'
-            ORDER BY ISNULL(u.exp, 0) DESC, u.id ASC
-            """;
         try
         {
-            using var db = CreateConnection();
-            var list = (await db.PgQueryAsync<ExpLeaderboardEntryDto>(sql, new { lim = limit })).ToList();
-            for (var i = 0; i < list.Count; i++)
-                list[i] = list[i] with { Rank = i + 1 };
-            return list;
+            var rows = await BuildAccountLeaderboardQuery(orderByXu: false)
+                .Take(limit)
+                .ToListAsync();
+
+            return rows.Select((r, i) => new ExpLeaderboardEntryDto(
+                i + 1,
+                r.UserId,
+                r.DisplayName,
+                r.AvatarUrl,
+                r.Exp,
+                r.LevelCode)).ToList();
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "GetExpLeaderboardAsync failed");
             return Array.Empty<ExpLeaderboardEntryDto>();
         }
+    }
+
+    public async Task<IReadOnlyList<XuLeaderboardEntryDto>> GetXuLeaderboardAsync(int limit = 20)
+    {
+        limit = Math.Clamp(limit, 1, 100);
+        try
+        {
+            var rows = await BuildAccountLeaderboardQuery(orderByXu: true)
+                .Take(limit)
+                .ToListAsync();
+
+            return rows.Select((r, i) => new XuLeaderboardEntryDto(
+                i + 1,
+                r.UserId,
+                r.DisplayName,
+                r.AvatarUrl,
+                r.Xu,
+                r.LevelCode)).ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "GetXuLeaderboardAsync failed");
+            return Array.Empty<XuLeaderboardEntryDto>();
+        }
+    }
+
+    private IQueryable<AccountLeaderboardRow> BuildAccountLeaderboardQuery(bool orderByXu)
+    {
+        var q =
+            from u in _learningDb.Users.AsNoTracking()
+            join up in _learningDb.UserProfiles.AsNoTracking() on u.Id equals up.UserId into upJoin
+            from up in upJoin.DefaultIfEmpty()
+            join lv in _learningDb.Levels.AsNoTracking() on u.LevelId equals lv.Id into lvJoin
+            from lv in lvJoin.DefaultIfEmpty()
+            where u.DeletedAt == null
+            where u.Role.ToLower() == "user"
+            where !u.IsLocked
+            where !EF.Functions.Like(u.Username.ToLower(), "admin%")
+            where !EF.Functions.Like(u.Username.ToLower(), "staff%")
+            where !EF.Functions.Like(u.Username.ToLower(), "moderator%")
+            where !EF.Functions.Like(u.Username.ToLower(), "demo%")
+            select new AccountLeaderboardRow
+            {
+                UserId = u.Id,
+                DisplayName = up != null && up.DisplayName != null && up.DisplayName.Trim() != ""
+                    ? up.DisplayName.Trim()
+                    : u.Username,
+                AvatarUrl = up != null ? up.AvatarUrl : null,
+                Exp = u.Exp,
+                Xu = u.Xu,
+                LevelCode = lv != null ? lv.Code : null,
+            };
+
+        return orderByXu
+            ? q.OrderByDescending(r => r.Xu).ThenBy(r => r.UserId)
+            : q.OrderByDescending(r => r.Exp).ThenBy(r => r.UserId);
+    }
+
+    private sealed class AccountLeaderboardRow
+    {
+        public int UserId { get; init; }
+        public string DisplayName { get; init; } = "";
+        public string? AvatarUrl { get; init; }
+        public int Exp { get; init; }
+        public int Xu { get; init; }
+        public string? LevelCode { get; init; }
     }
 
     public async Task<DailyChallengeDto?> GetTodayChallengeAsync(int userId)

@@ -152,6 +152,13 @@ export async function fetchExpLeaderboard(limit = 10) {
   return Array.isArray(data) ? data : [];
 }
 
+/** BXH tổng xu (users.xu) — không cần đăng nhập. */
+export async function fetchXuLeaderboard(limit = 10) {
+  const n = Math.min(100, Math.max(1, Number(limit) || 10));
+  const { data } = await gameApi.fetchXuLeaderboard({ params: { limit: n } });
+  return Array.isArray(data) ? data : [];
+}
+
 export async function fetchGameInventory() {
   const { data } = await gameApi.fetchGameInventory();
   return data ?? {};

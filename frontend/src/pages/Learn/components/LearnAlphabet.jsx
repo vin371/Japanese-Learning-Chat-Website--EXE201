@@ -1,100 +1,120 @@
-import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import http from '../../../api/client';
+import SpeakJaButton from '../../../components/learn/SpeakJaButton';
+import {
+  HIRAGANA_ROWS,
+  KATAKANA_ROWS,
+  N5_BASIC_KANJI_GROUPS,
+} from '../../../data/japaneseAlphabet';
 
 const containerVariants = {
   hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: { staggerChildren: 0.03 }
-  }
+  show: { opacity: 1, transition: { staggerChildren: 0.015 } },
 };
 
 const itemVariants = {
-  hidden: { opacity: 0, scale: 0.9, y: 10 },
-  show: { opacity: 1, scale: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } }
+  hidden: { opacity: 0, y: 6 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.2 } },
 };
 
-export default function LearnAlphabet() {
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [alphabetType, setAlphabetType] = useState('hiragana'); // 'hiragana' hoặc 'katakana'
-
-  useEffect(() => {
-    setLoading(true);
-    const lessonId = alphabetType === 'hiragana' ? 7 : 8;
-    http.get(`/api/lessons/${lessonId}/vocabulary`)
-      .then(res => {
-        // Assume data might be in res.data, res.data.items, or res.data.Items depending on standard API response wrapper
-        const items = res.data?.items ?? res.data?.Items ?? res.data;
-        if (Array.isArray(items)) {
-          // Sort by sortOrder if available
-          items.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
-          setData(items);
-        } else {
-          setData([]);
-        }
-      })
-      .catch(err => {
-        console.error('Failed to fetch alphabet', err);
-        setData([]);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  }, [alphabetType]);
-
+function KanaCell({ kana, romaji, tone }) {
   return (
-    <motion.section className="w-full" variants={containerVariants} initial="hidden" animate="show">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-slate-200 dark:border-slate-700 mb-4">
-        <div>
-          <h2 className="text-xl font-extrabold text-slate-800 dark:text-slate-100">
-            {alphabetType === 'hiragana' ? 'Bảng chữ cái Hiragana' : 'Bảng chữ cái Katakana'}
-          </h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-            {alphabetType === 'hiragana' 
-              ? 'Bảng chữ mềm (Hiragana) dùng cho từ thuần Nhật' 
-              : 'Bảng chữ cứng (Katakana) dùng cho từ mượn tiếng nước ngoài'}
-          </p>
-        </div>
-        <div className="learn-view-toggle" role="group" aria-label="Chọn loại bảng chữ cái">
-          <button
-            type="button"
-            className={`learn-view-toggle__btn${alphabetType === 'hiragana' ? ' learn-view-toggle__btn--on' : ''}`}
-            onClick={() => setAlphabetType('hiragana')}
-            aria-pressed={alphabetType === 'hiragana'}
-          >
-            Hiragana
-          </button>
-          <button
-            type="button"
-            className={`learn-view-toggle__btn${alphabetType === 'katakana' ? ' learn-view-toggle__btn--on' : ''}`}
-            onClick={() => setAlphabetType('katakana')}
-            aria-pressed={alphabetType === 'katakana'}
-          >
-            Katakana
-          </button>
-        </div>
+    <motion.div className={`learn-alpha-cell learn-alpha-cell--${tone}`} variants={itemVariants} lang="ja">
+      <div className="learn-alpha-cell__top">
+        <span className="learn-alpha-cell__kana">{kana}</span>
+        <SpeakJaButton text={kana} label={`Nghe: ${kana}`} />
       </div>
+      <span className="learn-alpha-cell__romaji">{romaji}</span>
+    </motion.div>
+  );
+}
 
-      {loading ? (
-        <p className="learn-track__loading py-8">Đang tải bảng chữ cái...</p>
-      ) : data.length === 0 ? (
-        <p className="learn-track__empty py-8 text-center text-slate-500">Không tìm thấy dữ liệu bảng chữ cái.</p>
-      ) : (
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 py-2">
-          {data.map(item => (
-            <motion.div 
-              key={`${alphabetType}-${item.id}`} 
-              className="flex flex-col items-center justify-center bg-white dark:bg-[#1e293b] border border-slate-200 dark:border-slate-700 rounded-lg py-6 px-2 shadow-sm cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-[#b72025] dark:hover:border-[#b72025]"
-              variants={itemVariants}
-            >
-              <div className="text-[1.85rem] font-bold text-slate-800 dark:text-slate-100 mb-1 leading-none" lang="ja">{item.wordJp}</div>
-              <div className="text-[0.9rem] text-slate-500 dark:text-slate-400 font-semibold">{item.reading}</div>
-            </motion.div>
-          ))}
-        </div>
-      )}
+function KanaColumn({ tone, title, subtitle, rows }) {
+  return (
+    <div className={`learn-alpha-col learn-alpha-col--${tone}`}>
+      <header className="learn-alpha-col__head">
+        <h3 className="learn-alpha-col__title">{title}</h3>
+        <p className="learn-alpha-col__sub">{subtitle}</p>
+      </header>
+      <div className="learn-alpha-col__body">
+        {rows.map((row) => (
+          <section key={row.label} className="learn-alpha-section">
+            <h4 className="learn-alpha-section__title">{row.label}</h4>
+            <div className="learn-alpha-grid">
+              {row.items.map((item) => (
+                <KanaCell key={item.kana} kana={item.kana} romaji={item.romaji} tone={tone} />
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function KanjiColumn() {
+  return (
+    <div className="learn-alpha-col learn-alpha-col--kanji">
+      <header className="learn-alpha-col__head">
+        <h3 className="learn-alpha-col__title">Kanji</h3>
+        <p className="learn-alpha-col__sub">Hán tự N5 cơ bản — đọc & nghĩa</p>
+      </header>
+      <div className="learn-alpha-col__body">
+        {N5_BASIC_KANJI_GROUPS.map((group) => (
+          <section key={group.label} className="learn-alpha-section">
+            <h4 className="learn-alpha-section__title">{group.label}</h4>
+            <div className="learn-alpha-grid learn-alpha-grid--kanji">
+              {group.items.map((item) => (
+                <motion.div
+                  key={item.char}
+                  className="learn-alpha-cell learn-alpha-cell--kanji"
+                  variants={itemVariants}
+                  lang="ja"
+                >
+                  <div className="learn-alpha-cell__top">
+                    <span className="learn-alpha-cell__kana learn-alpha-cell__kanji">{item.char}</span>
+                    <SpeakJaButton text={item.char} label={`Nghe: ${item.char}`} />
+                  </div>
+                  <span className="learn-alpha-cell__romaji">{item.reading}</span>
+                  <span className="learn-alpha-cell__vi">{item.vi}</span>
+                </motion.div>
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default function LearnAlphabet() {
+  return (
+    <motion.section
+      className="learn-alpha learn-alpha--triptych"
+      variants={containerVariants}
+      initial="hidden"
+      animate="show"
+    >
+      <header className="learn-alpha__header learn-alpha__header--triptych">
+        <h2 className="learn-alpha__title">Bảng chữ cái &amp; Kanji N5</h2>
+      </header>
+
+      <p className="learn-alpha__hint">Bấm loa từng ô để nghe. Cuộn từng cột khi cần xem thêm.</p>
+
+      <div className="learn-alpha-board" role="region" aria-label="Bảng Hiragana, Katakana và Kanji">
+        <KanaColumn
+          tone="hira"
+          title="Hiragana"
+          subtitle="Chữ mềm — từ thuần Nhật"
+          rows={HIRAGANA_ROWS}
+        />
+        <KanaColumn
+          tone="kata"
+          title="Katakana"
+          subtitle="Chữ cứng — từ mượn"
+          rows={KATAKANA_ROWS}
+        />
+        <KanjiColumn />
+      </div>
     </motion.section>
   );
 }

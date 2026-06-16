@@ -147,6 +147,15 @@ public record ExpLeaderboardEntryDto(
     int Exp,
     string? LevelCode);
 
+/// <summary>BXH tổng xu trên tài khoản (users.xu).</summary>
+public record XuLeaderboardEntryDto(
+    int Rank,
+    int UserId,
+    string DisplayName,
+    string? AvatarUrl,
+    int Xu,
+    string? LevelCode);
+
 public record DailyChallengeDto(
     int Id,
     string GameSlug,

@@ -1,23 +1,38 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion as motionFr, useReducedMotion } from 'framer-motion';
-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { ROUTES } from '../../data/routes';
-import { N5_LESSONS } from '../../data/n5BeginnerCourse';
 import { useAuth } from '../../hooks/useAuth';
 import http from '../../api/client';
+import { fetchMyProgressSummary } from '../../services/learningProgressService';
+import { isStaffUser } from '../../utils/roles';
 import LearnAiWidget from './LearnAiWidget';
 import { LearnSidebarShell } from './components/LearnSidebarShell';
 import { SakuraRainLayer } from '../../components/effects/SakuraRainLayer';
+import {
+  buildLessonGroupsFromDb,
+  dbLessonToNavItem,
+} from '../../utils/learnDbLessonNav';
+import {
+  jlptCodeToLevelId,
+  resolveActiveLearnLevelCode,
+} from '../../utils/learnLevelCode';
+import {
+  buildLevelProgressMap,
+  canViewLearnLevel,
+  getLevelAccessMode,
+  learnRouteWithJlpt,
+  resolveUserLearnCode,
+} from '../../utils/learnLevelAccess';
 
 const Motion = motionFr;
 
-const SECTION_ORDER = ['dialogue', 'reference', 'reading', 'vocab', 'kanji', 'grammar'];
-const STATIC_SLUGS = new Set(N5_LESSONS.map((l) => l.slug));
+const SECTION_ORDER = ['vocab', 'grammar', 'kanji', 'dialogue', 'reading', 'reference', 'alphabet'];
 
 /** Chỉ gọi API — không setState (tránh cảnh báo React Compiler trong useEffect). */
-async function fetchLearnLayoutSnapshot(isAuthenticated) {
+async function fetchLearnLayoutSnapshot(isAuthenticated, levelId) {
   try {
-    const lr = await http.get('/api/lessons', { params: { page: 1, pageSize: 100 } });
+    const lr = await http.get('/api/lessons', { params: { page: 1, pageSize: 200, levelId } });
     const items = lr.data?.items ?? lr.data?.Items ?? [];
     const list = Array.isArray(items) ? items : [];
 
@@ -29,7 +44,7 @@ async function fetchLearnLayoutSnapshot(isAuthenticated) {
       };
     }
 
-    const pr = await http.get('/api/users/me/progress', { params: { page: 1, pageSize: 100 } });
+    const pr = await http.get('/api/users/me/progress', { params: { page: 1, pageSize: 200 } });
     const progress = pr.data?.items ?? pr.data?.Items ?? [];
     const progressMap = new Map();
     for (const p of Array.isArray(progress) ? progress : []) {
@@ -63,12 +78,22 @@ async function fetchLearnLayoutSnapshot(isAuthenticated) {
 export default function LearnLayout() {
   const { isAuthenticated, user } = useAuth();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const reduceMotion = useReducedMotion();
   const navigate = useNavigate();
   const [sectionFilter, setSectionFilter] = useState('all');
   const [publishedFromDb, setPublishedFromDb] = useState([]);
   const [sidebarTotal, setSidebarTotal] = useState(0);
   const [sidebarDone, setSidebarDone] = useState(0);
+  const [levelProgressMap, setLevelProgressMap] = useState({});
+
+  const userLevelCode = resolveUserLearnCode(user);
+  const staffBypass = isStaffUser(user);
+  const activeLevelCode = resolveActiveLearnLevelCode(searchParams, user);
+  const activeLevelId = jlptCodeToLevelId(activeLevelCode);
+  const activeAccessMode = staffBypass
+    ? 'study'
+    : getLevelAccessMode(activeLevelCode, userLevelCode, levelProgressMap);
 
   const isLearnIndex = location.pathname === ROUTES.LEARN;
 
@@ -79,52 +104,85 @@ export default function LearnLayout() {
   }, []);
 
   const reloadLearnLayoutData = useCallback(() => {
-    void fetchLearnLayoutSnapshot(isAuthenticated).then(applyLearnLayoutSnapshot);
-  }, [isAuthenticated, applyLearnLayoutSnapshot]);
+    void fetchLearnLayoutSnapshot(isAuthenticated, activeLevelId).then(applyLearnLayoutSnapshot);
+    if (isAuthenticated) {
+      void fetchMyProgressSummary()
+        .then((data) => {
+          const byLevel = data?.byLevel ?? data?.ByLevel ?? [];
+          setLevelProgressMap(buildLevelProgressMap(byLevel));
+        })
+        .catch(() => setLevelProgressMap({}));
+    } else {
+      setLevelProgressMap({});
+    }
+  }, [isAuthenticated, activeLevelId, applyLearnLayoutSnapshot]);
 
   useEffect(() => {
     let cancelled = false;
-    void fetchLearnLayoutSnapshot(isAuthenticated).then((snap) => {
+    void fetchLearnLayoutSnapshot(isAuthenticated, activeLevelId).then((snap) => {
       if (cancelled) return;
       applyLearnLayoutSnapshot(snap);
     });
+    if (isAuthenticated) {
+      void fetchMyProgressSummary()
+        .then((data) => {
+          if (cancelled) return;
+          const byLevel = data?.byLevel ?? data?.ByLevel ?? [];
+          setLevelProgressMap(buildLevelProgressMap(byLevel));
+        })
+        .catch(() => {
+          if (!cancelled) setLevelProgressMap({});
+        });
+    } else {
+      setLevelProgressMap({});
+    }
     return () => {
       cancelled = true;
     };
-  }, [isAuthenticated, applyLearnLayoutSnapshot]);
+  }, [isAuthenticated, activeLevelId, applyLearnLayoutSnapshot]);
 
-  const dbOnlyLessons = useMemo(
+  useEffect(() => {
+    if (staffBypass) return;
+    if (!isAuthenticated) {
+      if (activeLevelCode !== 'N5') {
+        navigate(learnRouteWithJlpt(location.pathname, 'N5'), { replace: true });
+      }
+      return;
+    }
+    if (!canViewLearnLevel(activeLevelCode, userLevelCode, levelProgressMap)) {
+      navigate(learnRouteWithJlpt(location.pathname, userLevelCode), { replace: true });
+    }
+  }, [
+    staffBypass,
+    isAuthenticated,
+    activeLevelCode,
+    userLevelCode,
+    levelProgressMap,
+    location.pathname,
+    navigate,
+  ]);
+
+  const levelLessons = useMemo(
     () =>
-      publishedFromDb.filter((row) => {
-        const s = row.slug ?? row.Slug;
-        return s && !STATIC_SLUGS.has(s);
-      }),
-    [publishedFromDb],
+      publishedFromDb.filter((row) => Number(row.levelId ?? row.LevelId) === activeLevelId),
+    [publishedFromDb, activeLevelId],
   );
 
-  /** Bài từ DB theo tab (trước đây chỉ hiện khi «Tất cả» → dễ tưởng bài import bị mất). */
-  const visibleDbLessons = useMemo(() => {
-    if (sectionFilter === 'all') return dbOnlyLessons;
-    return dbOnlyLessons.filter((row) => {
-      const t = String(row.categoryType ?? row.CategoryType ?? '').trim().toLowerCase();
-      return t === sectionFilter;
-    });
-  }, [dbOnlyLessons, sectionFilter]);
+  const lessonNavList = useMemo(
+    () =>
+      [...levelLessons]
+        .map(dbLessonToNavItem)
+        .filter((x) => x.slug)
+        .sort((a, b) => a.sortOrder - b.sortOrder || a.id - b.id),
+    [levelLessons],
+  );
 
-  const lessonGroups = useMemo(() => {
-    const map = new Map();
-    for (const lesson of N5_LESSONS) {
-      if (!map.has(lesson.section)) {
-        map.set(lesson.section, { label: lesson.sectionLabel, items: [] });
-      }
-      map.get(lesson.section).items.push(lesson);
-    }
-    return SECTION_ORDER.filter((key) => map.has(key)).map((key) => ({
-      section: key,
-      label: map.get(key).label,
-      items: map.get(key).items,
-    }));
-  }, []);
+  const lessonGroups = useMemo(
+    () => buildLessonGroupsFromDb(levelLessons, SECTION_ORDER),
+    [levelLessons],
+  );
+
+  const visibleDbLessons = useMemo(() => [], []);
 
   const visibleGroups = useMemo(
     () =>
@@ -141,9 +199,20 @@ export default function LearnLayout() {
     user?.email?.split('@')[0] ||
     'Học viên';
 
+  function switchLearnLevel(code) {
+    if (!staffBypass && isAuthenticated) {
+      if (!canViewLearnLevel(code, userLevelCode, levelProgressMap)) return;
+    } else if (!isAuthenticated && code !== 'N5') {
+      return;
+    }
+    const target = learnRouteWithJlpt(isLearnIndex ? ROUTES.LEARN : location.pathname, code);
+    navigate(target);
+  }
+
   function goFilter(key) {
     setSectionFilter(key);
-    if (!isLearnIndex) navigate(ROUTES.LEARN);
+    const target = learnRouteWithJlpt(isLearnIndex ? ROUTES.LEARN : location.pathname, activeLevelCode);
+    if (!isLearnIndex) navigate(target);
   }
 
   return (
@@ -163,6 +232,11 @@ export default function LearnLayout() {
           lessonGroups={lessonGroups}
           visibleGroups={visibleGroups}
           visibleDbLessons={visibleDbLessons}
+          activeLevelCode={activeLevelCode}
+          userLevelCode={userLevelCode}
+          levelProgressMap={levelProgressMap}
+          onSwitchLevel={switchLearnLevel}
+          staffBypass={staffBypass}
         />
 
         <main className="learn-layout__main learn-layout__main--shodo">
@@ -183,6 +257,13 @@ export default function LearnLayout() {
                   reloadSidebarProgress: reloadLearnLayoutData,
                   sectionFilter,
                   goFilter,
+                  lessonNavList,
+                  activeLevelCode,
+                  activeLevelId,
+                  activeAccessMode,
+                  userLevelCode,
+                  levelProgressMap,
+                  staffBypass,
                 }}
               />
             </Motion.div>

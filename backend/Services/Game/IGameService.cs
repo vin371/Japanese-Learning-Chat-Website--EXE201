@@ -27,6 +27,7 @@ public interface IGameService
     /// <summary>Đánh giá lại thành tích mốc EXP (total_exp) — dùng backfill sau khi seed DB.</summary>
     Task RefreshTotalExpAchievementsForUserAsync(int userId);
     Task<IReadOnlyList<ExpLeaderboardEntryDto>> GetExpLeaderboardAsync(int limit = 20);
+    Task<IReadOnlyList<XuLeaderboardEntryDto>> GetXuLeaderboardAsync(int limit = 20);
     Task<DailyChallengeDto?> GetTodayChallengeAsync(int userId);
     Task<PvpRoomDto> CreatePvpRoomAsync(int userId, CreatePvpRoomRequest req);
     Task<PvpRoomDto> JoinPvpRoomAsync(int userId, JoinPvpRoomRequest req);
