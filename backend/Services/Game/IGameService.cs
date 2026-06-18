@@ -14,6 +14,7 @@ public interface IGameService
     Task<InventoryDto> GetInventoryAsync(int userId);
     Task<PurchasePowerUpResultDto> PurchasePowerUpAsync(int userId, PurchasePowerUpRequest req);
     Task<KanjiMemoryCompleteResultDto> CompleteKanjiMemoryAsync(int userId, CompleteKanjiMemoryRequest req);
+    Task<IReadOnlyList<KanjiMemoryPairDto>> GetKanjiMemoryPairsAsync(int? levelId = null);
     Task<UsePowerUpResultDto> UsePowerUpAsync(int userId, UsePowerUpRequest req);
     Task<IReadOnlyList<LeaderboardEntryDto>> GetLeaderboardAsync(
         string? gameSlug,

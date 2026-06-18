@@ -5,6 +5,7 @@ import SpeakJaButton from '../../components/learn/SpeakJaButton';
 import { PlayGameSetupPro } from '../../components/play/PlayGameSetupPro';
 import { playSetupChildVariants, playSetupParentVariants } from '../../components/play/playSetupMotion';
 import { ROUTES } from '../../data/routes';
+import { getErrorMessageForUser } from '../../utils/apiErrorMessage';
 import { buildLocalKanaQuestions } from '../../data/gojuonRomaji';
 import {
   artPowerup5050,
@@ -15,6 +16,7 @@ import {
 } from '../../assets/play';
 import {
   endGameSession,
+  extractGameApiError,
   fetchGameInventory,
   fetchGames,
   startGameSession,
@@ -172,6 +174,22 @@ const BOSS_BATTLE_Q_CHOICES = [5, 8, 10, 12, 15];
 const MAX_KANA_QUESTIONS = 46;
 /** Đồng bộ với PlayExpBar — làm mới EXP sau khi kết thúc phiên API */
 const YUME_PLAY_EXP_REFRESH = 'yume-play-exp-refresh';
+/** Thời gian hiện phản hồi đúng/sai trước khi sang câu tiếp (ms). */
+const ANSWER_FEEDBACK_MS = 520;
+
+function adjustInventorySlug(inventory, slug, delta) {
+  if (!inventory || !slug) return inventory;
+  const items = inventory.items ?? inventory.Items ?? [];
+  let changed = false;
+  const nextItems = items.map((item) => {
+    if ((item.slug ?? item.Slug) !== slug) return item;
+    changed = true;
+    const prev = Math.max(0, Math.floor(Number(item.quantityOwned ?? item.QuantityOwned ?? 0) || 0));
+    const next = Math.max(0, prev + delta);
+    return { ...item, quantityOwned: next, QuantityOwned: next };
+  });
+  return changed ? { ...inventory, items: nextItems, Items: nextItems } : inventory;
+}
 
 function syncKanaBattleAnim(kana, correct, powerUpUsed, setAnim) {
   if (!kana) return;
@@ -832,18 +850,18 @@ export default function KanaMatchGame() {
       }
     } catch (e) {
       const res = e?.response;
-      const payload = res?.data;
-      const apiMsg = payload?.message ?? payload?.Message ?? '';
+      const apiMsg = extractGameApiError(e) || e?.userMessage || getErrorMessageForUser(e);
       if (apiMsg) {
         setError(apiMsg);
       } else if (!res) {
         setError(
           'Không kết nối được máy chủ game. Kiểm tra backend đang chạy; nếu dùng VITE_API_URL thì cổng phải trùng API (vd. 5056).',
         );
-      } else if (!apiMsg) {
+      } else {
         setError('Không tạo được phiên (thiếu bộ câu hỏi hoặc slug chưa seed).');
       }
       if (kanaGame) {
+        setError('');
         startLocal(questionCount);
       } else {
         setPhase('error');
@@ -932,6 +950,10 @@ export default function KanaMatchGame() {
       /* ignore */
     }
   }, []);
+
+  const refreshInventoryLater = useCallback(() => {
+    void refreshInventory();
+  }, [refreshInventory]);
 
   const pushKanaFloat = useCallback((text, tone) => {
     const id = `kf-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
@@ -1026,16 +1048,19 @@ export default function KanaMatchGame() {
             apiCorrectRef.current += 1;
             setApiCorrectCount(apiCorrectRef.current);
           }
-          try {
-            await refreshInventory();
-          } catch {
-            /* ignore */
-          }
           setFeedback({
             correct,
             explanation: res.explanation ?? res.Explanation,
             correctIndex: corrIdx,
           });
+
+          if (
+            powerUpUsed === 'skip'
+            || (powerUpUsed === 'double-points' && correct)
+          ) {
+            setInventory((prev) => adjustInventorySlug(prev, powerUpUsed, -1));
+            refreshInventoryLater();
+          }
 
           syncKanaBattleAnim(kanaGame, correct, powerUpUsed, setKanaBattleAnim);
 
@@ -1052,11 +1077,7 @@ export default function KanaMatchGame() {
                 timerRef.current = null;
                 try {
                   const end = await endGameSession(sessionId);
-                  try {
-                    await refreshInventory();
-                  } catch {
-                    /* ignore */
-                  }
+                  refreshInventoryLater();
                   setSummary({
                     mode: 'api',
                     payload: end,
@@ -1065,11 +1086,8 @@ export default function KanaMatchGame() {
                     lostAllHearts: false,
                   });
                 } catch {
-                  try {
-                    await refreshInventory();
-                  } catch {
-                    /* ignore */
-                  }
+                  refreshInventoryLater();
+                  setError('');
                   setSummary({
                     mode: 'api',
                     kanaVictory: true,
@@ -1117,18 +1135,11 @@ export default function KanaMatchGame() {
             if (timerRef.current) clearInterval(timerRef.current);
             try {
               const end = await endGameSession(sessionId);
-              try {
-                await refreshInventory();
-              } catch {
-                /* ignore */
-              }
+              refreshInventoryLater();
               setSummary({ mode: 'api', payload: end, lostAllHearts });
             } catch {
-              try {
-                await refreshInventory();
-              } catch {
-                /* ignore */
-              }
+              refreshInventoryLater();
+              setError('');
               setSummary({
                 mode: 'api',
                 lostAllHearts,
@@ -1148,16 +1159,20 @@ export default function KanaMatchGame() {
             setPickedIndex(null);
             setIndex((i) => i + 1);
             busyRef.current = false;
-          }, 850);
+          }, ANSWER_FEEDBACK_MS);
           return;
         } catch (e) {
-          setError(
-            e?.response?.data?.message ||
-            (typeof e?.message === 'string' ? e.message : '') ||
-            'Lỗi gửi đáp án — chuyển sang luyện offline.',
-          );
           busyRef.current = false;
-          if (kanaGame) startLocal(questionCount);
+          if (kanaGame) {
+            setError('');
+            startLocal(questionCount);
+            return;
+          }
+          setError(
+            extractGameApiError(e) ||
+            e?.userMessage ||
+            getErrorMessageForUser(e, 'Lỗi gửi đáp án — thử lại hoặc tải lại trang.'),
+          );
           return;
         }
       }
@@ -1251,7 +1266,7 @@ export default function KanaMatchGame() {
         setPickedIndex(null);
         setIndex((i) => i + 1);
         busyRef.current = false;
-      }, 850);
+      }, ANSWER_FEEDBACK_MS);
     },
     [
       apiMode,
@@ -1265,7 +1280,7 @@ export default function KanaMatchGame() {
       questionCount,
       kanaGame,
       arcadeTheme,
-      refreshInventory,
+      refreshInventoryLater,
       pushKanaFloat,
       pulseKanaSlash,
       pulseKanaOrb,
@@ -1370,17 +1385,21 @@ export default function KanaMatchGame() {
   const onUseHeart = async () => {
     if (!apiMode || sessionId == null || busyRef.current) return;
     try {
-      await postInventoryPowerUp({ sessionId, powerUpSlug: 'heart' });
+      const res = await postInventoryPowerUp({ sessionId, powerUpSlug: 'heart' });
+      const serverHearts = res?.heartsRemaining ?? res?.HeartsRemaining;
+      setError('');
+      if (serverHearts != null && Number.isFinite(Number(serverHearts))) {
+        setHeartsRemaining(Math.max(0, Math.floor(Number(serverHearts))));
+      } else {
+        setHeartsRemaining((h) => Math.min(maxHearts, h + 1));
+      }
+      try {
+        await refreshInventory();
+      } catch {
+        /* đã dùng vật phẩm trên server — lỗi tải lại túi không nên báo như lỗi Heart */
+      }
     } catch (e) {
       setError(apiErrorMessage(e) || 'Không dùng được Heart.');
-      return;
-    }
-    setError('');
-    setHeartsRemaining((h) => Math.min(maxHearts, h + 1));
-    try {
-      await refreshInventory();
-    } catch {
-      /* đã dùng vật phẩm trên server — lỗi tải lại túi không nên báo như lỗi Heart */
     }
   };
 

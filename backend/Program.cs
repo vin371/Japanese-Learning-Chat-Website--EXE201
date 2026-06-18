@@ -19,6 +19,7 @@ using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Npgsql;
 using System;
 using System.Text.Json;
 
@@ -43,6 +44,12 @@ namespace backend
             if (args.Length > 0 && args[0] == "import-n3-docx")
             {
                 ImportN3DocxEntry(args).GetAwaiter().GetResult();
+                return;
+            }
+
+            if (args.Length > 0 && args[0] == "apply-sql")
+            {
+                ApplySqlEntry(args).GetAwaiter().GetResult();
                 return;
             }
 
@@ -443,6 +450,48 @@ namespace backend
                 : Path.GetFullPath(importDir);
 
             await N3DocxCourseImporter.RunAsync(db, dir, dryRun);
+        }
+
+        private static async Task ApplySqlEntry(string[] args)
+        {
+            AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+            var sqlPath = args.FirstOrDefault(a =>
+                !string.Equals(a, "apply-sql", StringComparison.OrdinalIgnoreCase));
+            if (string.IsNullOrWhiteSpace(sqlPath))
+            {
+                Console.Error.WriteLine("Usage: dotnet run -- apply-sql <path-to.sql>");
+                Environment.Exit(1);
+                return;
+            }
+
+            var fullPath = Path.GetFullPath(sqlPath);
+            if (!File.Exists(fullPath))
+            {
+                Console.Error.WriteLine($"File not found: {fullPath}");
+                Environment.Exit(1);
+                return;
+            }
+
+            var builder = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("appsettings.json", optional: false)
+                .AddJsonFile("appsettings.Development.json", optional: true)
+                .AddJsonFile("appsettings.Secrets.json", optional: true);
+
+            var cs = builder.Build().GetConnectionString("DefaultConnection");
+            if (string.IsNullOrWhiteSpace(cs))
+            {
+                Console.Error.WriteLine("ConnectionStrings:DefaultConnection chưa cấu hình.");
+                Environment.Exit(1);
+                return;
+            }
+
+            var sql = await File.ReadAllTextAsync(fullPath);
+            await using var conn = new NpgsqlConnection(cs);
+            await conn.OpenAsync();
+            await using var cmd = new NpgsqlCommand(sql, conn);
+            await cmd.ExecuteNonQueryAsync();
+            Console.WriteLine($"Applied SQL patch: {fullPath}");
         }
     }
 }

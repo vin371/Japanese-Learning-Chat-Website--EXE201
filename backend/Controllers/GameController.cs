@@ -127,6 +127,13 @@ public class GameController : ControllerBase
         }
     }
 
+    [HttpGet("kanji-memory/pairs")]
+    [AllowAnonymous]
+    public async Task<ActionResult<IReadOnlyList<KanjiMemoryPairDto>>> GetKanjiMemoryPairs([FromQuery] int? levelId)
+    {
+        return Ok(await _game.GetKanjiMemoryPairsAsync(levelId));
+    }
+
     [HttpPost("kanji-memory/complete")]
     [Authorize(Policy = AuthPolicies.Member)]
     public async Task<ActionResult<KanjiMemoryCompleteResultDto>> CompleteKanjiMemory([FromBody] CompleteKanjiMemoryRequest req)
@@ -200,6 +207,11 @@ public class GameController : ControllerBase
         catch (ArgumentException ex)
         {
             return BadRequest(new GameApiError("POWERUP_ERROR", ex.Message));
+        }
+        catch (PostgresException ex)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new GameApiError("POWERUP_SQL", ex.Message));
         }
     }
 

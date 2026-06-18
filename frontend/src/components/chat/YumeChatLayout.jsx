@@ -344,17 +344,13 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
   }, [location.pathname, navigate]);
 
   useEffect(() => {
-    loadRooms();
-  }, [loadRooms]);
+    void Promise.all([loadRooms(), loadFriends(), loadIncomingRequests(), loadOutgoingRequests()]);
+  }, [loadRooms, loadFriends, loadIncomingRequests, loadOutgoingRequests]);
 
   useEffect(() => {
     if (!inboxRevision) return;
     loadRooms();
   }, [inboxRevision, loadRooms]);
-
-  useEffect(() => {
-    loadFriends();
-  }, [loadFriends]);
 
   useEffect(() => {
     if (selectedRoomId == null || String(selectedRoomId).startsWith('demo-')) return;
@@ -375,14 +371,6 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
     }, 45_000);
     return () => window.clearInterval(t);
   }, [loadFriends]);
-
-  useEffect(() => {
-    loadIncomingRequests();
-  }, [loadIncomingRequests]);
-
-  useEffect(() => {
-    void loadOutgoingRequests();
-  }, [loadOutgoingRequests]);
 
   useEffect(() => {
     if (!invitesModalOpen) return;

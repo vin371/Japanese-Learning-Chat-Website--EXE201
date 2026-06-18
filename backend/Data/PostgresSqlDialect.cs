@@ -28,9 +28,25 @@ public static class PostgresSqlDialect
             RegexOptions.IgnoreCase);
 
         s = AdaptIsActiveBoolean(s);
+        s = AdaptBooleanCoalesce(s);
         s = AdaptInsertReturning(s);
         s = AdaptSelectTop(s);
         return s;
+    }
+
+    /// <summary>PostgreSQL: cột boolean không COALESCE với 0/1 (42804).</summary>
+    private static string AdaptBooleanCoalesce(string sql)
+    {
+        foreach (var col in new[] { "is_premium", "is_pvp", "is_locked", "is_boss_mode" })
+        {
+            sql = Regex.Replace(
+                sql,
+                $@"COALESCE\(((\w+\.)?{col}),\s*0\)",
+                $"COALESCE($1{col}, false)",
+                RegexOptions.IgnoreCase);
+        }
+
+        return sql;
     }
 
     /// <summary>PostgreSQL: is_active là boolean — không dùng COALESCE(..., 1) = 1.</summary>

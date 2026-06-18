@@ -1217,11 +1217,11 @@ CREATE TABLE IF NOT EXISTS "user_sessions" (
 
 CREATE TABLE IF NOT EXISTS "user_statistics" (
     "user_id" INTEGER NOT NULL,
-    "lessons_completed" INTEGER NOT NULL,
-    "games_played" INTEGER NOT NULL,
-    "quizzes_completed" INTEGER NOT NULL,
-    "total_exp" INTEGER NOT NULL,
-    "updated_at" TIMESTAMPTZ NOT NULL,
+    "lessons_completed" INTEGER NOT NULL DEFAULT 0,
+    "games_played" INTEGER NOT NULL DEFAULT 0,
+    "quizzes_completed" INTEGER NOT NULL DEFAULT 0,
+    "total_exp" INTEGER NOT NULL DEFAULT 0,
+    "updated_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     PRIMARY KEY ("user_id")
 );
 
@@ -1363,8 +1363,9 @@ DECLARE
   v_n                INTEGER;
   v_avail            INTEGER;
 BEGIN
-  SELECT id, max_hearts INTO v_game_id, v_max_hearts
-  FROM games WHERE slug = p_game_slug AND COALESCE(is_active, TRUE) = TRUE;
+  SELECT g.id, g.max_hearts INTO v_game_id, v_max_hearts
+  FROM games g
+  WHERE g.slug = p_game_slug AND COALESCE(g.is_active, TRUE) = TRUE;
 
   IF v_game_id IS NULL THEN
     RAISE EXCEPTION 'Game không tồn tại hoặc chưa active';
@@ -1390,8 +1391,9 @@ BEGIN
       ORDER BY gqs.sort_order, gqs.id LIMIT 1;
     END IF;
   ELSE
-    SELECT questions_per_round INTO v_questions_per_round
-    FROM game_question_sets WHERE id = v_actual_set_id;
+    SELECT gqs.questions_per_round INTO v_questions_per_round
+    FROM game_question_sets gqs
+    WHERE gqs.id = v_actual_set_id;
   END IF;
 
   IF v_actual_set_id IS NULL THEN
@@ -1414,8 +1416,9 @@ BEGIN
   IF v_n < 1 THEN v_n := 1; END IF;
 
   INSERT INTO game_sessions
-    (user_id, game_id, score, correct_count, total_questions, hearts_remaining, set_id, started_at)
-  VALUES (p_user_id, v_game_id, 0, 0, v_n, v_max_hearts, v_actual_set_id, NOW())
+    (user_id, game_id, score, max_combo, correct_count, total_questions,
+     hearts_remaining, hearts_lost, exp_earned, xu_earned, set_id, started_at)
+  VALUES (p_user_id, v_game_id, 0, 0, 0, v_n, v_max_hearts, 0, 0, 0, v_actual_set_id, NOW())
   RETURNING id INTO v_session_id;
 
   RETURN QUERY
@@ -1469,12 +1472,16 @@ BEGIN
   END IF;
 
   -- Calculate current combo streak
-  v_ord := (SELECT COALESCE(MAX(question_order), 0)
-            FROM game_session_answers WHERE session_id = p_session_id);
+  v_ord := (SELECT COALESCE(MAX(gsa.question_order), 0)
+            FROM game_session_answers gsa WHERE gsa.session_id = p_session_id);
   v_combo_now := 0;
   WHILE v_ord >= 1 LOOP
-    IF EXISTS (SELECT 1 FROM game_session_answers
-               WHERE session_id = p_session_id AND question_order = v_ord AND is_correct = TRUE) THEN
+    IF EXISTS (
+      SELECT 1 FROM game_session_answers gsa
+      WHERE gsa.session_id = p_session_id
+        AND gsa.question_order = v_ord
+        AND gsa.is_correct = TRUE
+    ) THEN
       v_combo_now := v_combo_now + 1;
     ELSE
       EXIT;
@@ -1492,10 +1499,10 @@ BEGIN
 
   INSERT INTO game_session_answers
     (session_id, question_id, question_order, chosen_index, is_correct,
-     response_ms, score_earned, combo_at_answer, power_up_used)
+     response_ms, score_earned, combo_at_answer, power_up_used, answered_at)
   VALUES
     (p_session_id, p_question_id, p_question_order, p_chosen_index, v_is_correct,
-     p_response_ms, v_score_earned, v_combo_now, p_power_up_used);
+     p_response_ms, v_score_earned, v_combo_now, p_power_up_used, NOW());
 
   RETURN QUERY SELECT v_is_correct, v_correct_index, v_score_earned, v_combo_now, 0;
 END;
@@ -1554,17 +1561,26 @@ BEGIN
     xu  = xu  + v_xu_reward
   WHERE id = v_user_id;
 
-  -- Update user_statistics
-  INSERT INTO user_statistics (user_id, games_played, total_exp)
-    VALUES (v_user_id, 1, v_exp_reward)
-  ON CONFLICT (user_id) DO UPDATE SET
-    games_played = user_statistics.games_played + 1,
-    total_exp    = user_statistics.total_exp + v_exp_reward,
-    updated_at   = NOW();
+  -- user_statistics / user_activities_log: lỗi không làm hỏng kết thúc phiên
+  BEGIN
+    INSERT INTO user_statistics (
+      user_id, lessons_completed, games_played, quizzes_completed, total_exp, updated_at
+    ) VALUES (v_user_id, 0, 1, 0, v_exp_reward, NOW())
+    ON CONFLICT (user_id) DO UPDATE SET
+      games_played = user_statistics.games_played + 1,
+      total_exp    = user_statistics.total_exp + v_exp_reward,
+      updated_at   = NOW();
+  EXCEPTION WHEN OTHERS THEN
+    NULL;
+  END;
 
-  -- Log activity
-  INSERT INTO user_activities_log (user_id, activity_type, entity_type, entity_id, score)
-  VALUES (v_user_id, 'game_completed', 'game', v_game_id, v_total_score);
+  BEGIN
+    INSERT INTO user_activities_log (
+      user_id, activity_type, entity_type, entity_id, score, created_at
+    ) VALUES (v_user_id, 'game_completed', 'game', v_game_id, v_total_score, NOW());
+  EXCEPTION WHEN OTHERS THEN
+    NULL;
+  END;
 
   RETURN QUERY SELECT v_total_score, v_correct, v_total_q,
                       v_accuracy, v_max_combo, v_time_spent,

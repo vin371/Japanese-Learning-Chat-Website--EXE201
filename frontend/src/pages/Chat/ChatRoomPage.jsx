@@ -483,6 +483,7 @@ export default function ChatRoomPage() {
       setError('');
       setNeedsJoin(false);
       setKeywordWarning('');
+      const msgPromise = chatService.getRoomMessages(roomId, { limit: 50 });
       try {
         let roomRes = null;
         let asMember = false;
@@ -509,7 +510,7 @@ export default function ChatRoomPage() {
           return;
         }
 
-        const msgRes = await chatService.getRoomMessages(roomId, { limit: 50 });
+        const msgRes = await msgPromise;
         if (cancelled) return;
         const parsed = parsePagedMessagesResponse(msgRes);
 
@@ -557,8 +558,7 @@ export default function ChatRoomPage() {
         if (member) {
           const last = parsed.items.length > 0 ? parsed.items[parsed.items.length - 1] : null;
           const lid = last ? last.id ?? last.Id : null;
-          /** Chờ read + bump xong trước khi tắt loading — tránh remount YumeChatLayout làm mất ChatShellContext và không refetch sidebar. */
-          await markReadAndSyncSidebar(roomId, lid, member);
+          void markReadAndSyncSidebar(roomId, lid, member);
         }
         if (!cancelled) {
           stickToBottomRef.current = true;

@@ -7,6 +7,7 @@ import {
   fetchLeaderboard,
 } from '../../services/gameService';
 import { fetchMyProgressSummary } from '../../services/learningProgressService';
+import { getErrorMessageForUser } from '../../utils/apiErrorMessage';
 import { PlayHubDashboard } from './hub/PlayHubDashboard';
 import {
   HUB_HIDDEN_GAME_SLUGS,
@@ -30,37 +31,65 @@ export default function PlayHub() {
   const [expTopRows, setExpTopRows] = useState([]);
   const [summary, setSummary] = useState(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const list = await fetchGames();
-        const raw = Array.isArray(list) && list.length > 0 ? list : STATIC_FALLBACK;
-        const mapped = raw
-          .map((row) => normalizeGameRow({ ...row, fromApi: Array.isArray(list) && list.length > 0 }))
-          .filter(Boolean)
-          .filter((g) => g.slug && !HUB_HIDDEN_GAME_SLUGS.has(g.slug));
-        if (!cancelled) {
+  const loadGamesList = useCallback(async () => {
+    setLoading(true);
+    setLoadError('');
+    let lastErr = null;
+    try {
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        if (attempt > 0) {
+          await new Promise((r) => window.setTimeout(r, 600 * attempt));
+        }
+        try {
+          const list = await fetchGames();
+          const raw = Array.isArray(list) && list.length > 0 ? list : STATIC_FALLBACK;
+          const mapped = raw
+            .map((row) => normalizeGameRow({ ...row, fromApi: Array.isArray(list) && list.length > 0 }))
+            .filter(Boolean)
+            .filter((g) => g.slug && !HUB_HIDDEN_GAME_SLUGS.has(g.slug));
           setGames(mapped);
-          setLoadError(Array.isArray(list) && list.length === 0 ? 'API trả về danh sách rỗng — hiển thị bản dự phòng.' : '');
-        }
-      } catch {
-        if (!cancelled) {
-          setGames(
-            STATIC_FALLBACK.map((row) => normalizeGameRow({ ...row, fromApi: false }))
-              .filter(Boolean)
-              .filter((g) => g.slug && !HUB_HIDDEN_GAME_SLUGS.has(g.slug)),
+          setLoadError(
+            Array.isArray(list) && list.length === 0
+              ? 'API trả về danh sách rỗng — hiển thị bản dự phòng.'
+              : '',
           );
-          setLoadError('Không tải được danh sách game từ server — đang dùng bản dự phòng.');
+          return;
+        } catch (e) {
+          lastErr = e;
         }
-      } finally {
-        if (!cancelled) setLoading(false);
       }
-    })();
-    return () => {
-      cancelled = true;
-    };
+      setGames(
+        STATIC_FALLBACK.map((row) => normalizeGameRow({ ...row, fromApi: false }))
+          .filter(Boolean)
+          .filter((g) => g.slug && !HUB_HIDDEN_GAME_SLUGS.has(g.slug)),
+      );
+      const detail = lastErr ? getErrorMessageForUser(lastErr) : '';
+      setLoadError(
+        detail
+          ? `${detail} — đang hiển thị bản dự phòng (9 game). Bấm «Tải lại» khi backend đã chạy.`
+          : 'Không tải được danh sách game từ server — đang dùng bản dự phòng.',
+      );
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    void loadGamesList();
+  }, [loadGamesList]);
+
+  useEffect(() => {
+    const onVis = () => {
+      if (document.visibilityState === 'visible') void loadGamesList();
+    };
+    const onFocus = () => void loadGamesList();
+    document.addEventListener('visibilitychange', onVis);
+    window.addEventListener('focus', onFocus);
+    return () => {
+      document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener('focus', onFocus);
+    };
+  }, [loadGamesList]);
 
   const reloadInventory = useCallback(async () => {
     try {
@@ -259,6 +288,7 @@ export default function PlayHub() {
     <PlayHubDashboard
       loadError={loadError}
       loading={loading}
+      onRetryGames={loadGamesList}
       ordered={ordered}
       displayName={displayName}
       exp={exp}

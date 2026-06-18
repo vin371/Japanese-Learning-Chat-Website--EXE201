@@ -1,10 +1,10 @@
 using System.Data;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using backend.Data;
 using backend.DTOs.Game;
 using Dapper;
 using Npgsql;
-using backend.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -425,8 +425,9 @@ public partial class GameService : IGameService
         }
         catch (PostgresException ex)
         {
-            _logger.LogError(ex, "sp_SubmitAnswer failed for session {SessionId}", req.SessionId);
-            throw;
+            _logger.LogWarning(ex,
+                "sp_submit_answer failed for session {SessionId} — fallback in-app submit", req.SessionId);
+            result = await SubmitAnswerInAppAsync(db, req, powerNorm);
         }
 
         if (powerNorm == "double-points" && result.is_correct)
@@ -441,25 +442,22 @@ public partial class GameService : IGameService
         var loseHeartOnWrong = !isCorrect && !string.Equals(usedPower, "skip", StringComparison.OrdinalIgnoreCase);
         var hearts = await GetHeartsRemainingAsync(db, req.SessionId, loseHeartOnWrong);
 
-        var explanation = await db.PgExecuteScalarAsync<string?>(
-            "SELECT explanation FROM dbo.game_questions WHERE id = @id",
-            new { id = req.QuestionId });
-
-        var totalScore = await db.PgExecuteScalarAsync<int?>(
-            "SELECT SUM(score_earned) FROM dbo.game_session_answers WHERE session_id = @id",
-            new { id = req.SessionId }) ?? 0;
-
-        if (hearts == 0)
-            await FinalizeSessionAsync(this, db, req.SessionId);
+        var postMeta = await db.PgQueryFirstAsync<(string? explanation, int total_score)>(
+            """
+            SELECT
+              (SELECT explanation FROM dbo.game_questions WHERE id = @qid) AS explanation,
+              (SELECT COALESCE(SUM(score_earned), 0) FROM dbo.game_session_answers WHERE session_id = @sid) AS total_score
+            """,
+            new { qid = req.QuestionId, sid = req.SessionId });
 
         return new AnswerResultDto(
             isCorrect,
             result.correct_index,
-            explanation,
+            postMeta.explanation,
             result.score_earned,
             result.combo,
             result.speed_bonus,
-            totalScore,
+            postMeta.total_score,
             hearts);
     }
 
@@ -511,20 +509,72 @@ public partial class GameService : IGameService
         return new KanjiMemoryCompleteResultDto(finalScore, matched, total, expReward, xuReward);
     }
 
+    private static readonly Regex KanjiMemoryKanjiRe = new(@"[\u4e00-\u9faf々〆ヵヶ]", RegexOptions.Compiled);
+
+    public async Task<IReadOnlyList<KanjiMemoryPairDto>> GetKanjiMemoryPairsAsync(int? levelId = null)
+    {
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        var pairs = new List<KanjiMemoryPairDto>();
+
+        void AddPair(string? kanji, string? meaning, string slug, string title)
+        {
+            var k = (kanji ?? "").Trim();
+            var m = (meaning ?? "").Trim();
+            if (k.Length == 0 || m.Length == 0 || k.Length > 14 || m.Length > 120) return;
+            var key = $"{k}|||{m}";
+            if (!seen.Add(key)) return;
+            pairs.Add(new KanjiMemoryPairDto(k, m, slug, title));
+        }
+
+        var kanjiRows = await (
+            from k in _learningDb.KanjiItems.AsNoTracking()
+            join l in _learningDb.Lessons.AsNoTracking() on k.LessonId equals l.Id
+            join c in _learningDb.LessonCategories.AsNoTracking() on l.CategoryId equals c.Id
+            where l.IsPublished && k.MeaningVi != null && k.KanjiChar != null
+                  && (!levelId.HasValue || c.LevelId == levelId.Value)
+            select new { k.KanjiChar, k.MeaningVi, l.Slug, l.Title }
+        ).ToListAsync();
+
+        foreach (var row in kanjiRows)
+            AddPair(row.KanjiChar, row.MeaningVi, row.Slug, row.Title);
+
+        var vocabRows = await (
+            from v in _learningDb.VocabularyItems.AsNoTracking()
+            join l in _learningDb.Lessons.AsNoTracking() on v.LessonId equals l.Id
+            join c in _learningDb.LessonCategories.AsNoTracking() on l.CategoryId equals c.Id
+            where l.IsPublished && v.MeaningVi != null && v.WordJp != null
+                  && (!levelId.HasValue || c.LevelId == levelId.Value)
+            select new { v.WordJp, v.MeaningVi, l.Slug, l.Title }
+        ).ToListAsync();
+
+        foreach (var row in vocabRows)
+        {
+            if (!KanjiMemoryKanjiRe.IsMatch(row.WordJp)) continue;
+            var fragment = row.WordJp
+                .Split(['／', '/', '、', ','])
+                .Select(s => s.Trim())
+                .FirstOrDefault(s => KanjiMemoryKanjiRe.IsMatch(s));
+            if (fragment != null)
+                AddPair(fragment, row.MeaningVi, row.Slug, row.Title);
+        }
+
+        return pairs;
+    }
+
     public async Task<InventoryDto> GetInventoryAsync(int userId)
     {
         const string sql = """
             SELECT p.id AS Id,
-                   REPLACE(REPLACE(LOWER(LTRIM(RTRIM(p.slug))), N'_', N'-'), N' ', N'') AS Slug,
+                   REPLACE(REPLACE(LOWER(TRIM(p.slug)), '_', '-'), ' ', '') AS Slug,
                    p.name AS Name, p.description AS Description,
                    p.effect_type AS EffectType,
                    p.xu_price AS XuPrice,
-                   CAST(ISNULL(p.is_premium, 0) AS BIT) AS IsPremium,
-                   ISNULL(i.quantity, 0) AS QuantityOwned
-            FROM dbo.power_ups p
-            LEFT JOIN dbo.user_inventory i ON i.power_up_id = p.id AND i.user_id = @uid
-            WHERE ISNULL(p.is_active, 1) = 1
-            ORDER BY ISNULL(p.sort_order, 0), p.id
+                   COALESCE(p.is_premium, false) AS IsPremium,
+                   COALESCE(i.quantity, 0) AS QuantityOwned
+            FROM power_ups p
+            LEFT JOIN user_inventory i ON i.power_up_id = p.id AND i.user_id = @uid
+            WHERE COALESCE(p.is_active, true)
+            ORDER BY COALESCE(p.sort_order, 0), p.id
             """;
         using var db = CreateConnection();
         await db.OpenAsync();
@@ -672,10 +722,14 @@ public partial class GameService : IGameService
         }
 
         await DeductPowerUpAsync(db, userId, norm, req.SessionId);
+        int? heartsAfter = null;
         if (norm == "heart")
+        {
             await RestoreOneHeartAsync(db, req.SessionId);
+            heartsAfter = await GetHeartsRemainingAsync(db, req.SessionId, loseHeart: false);
+        }
 
-        return new UsePowerUpResultDto(fiftyHidden);
+        return new UsePowerUpResultDto(fiftyHidden, heartsAfter);
     }
 
     private static int CountOptionEntriesFromJson(string? json)
@@ -747,9 +801,9 @@ public partial class GameService : IGameService
 
         var orderSql = sortBy switch
         {
-            "accuracy" => "le.accuracy_avg DESC, le.score DESC",
-            "speed" => "CASE WHEN le.avg_duration_ms IS NULL THEN 1 ELSE 0 END, le.avg_duration_ms ASC, le.score DESC",
-            _ => "le.score DESC, le.accuracy_avg DESC"
+            "accuracy" => "le.accuracy_percent DESC NULLS LAST, le.score DESC",
+            "speed" => "CASE WHEN le.avg_response_seconds IS NULL THEN 1 ELSE 0 END, le.avg_response_seconds ASC NULLS LAST, le.score DESC",
+            _ => "le.score DESC, le.accuracy_percent DESC NULLS LAST"
         };
 
         using var db = CreateConnection();
@@ -783,15 +837,15 @@ public partial class GameService : IGameService
 
             var sql = $"""
                 SELECT TOP (100)
-                       0 AS Rank,
+                       le.rank AS Rank,
                        le.user_id AS UserId,
                        ISNULL(NULLIF(LTRIM(RTRIM(up.display_name)), N''), u.username) AS DisplayName,
                        up.avatar_url AS AvatarUrl,
                        le.score AS Score,
-                       ISNULL(le.accuracy_avg, 0) AS AccuracyAvg,
-                       le.games_played AS GamesPlayed,
-                       le.best_combo AS BestCombo,
-                       le.avg_duration_ms AS AvgDurationMs,
+                       ISNULL(le.accuracy_percent, 0) AS AccuracyAvg,
+                       0 AS GamesPlayed,
+                       0 AS BestCombo,
+                       CAST(ISNULL(le.avg_response_seconds, 0) * 1000 AS INT) AS AvgDurationMs,
                        lv.code AS LevelCode
                 FROM dbo.leaderboard_entries le
                 INNER JOIN dbo.leaderboard_periods lp ON lp.id = le.period_id
@@ -799,11 +853,11 @@ public partial class GameService : IGameService
                 LEFT JOIN dbo.user_profiles up ON up.user_id = le.user_id
                 LEFT JOIN dbo.levels lv ON lv.id = u.level_id
                 LEFT JOIN dbo.games g ON g.id = lp.game_id
-                WHERE lp.period_type = @period
-                  AND lp.starts_at <= @utcNow
-                  AND (lp.ends_at IS NULL OR lp.ends_at > @utcNow)
+                WHERE lp.type = @period
+                  AND lp.period_start <= @today
+                  AND lp.period_end >= @today
                   AND ISNULL(LTRIM(RTRIM(LOWER(u.role))), N'user') = N'user'
-                  AND ISNULL(u.is_locked, 0) = 0
+                  AND COALESCE(u.is_locked, false) = false
                   AND LOWER(ISNULL(u.username, N'')) NOT LIKE N'admin%'
                   AND LOWER(ISNULL(u.username, N'')) NOT LIKE N'staff%'
                   AND LOWER(ISNULL(u.username, N'')) NOT LIKE N'moderator%'
@@ -814,18 +868,22 @@ public partial class GameService : IGameService
                 ORDER BY {orderSql}
                 """;
 
-            var utcNow = DateTime.UtcNow;
+            var today = DateTime.UtcNow.Date;
             var list = (await db.PgQueryAsync<LeaderboardEntryDto>(sql, new
             {
                 period,
                 gameSlug,
                 levelId,
                 friendIds,
-                utcNow
+                today
             })).ToList();
 
-            for (var i = 0; i < list.Count; i++)
-                list[i] = list[i] with { Rank = i + 1 };
+            if (list.Count > 0 && list.All(e => e.Rank == 0))
+            {
+                for (var i = 0; i < list.Count; i++)
+                    list[i] = list[i] with { Rank = i + 1 };
+            }
+
             return list;
         }
         catch (Exception ex)
@@ -1084,10 +1142,10 @@ public partial class GameService : IGameService
             """
             SELECT score AS final_score, correct_count, total_questions,
                    CAST(CASE WHEN total_questions > 0 THEN (correct_count * 100.0 / total_questions) ELSE 0 END AS DECIMAL(5,2)) AS accuracy_percent,
-                   ISNULL(max_combo, 0) AS max_combo,
-                   ISNULL(time_spent_seconds, 0) AS time_spent_seconds,
-                   ISNULL(exp_earned, 0) AS exp_earned,
-                   ISNULL(xu_earned, 0) AS xu_earned
+                   COALESCE(max_combo, 0) AS max_combo,
+                   COALESCE(time_spent_seconds, 0) AS time_spent_seconds,
+                   COALESCE(exp_earned, 0) AS exp_earned,
+                   COALESCE(xu_earned, 0) AS xu_earned
             FROM dbo.game_sessions
             WHERE id = @id AND ended_at IS NOT NULL
             """,
@@ -1096,9 +1154,28 @@ public partial class GameService : IGameService
         if (existing is not null)
             return MapEndResult(sessionId, existing);
 
-        var result = await db.PgQueryFirstAsync<SpEndRow>(
-            "SELECT * FROM sp_end_game_session(@session_id)",
-            new { session_id = sessionId });
+        SpEndRow result;
+        try
+        {
+            result = await FinalizeSessionInAppAsync(db, sessionId);
+        }
+        catch (Exception ex)
+        {
+            self._logger.LogWarning(ex,
+                "In-app finalize failed for session {SessionId} — trying sp_end_game_session", sessionId);
+            try
+            {
+                result = await db.PgQueryFirstAsync<SpEndRow>(
+                    "SELECT * FROM sp_end_game_session(@session_id)",
+                    new { session_id = sessionId });
+            }
+            catch (PostgresException spEx)
+            {
+                self._logger.LogWarning(spEx,
+                    "sp_end_game_session failed for session {SessionId} — retry in-app finalize", sessionId);
+                result = await FinalizeSessionInAppAsync(db, sessionId);
+            }
+        }
 
         try
         {
@@ -1110,6 +1187,204 @@ public partial class GameService : IGameService
         }
 
         return MapEndResult(sessionId, result);
+    }
+
+    /// <summary>Dự phòng khi SP PostgreSQL cũ lỗi (vd. user_statistics thiếu lessons_completed).</summary>
+    private static async Task<SpAnswerRow> SubmitAnswerInAppAsync(
+        NpgsqlConnection db,
+        SubmitAnswerRequest req,
+        string? powerNorm)
+    {
+        var sessionTotalQ = await db.PgExecuteScalarAsync<int?>(
+            "SELECT NULLIF(total_questions, 0) FROM dbo.game_sessions WHERE id = @id",
+            new { id = req.SessionId });
+
+        var ppt = sessionTotalQ is null or < 1
+            ? 10
+            : Math.Max(1, (int)Math.Round(100.0 / sessionTotalQ.Value));
+
+        var correctIndex = await db.PgExecuteScalarAsync<int?>(
+            "SELECT correct_index FROM dbo.game_questions WHERE id = @qid",
+            new { qid = req.QuestionId });
+
+        var isCorrect = req.ChosenIndex is not null
+                        && correctIndex is not null
+                        && req.ChosenIndex == correctIndex;
+
+        var maxOrder = await db.PgExecuteScalarAsync<int>(
+            """
+            SELECT COALESCE(MAX(question_order), 0)
+            FROM dbo.game_session_answers
+            WHERE session_id = @sid
+            """,
+            new { sid = req.SessionId });
+
+        var comboNow = 0;
+        for (var ord = maxOrder; ord >= 1; ord--)
+        {
+            var prevCorrect = await db.PgExecuteScalarAsync<bool?>(
+                """
+                SELECT is_correct FROM dbo.game_session_answers
+                WHERE session_id = @sid AND question_order = @ord
+                """,
+                new { sid = req.SessionId, ord });
+            if (prevCorrect == true)
+                comboNow++;
+            else
+                break;
+        }
+
+        var scoreEarned = 0;
+        if (isCorrect)
+        {
+            comboNow++;
+            var doubleActive = string.Equals(powerNorm, "double-points", StringComparison.OrdinalIgnoreCase);
+            scoreEarned = ppt * (doubleActive ? 2 : 1);
+        }
+        else
+        {
+            comboNow = 0;
+        }
+
+        await db.PgExecuteAsync(
+            """
+            INSERT INTO dbo.game_session_answers
+              (session_id, question_id, question_order, chosen_index, is_correct,
+               response_ms, score_earned, combo_at_answer, power_up_used, answered_at)
+            VALUES
+              (@sid, @qid, @ord, @chosen, @ok, @ms, @score, @combo, @pu, NOW())
+            """,
+            new
+            {
+                sid = req.SessionId,
+                qid = req.QuestionId,
+                ord = req.QuestionOrder,
+                chosen = req.ChosenIndex,
+                ok = isCorrect,
+                ms = req.ResponseMs,
+                score = scoreEarned,
+                combo = comboNow,
+                pu = powerNorm
+            });
+
+        return new SpAnswerRow
+        {
+            is_correct = isCorrect,
+            correct_index = correctIndex,
+            score_earned = scoreEarned,
+            combo = comboNow,
+            speed_bonus = 0
+        };
+    }
+
+    private static async Task UpsertUserStatisticsAfterGameAsync(NpgsqlConnection db, int userId, int expReward)
+    {
+        try
+        {
+            await db.PgExecuteAsync(
+                """
+                INSERT INTO user_statistics (
+                  user_id, lessons_completed, games_played, quizzes_completed, total_exp, updated_at
+                ) VALUES (@u, 0, 1, 0, @exp, NOW())
+                ON CONFLICT (user_id) DO UPDATE SET
+                  games_played = user_statistics.games_played + 1,
+                  total_exp    = user_statistics.total_exp + @exp,
+                  updated_at   = NOW()
+                """,
+                new { u = userId, exp = expReward });
+        }
+        catch (Exception)
+        {
+            /* không chặn kết thúc phiên */
+        }
+    }
+
+    private static async Task<SpEndRow> FinalizeSessionInAppAsync(NpgsqlConnection db, int sessionId)
+    {
+        var meta = await db.PgQueryFirstAsync<(int user_id, int game_id, int total_questions)>(
+            """
+            SELECT user_id, game_id, COALESCE(total_questions, 0) AS total_questions
+            FROM dbo.game_sessions
+            WHERE id = @id
+            """,
+            new { id = sessionId });
+
+        var agg = await db.PgQueryFirstAsync<(int total_score, int correct, int max_combo, int time_spent)>(
+            """
+            SELECT
+              COALESCE(SUM(score_earned), 0) AS total_score,
+              COALESCE(SUM(CASE WHEN is_correct THEN 1 ELSE 0 END), 0) AS correct,
+              COALESCE(MAX(combo_at_answer), 0) AS max_combo,
+              CASE WHEN COUNT(*) > 1
+                THEN EXTRACT(EPOCH FROM (MAX(answered_at) - MIN(answered_at)))::INTEGER
+                ELSE 0 END AS time_spent
+            FROM dbo.game_session_answers
+            WHERE session_id = @sid
+            """,
+            new { sid = sessionId });
+
+        var totalScore = Math.Min(100, agg.total_score);
+        var expReward = Math.Min(100, agg.correct * 10);
+        var xuReward = Math.Max(0, agg.correct);
+        var accuracy = meta.total_questions > 0
+            ? Math.Round((decimal)agg.correct / meta.total_questions * 100m, 2)
+            : 0m;
+
+        await db.PgExecuteAsync(
+            """
+            UPDATE dbo.game_sessions SET
+              score = @score,
+              correct_count = @correct,
+              max_combo = @combo,
+              time_spent_seconds = @time,
+              exp_earned = @exp,
+              xu_earned = @xu,
+              ended_at = NOW()
+            WHERE id = @id AND ended_at IS NULL
+            """,
+            new
+            {
+                id = sessionId,
+                score = totalScore,
+                correct = agg.correct,
+                combo = agg.max_combo,
+                time = agg.time_spent,
+                exp = expReward,
+                xu = xuReward
+            });
+
+        await db.PgExecuteAsync(
+            "UPDATE dbo.users SET exp = exp + @e, xu = xu + @x WHERE id = @u",
+            new { e = expReward, x = xuReward, u = meta.user_id });
+
+        await UpsertUserStatisticsAfterGameAsync(db, meta.user_id, expReward);
+
+        try
+        {
+            await db.PgExecuteAsync(
+                """
+                INSERT INTO user_activities_log (
+                  user_id, activity_type, entity_type, entity_id, score, created_at
+                ) VALUES (@u, 'game_completed', 'game', @gid, @score, NOW())
+                """,
+                new { u = meta.user_id, gid = meta.game_id, score = totalScore });
+        }
+        catch (Exception)
+        {
+            /* không chặn kết thúc phiên */
+        }
+
+        return new SpEndRow
+        {
+            final_score = totalScore,
+            correct_count = agg.correct,
+            total_questions = meta.total_questions,
+            accuracy_percent = accuracy,
+            max_combo = agg.max_combo,
+            time_spent_seconds = agg.time_spent,
+            exp_earned = expReward,
+            xu_earned = xuReward
+        };
     }
 
     private static SessionSummaryDto MapEndResult(int sessionId, SpEndRow r) =>
@@ -1127,18 +1402,20 @@ public partial class GameService : IGameService
 
     private static async Task<int> GetHeartsRemainingAsync(NpgsqlConnection db, int sessionId, bool loseHeart)
     {
-        var session = await db.PgQueryFirstAsync<(int? hearts_remaining, int hearts_lost, int game_id)>(
-            "SELECT hearts_remaining, ISNULL(hearts_lost, 0), game_id FROM dbo.game_sessions WHERE id = @id",
+        var session = await db.PgQueryFirstAsync<(int? hearts_remaining, int max_hearts)>(
+            """
+            SELECT gs.hearts_remaining,
+                   COALESCE(g.max_hearts, 3) AS max_hearts
+            FROM dbo.game_sessions gs
+            INNER JOIN dbo.games g ON g.id = gs.game_id
+            WHERE gs.id = @id
+            """,
             new { id = sessionId });
 
-        var maxHearts = await db.PgExecuteScalarAsync<int>(
-            "SELECT ISNULL(max_hearts, 3) FROM dbo.games WHERE id = @id",
-            new { id = session.game_id });
-
         if (!loseHeart)
-            return session.hearts_remaining ?? maxHearts;
+            return session.hearts_remaining ?? session.max_hearts;
 
-        var current = session.hearts_remaining ?? maxHearts;
+        var current = session.hearts_remaining ?? session.max_hearts;
         var newVal = Math.Max(0, current - 1);
 
         await db.PgExecuteAsync(
@@ -1157,15 +1434,14 @@ public partial class GameService : IGameService
     {
         await db.PgExecuteAsync(
             """
-            UPDATE gs
-            SET gs.hearts_remaining = CASE
-                WHEN gs.hearts_remaining IS NULL THEN g.max_hearts
-                WHEN gs.hearts_remaining + 1 > g.max_hearts THEN g.max_hearts
+            UPDATE game_sessions gs
+            SET hearts_remaining = CASE
+                WHEN gs.hearts_remaining IS NULL THEN COALESCE(g.max_hearts, 3)
+                WHEN gs.hearts_remaining + 1 > COALESCE(g.max_hearts, 3) THEN COALESCE(g.max_hearts, 3)
                 ELSE gs.hearts_remaining + 1
             END
-            FROM dbo.game_sessions gs
-            INNER JOIN dbo.games g ON g.id = gs.game_id
-            WHERE gs.id = @sid
+            FROM games g
+            WHERE gs.game_id = g.id AND gs.id = @sid
             """,
             new { sid = sessionId });
     }

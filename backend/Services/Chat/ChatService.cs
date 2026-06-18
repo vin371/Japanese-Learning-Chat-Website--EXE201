@@ -855,6 +855,19 @@ public class ChatService : IChatService
 
         var myMemberByRoom = membersByRoom.Where(m => m.UserId == currentUserId).ToDictionary(m => m.RoomId);
 
+        var unreadByRoom = roomIds.Count == 0
+            ? new Dictionary<int, int>()
+            : await (
+                from m in _db.Messages.AsNoTracking()
+                join mem in _db.ChatRoomMembers.AsNoTracking()
+                    on new { RoomId = m.RoomId, UserId = currentUserId }
+                    equals new { RoomId = mem.RoomId, UserId = mem.UserId }
+                where roomIds.Contains(m.RoomId) && !m.IsDeleted
+                      && (mem.LastReadAt == null || m.CreatedAt > mem.LastReadAt)
+                group m by m.RoomId into g
+                select new { RoomId = g.Key, Cnt = g.Count() }
+            ).ToDictionaryAsync(x => x.RoomId, x => x.Cnt);
+
         var messageCounts = roomIds.Count == 0
             ? new Dictionary<int, int>()
             : await _db.Messages
@@ -903,11 +916,7 @@ public class ChatService : IChatService
                 lastDto.Reactions = new List<ReactionSummaryDto>();
             }
             myMemberByRoom.TryGetValue(rid, out var myMem);
-            var unread = 0;
-            if (myMem?.LastReadAt != null && lastMsg != null && lastMsg.CreatedAt > myMem.LastReadAt)
-                unread = await _db.Messages.CountAsync(m => m.RoomId == rid && !m.IsDeleted && m.CreatedAt > myMem.LastReadAt);
-            else if (myMem?.LastReadAt == null && lastMsg != null)
-                unread = await _db.Messages.CountAsync(m => m.RoomId == rid && !m.IsDeleted);
+            var unread = unreadByRoom.GetValueOrDefault(rid);
 
             var msgTotal = messageCounts.GetValueOrDefault(rid);
             var onlineInRoom = roomMembers.Count(uid =>

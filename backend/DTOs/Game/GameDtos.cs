@@ -18,8 +18,8 @@ public record SubmitAnswerRequest(
 
 public record UsePowerUpRequest(int SessionId, string PowerUpSlug, int? QuestionId = null);
 
-/// <summary>Kết quả dùng vật phẩm trong phiên. Với 50:50, server trả về chỉ số đáp án sai cần ẩn (đã trừ túi).</summary>
-public record UsePowerUpResultDto(IReadOnlyList<int>? HiddenOptionIndices);
+/// <summary>Kết quả dùng vật phẩm trong phiên. Với 50:50, server trả về chỉ số đáp án sai cần ẩn (đã trừ túi). Với heart, trả heartsRemaining sau khi hồi mạng.</summary>
+public record UsePowerUpResultDto(IReadOnlyList<int>? HiddenOptionIndices, int? HeartsRemaining = null);
 
 public record PurchasePowerUpRequest(string PowerUpSlug, int Quantity = 1);
 
@@ -35,6 +35,12 @@ public record KanjiMemoryCompleteResultDto(
     int TotalPairs,
     int ExpEarned,
     int XuEarned);
+
+public record KanjiMemoryPairDto(
+    string Kanji,
+    string Meaning,
+    string LessonSlug,
+    string LessonTitle);
 
 public record CreatePvpRoomRequest(string GameSlug, int? LevelId);
 

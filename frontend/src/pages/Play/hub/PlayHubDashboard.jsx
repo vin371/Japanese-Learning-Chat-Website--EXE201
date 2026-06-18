@@ -137,6 +137,7 @@ function rankCellLabel(kind) {
 export function PlayHubDashboard({
   loadError,
   loading,
+  onRetryGames,
   ordered,
   displayName,
   exp,
@@ -230,7 +231,21 @@ export function PlayHubDashboard({
 
         <Motion.div className="grid grid-cols-1 lg:grid-cols-[1fr_minmax(260px,320px)] gap-4 lg:gap-7 items-start" variants={vColumns}>
           <Motion.div className="flex-1 min-w-0" variants={vSlideMain}>
-            {loadError ? <div className="text-rose-600 bg-rose-50 border border-rose-200 p-3 rounded-lg mb-4 text-sm font-medium">{loadError}</div> : null}
+            {loadError ? (
+              <div className="text-rose-600 bg-rose-50 border border-rose-200 p-3 rounded-lg mb-4 text-sm font-medium flex flex-wrap items-center justify-between gap-2">
+                <span>{loadError}</span>
+                {onRetryGames ? (
+                  <button
+                    type="button"
+                    className="shrink-0 px-3 py-1.5 rounded-lg bg-rose-700 text-white text-xs font-bold hover:bg-rose-800 disabled:opacity-60"
+                    onClick={() => void onRetryGames()}
+                    disabled={loading}
+                  >
+                    {loading ? 'Đang tải…' : 'Tải lại'}
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
             {loading ? <p className="text-slate-500 italic text-sm mb-4">Đang tải danh sách game…</p> : null}
 
             <Motion.section className="mb-5" variants={vBlock}>

@@ -1,4 +1,41 @@
 import { gameApi } from '../api/gameApi';
+import { isApiUnavailableError } from '../utils/apiErrorMessage';
+
+/** Lấy thông báo lỗi từ response API (500/400) — tránh nhầm với lỗi mạng. */
+export function extractGameApiError(e, fallback = 'Lỗi máy chủ game.') {
+  const res = e?.response;
+  if (!res) return null;
+  const d = res.data;
+  const raw =
+    (typeof d === 'string' && d.trim() ? d.trim() : null)
+    ?? d?.message
+    ?? d?.Message;
+  if (raw) {
+    const text = String(raw);
+    if (/lessons_completed|user_statistics/i.test(text)) {
+      return 'Lỗi thống kê tài khoản trên server — điểm vẫn được ghi nhận. Tải lại trang nếu game bị kẹt.';
+    }
+    return text.slice(0, 240);
+  }
+  return fallback;
+}
+
+async function withNetworkRetry(fn, maxAttempts = 3) {
+  let lastErr;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      return await fn();
+    } catch (e) {
+      lastErr = e;
+      if (attempt < maxAttempts - 1 && isApiUnavailableError(e)) {
+        await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
+        continue;
+      }
+      throw e;
+    }
+  }
+  throw lastErr;
+}
 
 /**
  * @returns {Promise<Array<{ id, slug, name, description, skillType, maxHearts, isPvp, isBossMode, sortOrder }>>}
@@ -65,7 +102,7 @@ export async function startGameSession(body) {
     payload.useLessonVocabulary = true;
   }
 
-  const { data } = await gameApi.startSession(payload);
+  const { data } = await withNetworkRetry(() => gameApi.startSession(payload));
   return data;
 }
 
@@ -109,7 +146,7 @@ export async function submitGameAnswer(body) {
     responseMs: responseMs != null && Number.isFinite(responseMs) ? Math.max(0, Math.floor(responseMs)) : null,
     powerUpUsed: body.powerUpUsed == null || body.powerUpUsed === '' ? null : String(body.powerUpUsed),
   };
-  const { data } = await gameApi.submitAnswer(payload);
+  const { data } = await withNetworkRetry(() => gameApi.submitAnswer(payload));
   return data;
 }
 

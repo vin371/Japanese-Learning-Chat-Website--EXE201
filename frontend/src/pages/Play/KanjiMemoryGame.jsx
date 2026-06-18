@@ -5,12 +5,13 @@ import { PlayGameSetupPro } from '../../components/play/PlayGameSetupPro';
 import { playSetupChildVariants, playSetupParentVariants } from '../../components/play/playSetupMotion';
 import SpeakJaButton from '../../components/learn/SpeakJaButton';
 import { ROUTES } from '../../data/routes';
-import { N5_LESSONS } from '../../data/n5BeginnerCourse';
+import http from '../../api/client';
 import { completeKanjiMemoryRewards } from '../../services/gameService';
 import { PlayKurenaiSummary } from './PlayKurenaiSummary';
 import {
-  extractKanjiMemoryPairsFromN5Lessons,
+  fetchKanjiMemoryPairsFromApi,
   pickRandomPairs,
+  resolveKanjiMemoryPool,
 } from '../../utils/kanjiMemoryFromLessons';
 import { BookType, Settings, Star } from 'lucide-react';
 
@@ -84,6 +85,9 @@ export default function KanjiMemoryGame() {
   const [apiRewardErr, setApiRewardErr] = useState('');
   const [apiRewardLoading, setApiRewardLoading] = useState(false);
   const [elapsedSec, setElapsedSec] = useState(0);
+  const [poolLoading, setPoolLoading] = useState(true);
+  const [poolLoadErr, setPoolLoadErr] = useState('');
+  const [apiPool, setApiPool] = useState([]);
   const lockRef = useRef(false);
   const flipBackTimerRef = useRef(null);
   const turnsRef = useRef(0);
@@ -93,25 +97,56 @@ export default function KanjiMemoryGame() {
     setSelectedLesson(lessonParam);
   }, [lessonParam]);
 
-  const poolAll = useMemo(() => extractKanjiMemoryPairsFromN5Lessons(null), []);
-  const poolLesson = useMemo(
-    () => (selectedLesson ? extractKanjiMemoryPairsFromN5Lessons(selectedLesson) : []),
-    [selectedLesson],
-  );
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setPoolLoading(true);
+      setPoolLoadErr('');
+      try {
+        const pairs = await fetchKanjiMemoryPairsFromApi(http);
+        if (!cancelled) setApiPool(pairs);
+      } catch {
+        if (!cancelled) {
+          setApiPool([]);
+          setPoolLoadErr('Không tải được từ vựng/kanji từ API — kiểm tra backend đang chạy.');
+        }
+      } finally {
+        if (!cancelled) setPoolLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const poolAll = resolveKanjiMemoryPool(apiPool.length > 0 ? apiPool : []);
+
+  const poolLesson = useMemo(() => {
+    if (!selectedLesson) return [];
+    return poolAll.filter((p) => p.lessonSlug === selectedLesson);
+  }, [poolAll, selectedLesson]);
 
   const activePool = selectedLesson ? poolLesson : poolAll;
   const maxPairsAvailable = activePool.length;
 
   const lessonOptions = useMemo(() => {
-    return N5_LESSONS.map((l) => {
-      const count = extractKanjiMemoryPairsFromN5Lessons(l.slug).length;
-      return {
-        slug: l.slug,
-        label: `${l.navTitle || l.slug} (${l.sectionLabel || l.section})`,
-        count,
-      };
-    }).filter((o) => o.count >= MIN_PAIRS);
-  }, []);
+    const bySlug = new Map();
+    for (const p of poolAll) {
+      if (!p.lessonSlug) continue;
+      const prev = bySlug.get(p.lessonSlug);
+      if (prev) prev.count += 1;
+      else {
+        bySlug.set(p.lessonSlug, {
+          slug: p.lessonSlug,
+          label: p.lessonTitle || p.lessonSlug,
+          count: 1,
+        });
+      }
+    }
+    return [...bySlug.values()]
+      .filter((o) => o.count >= MIN_PAIRS)
+      .sort((a, b) => a.label.localeCompare(b.label, 'vi'));
+  }, [poolAll]);
 
   const startGame = useCallback(() => {
     if (flipBackTimerRef.current) {
@@ -353,15 +388,31 @@ export default function KanjiMemoryGame() {
           </Motion.div>
 
           <Motion.p variants={childV} className="m-0 mb-3 text-[0.88rem] text-slate-600 dark:text-slate-300">
-            Đang có <strong>{poolAll.length}</strong> cặp unique trong toàn khóa; bài chọn: <strong>{maxPairsAvailable}</strong>{' '}
-            cặp.
+            {poolLoading ? (
+              <>
+                Đang đồng bộ thêm từ bài học… (đã có <strong>{poolAll.length}</strong> cặp sẵn sàng)
+              </>
+            ) : (
+              <>
+                Đang có <strong>{poolAll.length}</strong> cặp unique trong toàn khóa; bài chọn:{' '}
+                <strong>{maxPairsAvailable}</strong> cặp.
+              </>
+            )}
           </Motion.p>
 
-          {maxPairsAvailable < MIN_PAIRS ? (
+          {poolLoadErr ? (
+            <Motion.p variants={childV} className="m-0 mb-4 text-amber-700 bg-amber-50 border border-amber-200 p-3 rounded-lg text-sm font-medium">
+              {poolLoadErr}
+            </Motion.p>
+          ) : null}
+
+          {maxPairsAvailable < MIN_PAIRS && !poolLoading ? (
             <Motion.p variants={childV} className="m-0 mb-4 text-rose-600 bg-rose-50 border border-rose-200 p-3 rounded-lg text-sm font-medium">
               Chưa đủ cặp Kanji trong bài đã chọn (cần ít nhất {MIN_PAIRS}). Thử &quot;Toàn bộ bài N5&quot;.
             </Motion.p>
-          ) : (
+          ) : null}
+
+          {maxPairsAvailable >= MIN_PAIRS ? (
             <Motion.div variants={childV}>
               <Motion.button
                 type="button"
@@ -374,7 +425,7 @@ export default function KanjiMemoryGame() {
                 Bắt đầu <span aria-hidden>▶</span>
               </Motion.button>
             </Motion.div>
-          )}
+          ) : null}
 
           <Motion.section variants={childV} className="relative rounded-2xl overflow-hidden min-h-[clamp(11rem,32vw,20rem)] border border-slate-900/5 bg-rose-50 dark:bg-slate-900" aria-label="Cảm hứng học tập">
             <div className="absolute inset-0 bg-transparent bg-[url('../../assets/images/zen-bg.jpg')] bg-cover bg-center bg-no-repeat opacity-40 mix-blend-multiply dark:mix-blend-screen dark:opacity-20 pointer-events-none" style={{ backgroundImage: `linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.22) 100%), var(--play-setup-zen-bg, none)` }} />
