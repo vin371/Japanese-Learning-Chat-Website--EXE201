@@ -590,3 +590,79 @@ html[data-theme='dark'] .up-header-avatar {
   background-color: var(--border);
   margin: 0.25rem 0;
 }
+
+/* Avatar Premium — viền vàng + huy hiệu sao (nav profile) */
+.yume-nav-avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
+  padding: 2px;
+  border-radius: 999px;
+}
+
+.yume-nav-avatar-wrap--premium {
+  padding: 3px;
+  background: linear-gradient(135deg, #fde68a 0%, #f59e0b 42%, #d97706 100%);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, #fbbf24 55%, transparent),
+    0 4px 16px color-mix(in srgb, #f59e0b 35%, transparent);
+}
+
+.yume-nav-avatar-inner {
+  background: #fff;
+}
+
+html[data-theme='dark'] .yume-nav-avatar-inner {
+  background: #0f172a;
+}
+
+.yume-nav-avatar-premium {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  background: linear-gradient(135deg, #f59e0b, #b45309);
+  border: 2px solid #fff;
+  box-shadow: 0 2px 8px color-mix(in srgb, #f59e0b 45%, transparent);
+  pointer-events: none;
+}
+
+html[data-theme='dark'] .yume-nav-avatar-premium {
+  border-color: #0f172a;
+}
+
+.yume-nav-profile-trigger--premium {
+  border-color: color-mix(in srgb, #f59e0b 35%, #e2e8f0) !important;
+  box-shadow: 0 0 0 1px color-mix(in srgb, #fbbf24 18%, transparent);
+}
+
+html[data-theme='dark'] .yume-nav-profile-trigger--premium {
+  border-color: color-mix(in srgb, #f59e0b 40%, #334155) !important;
+  box-shadow: 0 0 18px color-mix(in srgb, #f59e0b 15%, transparent);
+}
+
+.yume-nav-profile-premium-label {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0.08rem 0.38rem;
+  border-radius: 999px;
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  vertical-align: middle;
+  color: #92400e;
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  border: 1px solid color-mix(in srgb, #f59e0b 35%, transparent);
+}
+
+html[data-theme='dark'] .yume-nav-profile-premium-label {
+  color: #fffbeb;
+  background: linear-gradient(135deg, #92400e, #b45309);
+  border-color: color-mix(in srgb, #fcd34d 35%, transparent);
+}

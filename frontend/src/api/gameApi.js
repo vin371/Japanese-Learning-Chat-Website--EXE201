@@ -19,7 +19,9 @@ export const gameApi = {
 
   fetchMyAchievements: () => http.get('/api/game/achievements'),
 
-  fetchExpLeaderboard: (params) => http.get('/api/game/exp-leaderboard', { params }),
+  fetchExpLeaderboard: (config) => http.get('/api/game/exp-leaderboard', config),
+
+  fetchXuLeaderboard: (config) => http.get('/api/game/xu-leaderboard', config),
 
   fetchGameInventory: () => http.get('/api/game/inventory'),
 

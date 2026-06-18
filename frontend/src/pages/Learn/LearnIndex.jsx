@@ -2,17 +2,22 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Link, useOutletContext } from 'react-router-dom';
 import { ROUTES } from '../../data/routes';
-import { N5_LESSONS } from '../../data/n5BeginnerCourse';
 import { useAuth } from '../../hooks/useAuth';
 import http from '../../api/client';
 import { isStaffUser } from '../../utils/roles';
-import { getJlptLevelCodeFromUser } from '../../utils/learnLevelCode';
+import { getJlptLevelCodeFromUser, jlptCodeToLevelId } from '../../utils/learnLevelCode';
+import {
+  getLevelAccessMode,
+  learnRouteWithJlpt,
+  lockedLevelMessage,
+} from '../../utils/learnLevelAccess';
+import { LearnLevelLocked } from './components/LearnLevelLocked';
+import { categoryTypeToSection, sectionLabelFor, sectionMatchesFilter } from '../../utils/learnDbLessonNav';
+import { learnCardHover } from '../../utils/learnMotion';
 import { LearnProgressRing } from './components/LearnProgressRing';
 import { LearnImageCarousel } from './components/LearnImageCarousel';
 import LearnAlphabet from './components/LearnAlphabet';
-import LearnVocab from './components/LearnVocab';
-import LearnGrammar from './components/LearnGrammar';
-import LearnKanji from './components/LearnKanji';
+import { LEARN_TOPIC_IMAGES, LEARN_VISUAL } from '../../data/learnVisualAssets';
 
 /** Ảnh minh họa banner «Kiểm tra trình độ» — luân phiên (crossfade) */
 const LEARN_PROMO_ART_CAROUSEL_URLS = [
@@ -60,25 +65,61 @@ const learnSectionStagger = {
   },
 };
 
-function extractPreviewTiles(title, max = 5) {
-  const jp = title?.match(/[\u3040-\u309f\u30a0-\u30ff\u4e00-\u9faf]/g);
-  if (jp?.length) return jp.slice(0, max);
-  const t = (title || '·').slice(0, max);
-  return t.split('');
+const DISPLAY_GROUP_KEYS = [
+  { key: 'vocab', labelKey: 'vocab' },
+  { key: 'grammar', labelKey: 'grammar' },
+  { key: 'kanji', labelKey: 'kanji' },
+];
+
+function displayGroupsFor(levelCode) {
+  const code = String(levelCode || 'N5').toUpperCase();
+  return DISPLAY_GROUP_KEYS.map((g) => ({
+    key: g.key,
+    label:
+      g.key === 'vocab'
+        ? `Từ vựng ${code}`
+        : g.key === 'grammar'
+          ? `Ngữ pháp ${code}`
+          : `Kanji ${code}`,
+  }));
+}
+
+function sectionHeadVi(levelCode) {
+  const code = String(levelCode || 'N5').toUpperCase();
+  return {
+    all: `Tất cả chủ đề JLPT ${code}`,
+    dialogue: 'Hội thoại',
+    reference: 'Tra cứu',
+    reading: 'Bài đọc',
+    vocab: `Từ vựng ${code}`,
+    kanji: `Kanji ${code}`,
+    grammar: `Ngữ pháp ${code}`,
+    alphabet: 'Bảng chữ cái',
+  };
+}
+
+function categoryAccent(section) {
+  if (section === 'vocab') return 'vocab';
+  if (section === 'grammar') return 'grammar';
+  if (section === 'kanji') return 'kanji';
+  return 'default';
 }
 
 function normalizeLesson(row) {
+  const categoryType = row.categoryType ?? row.CategoryType ?? '';
   return {
     id: row.id ?? row.Id,
     slug: row.slug ?? row.Slug,
     title: row.title ?? row.Title,
     categoryName: row.categoryName ?? row.CategoryName ?? '',
+    categoryType,
+    section: categoryTypeToSection(categoryType),
     sortOrder: row.sortOrder ?? row.SortOrder ?? 0,
     levelId: row.levelId ?? row.LevelId ?? 0,
   };
 }
 
-/** completed | active | locked | guest-open */
+/** completed | active | locked | guest-open — mọi bài N5 mở; chỉ đánh dấu đã xong. */
 function rowStatesForAuth(lessons, progressByLessonId) {
   const isDone = (id) => {
     const p = progressByLessonId.get(id);
@@ -88,19 +129,9 @@ function rowStatesForAuth(lessons, progressByLessonId) {
     return st === 'completed' || pct >= 100;
   };
 
-  let firstIncomplete = -1;
-  for (let i = 0; i < lessons.length; i++) {
-    if (!isDone(lessons[i].id)) {
-      firstIncomplete = i;
-      break;
-    }
-  }
-
-  return lessons.map((lesson, i) => {
+  return lessons.map((lesson) => {
     if (isDone(lesson.id)) return { lesson, state: 'completed' };
-    if (firstIncomplete === -1) return { lesson, state: 'completed' };
-    if (i === firstIncomplete) return { lesson, state: 'active' };
-    return { lesson, state: 'locked' };
+    return { lesson, state: 'guest-open' };
   });
 }
 
@@ -108,67 +139,63 @@ function rowStatesGuest(lessons) {
   return lessons.map((lesson) => ({ lesson, state: 'guest-open' }));
 }
 
-function displayCategory(name) {
-  const s = String(name || 'Bài học').trim();
-  return s.toUpperCase();
+function topicImage(section) {
+  if (section === 'vocab') return LEARN_TOPIC_IMAGES.vocab;
+  if (section === 'grammar') return LEARN_TOPIC_IMAGES.grammar;
+  if (section === 'kanji') return LEARN_TOPIC_IMAGES.kanji;
+  return LEARN_VISUAL.study;
 }
 
-const SECTION_HEAD_VI = {
-  all: 'Tất cả bài từ hệ thống',
-  dialogue: 'Hội thoại',
-  reference: 'Tra cứu',
-  reading: 'Bài đọc',
-  vocab: 'Từ vựng',
-  kanji: 'Kanji',
-  grammar: 'Ngữ pháp',
-};
-
-function openLearnAiPanel() {
-  window.dispatchEvent(new CustomEvent('yume-open-learn-ai'));
-}
-
-/** Thẻ lưới — bám sát mẫu (XONG / ĐANG HỌC, nền trắng, viền đỏ bài đang học) */
+/** Thẻ bài học — có ảnh minh họa theo chủ đề */
 function TrackCard({ lesson, state, to, progressPercent }) {
-  const tiles = extractPreviewTiles(lesson.title, 5);
   const isLocked = state === 'locked';
+  const accent = categoryAccent(lesson.section);
   const badge =
     state === 'completed'
-      ? { cls: 'learn-track-card__badge--done', text: 'XONG' }
+      ? { cls: 'learn-track-card__badge--done', text: 'Xong' }
       : state === 'locked'
-        ? { cls: 'learn-track-card__badge--locked', text: 'KHÓA' }
+        ? { cls: 'learn-track-card__badge--locked', text: 'Khóa' }
         : state === 'guest-open'
-          ? { cls: 'learn-track-card__badge--sample', text: 'BÀI MẪU' }
-          : { cls: 'learn-track-card__badge--active', text: 'ĐANG HỌC' };
+          ? { cls: 'learn-track-card__badge--sample', text: 'Mở' }
+          : { cls: 'learn-track-card__badge--active', text: 'Đang học' };
   const btnClass =
     state === 'completed'
       ? 'learn-track-card__btn learn-track-card__btn--review'
       : state === 'locked'
         ? 'learn-track-card__btn learn-track-card__btn--locked'
         : 'learn-track-card__btn learn-track-card__btn--primary';
-  const label = state === 'completed' ? 'Ôn tập ngay' : 'Học ngay';
+  const label = state === 'completed' ? 'Ôn tập' : 'Học ngay';
 
   return (
-    <div
-      className={`learn-track-card learn-track-card--${state === 'guest-open' ? 'guest' : state}`}
+    <Motion.div
+      className={`learn-track-card learn-track-card--visual learn-track-card--accent-${accent} learn-track-card--${state === 'guest-open' ? 'guest' : state}`}
+      variants={learnCardHover}
+      initial="rest"
+      whileHover="hover"
+      whileTap="tap"
     >
+      <div className="learn-track-card__thumb">
+        <img src={topicImage(lesson.section)} alt="" loading="lazy" />
+        <div className="learn-track-card__thumb-shade" aria-hidden />
+      </div>
+      <div className="learn-track-card__accent-bar" aria-hidden />
       <div className="learn-track-card__head">
         <span className={`learn-track-card__badge ${badge.cls}`}>{badge.text}</span>
-        <span className="learn-track-card__cat">{displayCategory(lesson.categoryName)}</span>
+        {lesson.sortOrder ? (
+          <span className="learn-track-card__lesson-no">Bài {lesson.sortOrder}</span>
+        ) : null}
       </div>
       <div className="learn-track-card__middle">
+        <p className="learn-track-card__cat">{sectionLabelFor(lesson.section)}</p>
         <h4 className="learn-track-card__title">{lesson.title}</h4>
         {state === 'active' && progressPercent != null ? (
           <div className="learn-track-card__mini-prog" aria-hidden>
-            <div className="learn-track-card__mini-prog-fill" style={{ width: `${Math.min(100, progressPercent)}%` }} />
+            <div
+              className="learn-track-card__mini-prog-fill"
+              style={{ width: `${Math.min(100, progressPercent)}%` }}
+            />
           </div>
         ) : null}
-        <div className="learn-track-card__tiles" aria-hidden>
-          {tiles.map((ch, i) => (
-            <span key={i} className="learn-track-card__tile" lang="ja">
-              {ch}
-            </span>
-          ))}
-        </div>
       </div>
       <div className="learn-track-card__foot">
         {isLocked ? (
@@ -181,15 +208,45 @@ function TrackCard({ lesson, state, to, progressPercent }) {
           </Link>
         )}
       </div>
-    </div>
+    </Motion.div>
+  );
+}
+
+function openLearnAiPanel() {
+  window.dispatchEvent(new CustomEvent('yume-open-learn-ai'));
+}
+
+function LessonGrid({ rows, viewMode, lessonProgressPercent, activeLevelCode }) {
+  return (
+    <Motion.div
+      className={`learn-track__grid learn-track__grid--m2${viewMode === 'list' ? ' learn-track__grid--list' : ''}`}
+      variants={learnGridBlock}
+    >
+      {rows.map(({ lesson, state }) => (
+        <Motion.div key={lesson.id} className="learn-track-card-wrap" variants={learnItem}>
+          <TrackCard
+            lesson={lesson}
+            state={state}
+            to={learnRouteWithJlpt(`${ROUTES.LEARN}/${encodeURIComponent(lesson.slug)}`, activeLevelCode)}
+            progressPercent={state === 'active' ? lessonProgressPercent(lesson.id) ?? 40 : null}
+          />
+        </Motion.div>
+      ))}
+    </Motion.div>
   );
 }
 
 export default function LearnIndex() {
   const reduceMotion = useReducedMotion();
   const { isAuthenticated, user } = useAuth();
-  const { sectionFilter } = useOutletContext() || {};
+  const { sectionFilter, activeLevelCode: ctxLevelCode, activeLevelId: ctxLevelId, activeAccessMode, userLevelCode: ctxUserLevel, levelProgressMap } = useOutletContext() || {};
   const filterKey = sectionFilter || 'all';
+  const activeLevelCode = ctxLevelCode || getJlptLevelCodeFromUser(user);
+  const activeLevelId = ctxLevelId ?? jlptCodeToLevelId(activeLevelCode);
+  const userLevelCode = ctxUserLevel || getJlptLevelCodeFromUser(user);
+  const accessMode = activeAccessMode || getLevelAccessMode(activeLevelCode, userLevelCode, levelProgressMap || {});
+  const displayGroups = useMemo(() => displayGroupsFor(activeLevelCode), [activeLevelCode]);
+  const sectionHeadlines = useMemo(() => sectionHeadVi(activeLevelCode), [activeLevelCode]);
   const staffNoLearnerTests = isStaffUser(user);
   const [apiLessons, setApiLessons] = useState([]);
   const [progressItems, setProgressItems] = useState([]);
@@ -199,12 +256,12 @@ export default function LearnIndex() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const lr = await http.get('/api/lessons', { params: { page: 1, pageSize: 100 } });
+      const lr = await http.get('/api/lessons', { params: { page: 1, pageSize: 200, levelId: activeLevelId } });
       const items = lr.data?.items ?? lr.data?.Items ?? [];
       setApiLessons((Array.isArray(items) ? items : []).map(normalizeLesson));
 
       if (isAuthenticated) {
-        const pr = await http.get('/api/users/me/progress', { params: { page: 1, pageSize: 100 } });
+        const pr = await http.get('/api/users/me/progress', { params: { page: 1, pageSize: 200 } });
         const pi = pr.data?.items ?? pr.data?.Items ?? [];
         setProgressItems(Array.isArray(pi) ? pi : []);
       } else {
@@ -216,7 +273,7 @@ export default function LearnIndex() {
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, activeLevelId]);
 
   useEffect(() => {
     load();
@@ -232,26 +289,32 @@ export default function LearnIndex() {
   }, [progressItems]);
 
   const sortedApi = useMemo(() => {
-    return [...apiLessons].sort((a, b) => {
-      if (a.levelId !== b.levelId) return a.levelId - b.levelId;
-      if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
-      return a.id - b.id;
-    });
-  }, [apiLessons]);
+    return [...apiLessons]
+      .filter((l) => l.levelId === activeLevelId)
+      .sort((a, b) => {
+        const sectionOrder = { vocab: 0, grammar: 1, kanji: 2 };
+        const sa = sectionOrder[a.section] ?? 9;
+        const sb = sectionOrder[b.section] ?? 9;
+        if (sa !== sb) return sa - sb;
+        if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+        return a.id - b.id;
+      });
+  }, [apiLessons, activeLevelId]);
+
+  const filteredLessons = useMemo(() => {
+    if (filterKey === 'all' || filterKey === 'dialogue' || filterKey === 'reading' || filterKey === 'reference') {
+      return sortedApi;
+    }
+    return sortedApi.filter((l) => sectionMatchesFilter(l.categoryType, filterKey));
+  }, [sortedApi, filterKey]);
 
   const apiRows = useMemo(() => {
-    if (!sortedApi.length) return [];
-    return isAuthenticated
-      ? rowStatesForAuth(sortedApi, progressByLessonId)
-      : rowStatesGuest(sortedApi);
-  }, [sortedApi, progressByLessonId, isAuthenticated]);
-
-  // Bài mẫu N5: luôn ở trạng thái "chưa học" cho mỗi trình duyệt,
-  // không dùng tick xanh/Ôn tập để tránh hiểu nhầm đã hoàn thành.
-  const n5Rows = useMemo(
-    () => N5_LESSONS.map((lesson) => ({ lesson, state: 'guest-open' })),
-    [],
-  );
+    if (!filteredLessons.length) return [];
+    const rows = isAuthenticated
+      ? rowStatesForAuth(filteredLessons, progressByLessonId)
+      : rowStatesGuest(filteredLessons);
+    return rows;
+  }, [filteredLessons, progressByLessonId, isAuthenticated]);
 
   const apiCompleted = sortedApi.filter((l) => {
     const p = progressByLessonId.get(l.id);
@@ -266,13 +329,22 @@ export default function LearnIndex() {
   const progressPct = totalTrack ? Math.round((doneTrack / totalTrack) * 100) : 0;
 
   const remainder = Math.max(0, totalTrack - doneTrack);
-  const levelCode = getJlptLevelCodeFromUser(user);
-  const sectionHeadline = SECTION_HEAD_VI[filterKey] ?? SECTION_HEAD_VI.all;
+  const sectionHeadline = sectionHeadlines[filterKey] ?? sectionHeadlines.all;
 
   function lessonProgressPercent(lessonId) {
     const p = progressByLessonId.get(lessonId);
     if (!p) return null;
     return Number(p.progressPercent ?? p.ProgressPercent ?? 0);
+  }
+
+  if (accessMode === 'locked') {
+    return (
+      <LearnLevelLocked
+        targetCode={activeLevelCode}
+        userCode={userLevelCode}
+        message={lockedLevelMessage(userLevelCode, levelProgressMap || {})}
+      />
+    );
   }
 
   if (filterKey === 'alphabet') {
@@ -288,44 +360,7 @@ export default function LearnIndex() {
     );
   }
 
-  if (filterKey === 'vocab') {
-    return (
-      <Motion.div
-        className="learn-dashboard"
-        variants={learnRoot}
-        initial={reduceMotion ? false : 'hidden'}
-        animate="show"
-      >
-        <LearnVocab />
-      </Motion.div>
-    );
-  }
-
-  if (filterKey === 'grammar') {
-    return (
-      <Motion.div
-        className="learn-dashboard"
-        variants={learnRoot}
-        initial={reduceMotion ? false : 'hidden'}
-        animate="show"
-      >
-        <LearnGrammar />
-      </Motion.div>
-    );
-  }
-
-  if (filterKey === 'kanji') {
-    return (
-      <Motion.div
-        className="learn-dashboard"
-        variants={learnRoot}
-        initial={reduceMotion ? false : 'hidden'}
-        animate="show"
-      >
-        <LearnKanji />
-      </Motion.div>
-    );
-  }
+  const showGrouped = filterKey === 'all';
 
   return (
     <Motion.div
@@ -334,31 +369,47 @@ export default function LearnIndex() {
       initial={reduceMotion ? false : 'hidden'}
       animate="show"
     >
-      <Motion.header className="learn-dashboard__hero learn-dashboard__hero--compact" variants={learnItem}>
-        <div className="learn-dashboard__hero-main">
+      <Motion.header className="learn-visual-hero" variants={learnItem}>
+        {accessMode === 'review' ? (
+          <div className="learn-level-review-banner" role="status">
+            <span className="learn-level-review-banner__tag">Ôn tập</span>
+            <p className="learn-level-review-banner__text">
+              Bạn đang xem lại nội dung <strong>JLPT {activeLevelCode}</strong>. Tiến độ chỉ cập nhật khi học ở cấp{' '}
+              <strong>{userLevelCode}</strong>.
+            </p>
+          </div>
+        ) : null}
+        <div className="learn-visual-hero__copy">
           <span className="learn-dashboard__tag">Lộ trình YumeGo-ji</span>
           <h1 className="learn-dashboard__title">
-            Lộ trình học tập <span className="learn-dashboard__title-accent">JLPT</span>
+            Học tiếng Nhật <span className="learn-dashboard__title-accent">JLPT {activeLevelCode}</span>
           </h1>
           <p className="learn-dashboard__lead">
             {isAuthenticated
-              ? 'Theo dõi tiến độ bài hệ thống, ôn bài đã xong và tiếp tục bài đang học.'
-              : 'Đăng nhập để lưu tiến độ. Bài mẫu N5 luôn mở để học thử.'}
+              ? 'Từ vựng, ngữ pháp và kanji — mỗi bài kèm thẻ học và minh họa trực quan.'
+              : `Đăng nhập để lưu tiến độ. Mọi bài ${activeLevelCode} đều mở để học thử.`}
           </p>
+          <div className="learn-visual-hero__chips">
+            <span className="learn-visual-chip">Từ vựng</span>
+            <span className="learn-visual-chip">Ngữ pháp</span>
+            <span className="learn-visual-chip">Kanji</span>
+          </div>
         </div>
-        <div className="learn-dashboard__hero-ring-wrap">
-          <LearnProgressRing size={108} percent={totalTrack ? progressPct : null} />
-          <p className="learn-hero-ring__kicker">Tiến độ tổng</p>
-          <p className="learn-hero-ring__level">Cấp độ {levelCode}</p>
-          <p className="learn-dashboard__stat-meta learn-dashboard__stat-meta--under-ring">
-            {totalTrack > 0
-              ? remainder > 0
-                ? `${doneTrack}/${totalTrack} bài hoàn thành — Còn ${remainder} bài`
-                : `${doneTrack}/${totalTrack} bài hoàn thành`
-              : isAuthenticated
-                ? 'Chưa có bài hệ thống — dùng bài mẫu N5'
-                : 'Đăng nhập để xem tiến độ bài hệ thống'}
-          </p>
+        <div className="learn-visual-hero__media">
+          <img src={LEARN_VISUAL.sakura} alt="" className="learn-visual-hero__photo" loading="lazy" />
+          <div className="learn-visual-hero__ring">
+            <LearnProgressRing size={100} percent={totalTrack ? progressPct : null} />
+            <p className="learn-hero-ring__kicker">Tiến độ tổng</p>
+            <p className="learn-dashboard__stat-meta learn-dashboard__stat-meta--under-ring">
+              {totalTrack > 0
+                ? remainder > 0
+                  ? `${doneTrack}/${totalTrack} bài — còn ${remainder}`
+                  : `${doneTrack}/${totalTrack} bài hoàn thành`
+                : isAuthenticated
+                  ? `Chưa có bài ${activeLevelCode}`
+                  : 'Đăng nhập để xem tiến độ'}
+            </p>
+          </div>
         </div>
       </Motion.header>
 
@@ -368,14 +419,14 @@ export default function LearnIndex() {
         </Motion.p>
       ) : null}
 
-      {sortedApi.length > 0 ? (
+      {filteredLessons.length > 0 ? (
         <Motion.section className="learn-track learn-track--cards" aria-labelledby="learn-track-api-title" variants={learnSectionStagger}>
           <Motion.div className="learn-section-head learn-section-head--m2" variants={learnItem}>
             <div>
               <h2 id="learn-track-api-title" className="learn-section-head__title learn-section-head__title--system">
-                Bài từ hệ thống
+                Khóa học {activeLevelCode}
               </h2>
-              <p className="learn-section-head__sub">Học phần: {sectionHeadline}</p>
+              <p className="learn-section-head__sub">{sectionHeadline}</p>
               {isAuthenticated && apiCompleted > 0 ? (
                 <p className="learn-section-head__ready-line">Sẵn sàng để ôn tập</p>
               ) : null}
@@ -399,58 +450,27 @@ export default function LearnIndex() {
               </button>
             </div>
           </Motion.div>
-          <Motion.div
-            className={`learn-track__grid learn-track__grid--m2${viewMode === 'list' ? ' learn-track__grid--list' : ''}`}
-            variants={learnGridBlock}
-          >
-            {apiRows.map(({ lesson, state }) => (
-              <Motion.div key={lesson.id} className="learn-track-card-wrap" variants={learnItem}>
-                <TrackCard
-                  lesson={lesson}
-                  state={state}
-                  to={`${ROUTES.LEARN}/${encodeURIComponent(lesson.slug)}`}
-                  progressPercent={state === 'active' ? lessonProgressPercent(lesson.id) ?? 40 : null}
-                />
-              </Motion.div>
-            ))}
-          </Motion.div>
+
+          {showGrouped ? (
+            displayGroups.map((group) => {
+              const groupRows = apiRows.filter(({ lesson }) => lesson.section === group.key);
+              if (!groupRows.length) return null;
+              return (
+                <div key={group.key} className="learn-track-group">
+                  <h3 className="learn-track-group__title">{group.label}</h3>
+                  <LessonGrid rows={groupRows} viewMode={viewMode} lessonProgressPercent={lessonProgressPercent} activeLevelCode={activeLevelCode} />
+                </div>
+              );
+            })
+          ) : (
+            <LessonGrid rows={apiRows} viewMode={viewMode} lessonProgressPercent={lessonProgressPercent} activeLevelCode={activeLevelCode} />
+          )}
         </Motion.section>
       ) : !loading ? (
         <Motion.p className="learn-track__empty" variants={learnItem}>
-          Chưa có bài đã xuất bản từ moderator.
+          Chưa có bài {activeLevelCode} trong hệ thống.
         </Motion.p>
       ) : null}
-
-      <Motion.section className="learn-track learn-track--cards learn-track--n5" aria-labelledby="learn-track-n5-title" variants={learnSectionStagger}>
-        <Motion.div className="learn-section-head" variants={learnItem}>
-            <h2 id="learn-track-n5-title" className="learn-section-head__title">
-              BÀI MẪU N5
-            </h2>
-          <span className="learn-section-head__link" aria-hidden>
-            Lộ trình mẫu
-          </span>
-        </Motion.div>
-        <Motion.div
-          className={`learn-track__grid learn-track__grid--n5 learn-track__grid--m2${viewMode === 'list' ? ' learn-track__grid--list' : ''}`}
-          variants={learnGridBlock}
-        >
-          {n5Rows.map(({ lesson, state }) => (
-            <Motion.div key={lesson.slug} className="learn-track-card-wrap" variants={learnItem}>
-              <TrackCard
-                lesson={{
-                  id: lesson.slug,
-                  slug: lesson.slug,
-                  title: lesson.navTitle,
-                  categoryName: lesson.sectionLabel,
-                }}
-                state={state}
-                to={`${ROUTES.LEARN}/${encodeURIComponent(lesson.slug)}`}
-                progressPercent={null}
-              />
-            </Motion.div>
-          ))}
-        </Motion.div>
-      </Motion.section>
 
       <Motion.section className="learn-ai-promo" aria-labelledby="learn-ai-promo-title" id="learn-ai-sensei" variants={learnItem}>
         <div className="learn-ai-promo__text">
@@ -520,8 +540,7 @@ export default function LearnIndex() {
       )}
 
       <Motion.p className="learn-track__hint" variants={learnItem}>
-        Gợi ý: mở bài từ DB và bấm <strong>Hoàn thành bài học</strong> ở cuối trang để cập nhật tiến độ. Bài mẫu
-        N5: bấm <strong>Đánh dấu xong (N5)</strong> trong trang bài.
+        Gợi ý: mở từng bài và bấm <strong>Hoàn thành bài học</strong> ở cuối trang để cập nhật tiến độ.
       </Motion.p>
     </Motion.div>
   );

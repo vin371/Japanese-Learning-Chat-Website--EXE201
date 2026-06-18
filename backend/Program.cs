@@ -28,27 +28,37 @@ namespace backend
     {
         public static void Main(string[] args)
         {
+            if (args.Length > 0 && args[0] == "import-n5-docx")
+            {
+                ImportN5DocxEntry(args).GetAwaiter().GetResult();
+                return;
+            }
+
+            if (args.Length > 0 && args[0] == "import-n4-docx")
+            {
+                ImportN4DocxEntry(args).GetAwaiter().GetResult();
+                return;
+            }
+
+            if (args.Length > 0 && args[0] == "import-n3-docx")
+            {
+                ImportN3DocxEntry(args).GetAwaiter().GetResult();
+                return;
+            }
+
             // Supabase/PostgreSQL: cột timestamp (không time zone) — tương thích DateTime UTC từ code SQL Server cũ
             AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
             var builder = WebApplication.CreateBuilder(args);
 
-            // Railway / Docker: bắt buộc lắng nghe $PORT trên 0.0.0.0 (proxy không tới được localhost)
+            // Railway / Docker: bắt buộc lắng nghe $PORT trên 0.0.0.0 (proxy không tới được localhost).
+            // Dev local: không ghi đè — dùng applicationUrl trong launchSettings (mặc định :5056, tránh trùng Vite :8080).
             var portEnv = Environment.GetEnvironmentVariable("PORT");
             if (!string.IsNullOrWhiteSpace(portEnv))
             {
-                builder.WebHost.UseUrls($"http://0.0.0.0:{portEnv.Trim()}");
-                Console.WriteLine($"[yumegoji] Kestrel -> http://0.0.0.0:{portEnv.Trim()} (PORT env={portEnv})");
-            }
-            else if (builder.Environment.IsDevelopment())
-            {
-                // Khi chạy local ở Development, không ghi đè UseUrls để Kestrel dùng cấu hình trong launchSettings.json
-                Console.WriteLine("[yumegoji] Kestrel -> Sử dụng cấu hình trong launchSettings.json (mặc định http://localhost:5056)");
-            }
-            else
-            {
-                builder.WebHost.UseUrls("http://0.0.0.0:8080");
-                Console.WriteLine("[yumegoji] Kestrel -> http://0.0.0.0:8080 (Default fallback)");
+                var listenPort = portEnv.Trim();
+                builder.WebHost.UseUrls($"http://0.0.0.0:{listenPort}");
+                Console.WriteLine($"[yumegoji] Kestrel -> http://0.0.0.0:{listenPort} (PORT env={portEnv})");
             }
 
             // OpenAI ApiKey: đặt trong appsettings.Secrets.json (đã .gitignore) hoặc User Secrets — xem OPENAI-CAU-HINH.txt
@@ -340,6 +350,99 @@ namespace backend
             app.MapHub<ChatHub>("/hubs/chat");
 
             app.Run();
+        }
+
+        private static async Task ImportN5DocxEntry(string[] args)
+        {
+            AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+            var dryRun = args.Contains("--dry-run", StringComparer.OrdinalIgnoreCase);
+            var importDir = args.FirstOrDefault(a =>
+                !a.StartsWith("--", StringComparison.Ordinal) &&
+                !string.Equals(a, "import-n5-docx", StringComparison.OrdinalIgnoreCase));
+
+            var builder = WebApplication.CreateBuilder();
+            builder.Configuration.AddJsonFile("appsettings.json", optional: false);
+            builder.Configuration.AddJsonFile("appsettings.Development.json", optional: true);
+            builder.Configuration.AddJsonFile("appsettings.Secrets.json", optional: true, reloadOnChange: false);
+
+            builder.Services.AddDbContext<ApplicationDbContext>(options =>
+            {
+                var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+                options.UseNpgsql(connectionString);
+            });
+
+            var app = builder.Build();
+            using var scope = app.Services.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+            var dir = string.IsNullOrWhiteSpace(importDir)
+                ? Path.Combine(Directory.GetCurrentDirectory(), "doc", "import")
+                : Path.GetFullPath(importDir);
+
+            await N5DocxCourseImporter.RunAsync(db, dir, dryRun);
+        }
+
+        private static async Task ImportN4DocxEntry(string[] args)
+        {
+            AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+            var dryRun = args.Contains("--dry-run", StringComparer.OrdinalIgnoreCase);
+            var importDir = args.FirstOrDefault(a =>
+                !a.StartsWith("--", StringComparison.Ordinal) &&
+                !string.Equals(a, "import-n4-docx", StringComparison.OrdinalIgnoreCase));
+
+            var builder = WebApplication.CreateBuilder();
+            builder.Configuration.AddJsonFile("appsettings.json", optional: false);
+            builder.Configuration.AddJsonFile("appsettings.Development.json", optional: true);
+            builder.Configuration.AddJsonFile("appsettings.Secrets.json", optional: true, reloadOnChange: false);
+
+            builder.Services.AddDbContext<ApplicationDbContext>(options =>
+            {
+                var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+                options.UseNpgsql(connectionString);
+            });
+
+            var app = builder.Build();
+            using var scope = app.Services.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+            var dir = string.IsNullOrWhiteSpace(importDir)
+                ? Path.Combine(Directory.GetCurrentDirectory(), "doc", "import", "n4")
+                : Path.GetFullPath(importDir);
+
+            await N4DocxCourseImporter.RunAsync(db, dir, dryRun);
+        }
+
+        private static async Task ImportN3DocxEntry(string[] args)
+        {
+            AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+            var dryRun = args.Contains("--dry-run", StringComparer.OrdinalIgnoreCase);
+            var useDocker = args.Contains("--docker", StringComparer.OrdinalIgnoreCase);
+            var importDir = args.FirstOrDefault(a =>
+                !a.StartsWith("--", StringComparison.Ordinal) &&
+                !string.Equals(a, "import-n3-docx", StringComparison.OrdinalIgnoreCase));
+
+            var builder = WebApplication.CreateBuilder();
+            builder.Configuration.AddJsonFile("appsettings.json", optional: false);
+            builder.Configuration.AddJsonFile("appsettings.Development.json", optional: true);
+            builder.Configuration.AddJsonFile("appsettings.Secrets.json", optional: true, reloadOnChange: false);
+            if (useDocker)
+                builder.Configuration.AddJsonFile("appsettings.Docker.json", optional: false, reloadOnChange: false);
+
+            builder.Services.AddDbContext<ApplicationDbContext>(options =>
+            {
+                var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+                options.UseNpgsql(connectionString);
+            });
+
+            var app = builder.Build();
+            using var scope = app.Services.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+            var dir = string.IsNullOrWhiteSpace(importDir)
+                ? Path.Combine(Directory.GetCurrentDirectory(), "doc", "import", "n3")
+                : Path.GetFullPath(importDir);
+
+            await N3DocxCourseImporter.RunAsync(db, dir, dryRun);
         }
     }
 }

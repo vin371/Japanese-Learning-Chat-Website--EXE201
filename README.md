@@ -21,6 +21,7 @@ EXE201/
 ├── docker-compose.yml       # PostgreSQL 16 + init seed + API (host 5433 / 5056)
 ├── Dockerfile               # Image chạy API (không chứa DB)
 ├── backend/doc/sql/         # Schema + seed Supabase — xem mục “Cơ sở dữ liệu”
+├── backend/doc/import/    # DOCX import khóa JLPT (n3/, n4/, …)
 ├── DOCKER-DESKTOP.md        # Docker Desktop + pgAdmin + cổng 5433
 └── README.md
 ```
@@ -108,6 +109,8 @@ Compose tự: khởi động Postgres → `db-init` chạy schema + seed → bui
   dotnet run --launch-profile Docker
   ```
 
+**Lưu ý cổng 5056:** Container `yumegoji-api` và `dotnet run` mặc định cùng dùng **5056** — chỉ chạy **một** trong hai.
+
 ## 2. Chạy backend (API)
 
 ```bash
@@ -136,14 +139,40 @@ npm run dev
 
 **Khuyến nghị:** Sao chép `.env.example` → `.env`. Để **trống** `VITE_API_URL` khi dev để mọi request đi qua proxy (tránh lỗi CORS / sai cổng).
 
-## 4. AI import bài học (Moderator)
+### Trang Học tập — chuyển cấp JLPT (N5 / N4 / N3)
+
+- Sidebar: bấm **N5**, **N4**, **N3** để đổi nội dung (`/learn?jlpt=N4`).
+- **Đang học:** cấp trùng hồ sơ — cập nhật tiến độ.
+- **Ôn tập:** cấp dễ hơn — xem lại, không đánh dấu hoàn thành.
+- **Khóa:** cấp khó hơn — mở khi hoàn thành 100% bài cấp hiện tại.
+
+## 4. Import khóa học JLPT từ DOCX (N5 / N4 / N3)
+
+Xóa bài cũ của cấp tương ứng rồi import từ 3 file Word (từ vựng, ngữ pháp, hán tự).
+
+| Cấp | Thư mục mặc định | Lệnh |
+|-----|------------------|------|
+| N5 | `backend/doc/import/` | `dotnet run --no-launch-profile -- import-n5-docx` |
+| N4 | `backend/doc/import/n4/` | `dotnet run --no-launch-profile -- import-n4-docx` |
+| N3 | `backend/doc/import/n3/` | `dotnet run --no-launch-profile -- import-n3-docx` |
+
+**Dry-run:** thêm `--dry-run` · **Docker Postgres:** N3 hỗ trợ `--docker`
+
+```powershell
+cd backend
+dotnet run --no-launch-profile -- import-n3-docx "doc\import\n3" --docker
+```
+
+Importer: `backend/Services/Learning/N3DocxCourseImporter.cs`, `N4DocxCourseImporter.cs`, `N5DocxCourseImporter.cs`.
+
+## 5. AI import bài học (Moderator)
 
 - **OpenAI:** đặt `OpenAI:ApiKey` trong cấu hình (xem `backend/OPENAI-CAU-HINH.txt`).
 - **Ollama (local):** `ollama serve`, `ollama pull llama3.2`. Trong `appsettings.json`: `Ollama:BaseUrl`, `LessonImport:Provider` (`auto` / `openai` / `ollama`).
 
 Upload PDF/DOCX/PPTX có thể mất vài phút — frontend đã cấu hình timeout proxy dài cho import.
 
-## 5. Build production (tham khảo)
+## 6. Build production (tham khảo)
 
 ```bash
 # Frontend
@@ -157,7 +186,7 @@ dotnet publish -c Release -o ./publish
 
 Triển khai: **Frontend** [Vercel](https://yumegoji-exe-201.vercel.app) — set `VITE_API_URL`. **Backend** Railway hoặc tương đương — set `ConnectionStrings__DefaultConnection` (Supabase pooler), `Jwt__Key`, HTTPS.
 
-## 6. Script SQL (`backend/doc/sql/`)
+## 7. Script SQL (`backend/doc/sql/`)
 
 | Luồng | Mô tả |
 |-------|--------|
@@ -168,7 +197,7 @@ Patch lẻ (`patch_*`, `seed_*`) dùng khi cần sửa từng phần trên DB đ
 
 ## Liên kết
 
-- Repository: [vinhhntse180198/Yumegoji-EXE201](https://github.com/vinhhntse180198/Yumegoji-EXE201)
+- Repository: [vin371/Japanese-Learning-Chat-Website--EXE201](https://github.com/vin371/Japanese-Learning-Chat-Website--EXE201)
 
 ---
 

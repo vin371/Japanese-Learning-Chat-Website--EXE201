@@ -6,41 +6,32 @@ import { ROUTES } from '../../data/routes';
 import { fetchMyProgressSummary } from '../../services/learningProgressService';
 import { authService } from '../../services/authService';
 import { ChatbotWidget } from '../../components/support/ChatbotWidget';
-import { PremiumBadge } from '../../components/profile/PremiumBadge';
 import { userIsPremium } from '../../utils/userPremium';
 import { SakuraRainLayer } from '../../components/effects/SakuraRainLayer';
-import { Play, Gamepad2, ChartColumn, Trophy } from 'lucide-react';
+import { Play, Gamepad2, ChartColumn, Trophy, Sparkles } from 'lucide-react';
+import AnimatedProgressBar from '../../components/motion/AnimatedProgressBar';
+import ShimmerSkeleton from '../../components/motion/ShimmerSkeleton';
+import { learnCardHover } from '../../utils/learnMotion';
+import { DASH_ACTION_IMAGES, LEARN_VISUAL } from '../../data/learnVisualAssets';
 
-/** Alias để ESLint nhận diện biến dùng qua JSX. */
 const Motion = motion;
 
 const dashRoot = {
   hidden: {},
-  show: {
-    transition: { staggerChildren: 0.085, delayChildren: 0.04 },
-  },
+  show: { transition: { staggerChildren: 0.07, delayChildren: 0.05 } },
 };
 
 const dashItem = {
-  hidden: { opacity: 0, y: 26 },
-  show: {
-    opacity: 1,
-    y: 0,
-    transition: { type: 'spring', stiffness: 340, damping: 30 },
-  },
-};
-
-const dashStatGrid = {
-  hidden: {},
-  show: {
-    transition: { staggerChildren: 0.065 },
-  },
+  hidden: { opacity: 0, y: 22 },
+  show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 340, damping: 30 } },
 };
 
 const dashCol = {
-  hidden: {},
+  hidden: { opacity: 0, y: 18 },
   show: {
-    transition: { staggerChildren: 0.08 },
+    opacity: 1,
+    y: 0,
+    transition: { type: 'spring', stiffness: 320, damping: 32, staggerChildren: 0.06 },
   },
 };
 
@@ -79,21 +70,58 @@ function rankProgressFromExp(exp) {
   const cur = RANK_TIERS[idx];
   const next = RANK_TIERS[idx + 1];
   if (!next) {
-    return {
-      currentLabel: cur.label,
-      barPct: 100,
-      foot: 'Bạn đã đạt rank cao nhất trong hệ thống hiện tại.',
-      targetLine: `${formatIntVi(e)} XP`,
-    };
+    return { currentLabel: cur.label, barPct: 100 };
   }
   const span = next.minExp - cur.minExp;
   const inTier = Math.min(100, Math.max(0, Math.round(((e - cur.minExp) / span) * 100)));
-  return {
-    currentLabel: cur.label,
-    barPct: inTier,
-    foot: `${inTier}% đến rank tiếp theo`,
-    targetLine: `${formatIntVi(e)} / ${formatIntVi(next.minExp)} XP — ${next.label} (${formatIntVi(next.minExp)} XP)`,
-  };
+  return { currentLabel: cur.label, barPct: inTier };
+}
+
+function ShortcutCard({ to, image, title, subtitle, icon }) {
+  return (
+    <Link to={to} className="yume-hub-shortcut">
+      <span className="yume-hub-shortcut__icon">{icon}</span>
+      <span className="yume-hub-shortcut__text">
+        <strong>{title}</strong>
+        <small>{subtitle}</small>
+      </span>
+      <span className="yume-hub-shortcut__thumb">
+        <img src={image} alt="" loading="lazy" />
+      </span>
+    </Link>
+  );
+}
+
+function learnRouteForJlpt(code) {
+  const c = String(code || 'N5').trim().toUpperCase();
+  return `${ROUTES.LEARN}?jlpt=${encodeURIComponent(c)}`;
+}
+
+function JlptPathRow({ code, name, pct, done, total, image }) {
+  const jlpt = String(code || '').trim().toUpperCase();
+  return (
+    <Link to={learnRouteForJlpt(jlpt)} className="yume-hub-jlpt-row yume-hub-jlpt-row--link">
+      <div className="yume-hub-jlpt-row__thumb">
+        <img src={image} alt="" loading="lazy" />
+      </div>
+      <div className="yume-hub-jlpt-row__body">
+        <div className="yume-hub-jlpt-row__head">
+          <span className="yume-hub-jlpt-row__code">{code}</span>
+          <strong>{name}</strong>
+          <span className="yume-hub-jlpt-row__pct">{pct}%</span>
+        </div>
+        <AnimatedProgressBar
+          percent={pct}
+          className="yume-hub-jlpt-row__bar"
+          fillClassName="yume-hub-jlpt-row__bar-fill"
+          aria-label={`Tiến độ ${code}`}
+        />
+        <p className="yume-hub-jlpt-row__meta">
+          {done}/{total} bài hoàn thành
+        </p>
+      </div>
+    </Link>
+  );
 }
 
 export default function Dashboard() {
@@ -119,21 +147,15 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
-    const role = String(
-      user?.role ?? user?.Role ?? authService.getRoleFromStoredToken() ?? 'user',
-    ).toLowerCase();
-    if (role === 'admin') {
-      navigate(ROUTES.ADMIN, { replace: true });
-    } else if (role === 'moderator') {
-      navigate(ROUTES.MODERATOR, { replace: true });
-    }
+    const role = String(user?.role ?? user?.Role ?? authService.getRoleFromStoredToken() ?? 'user').toLowerCase();
+    if (role === 'admin') navigate(ROUTES.ADMIN, { replace: true });
+    else if (role === 'moderator') navigate(ROUTES.MODERATOR, { replace: true });
   }, [user, navigate]);
 
   useEffect(() => {
     loadSummary();
   }, [loadSummary]);
 
-  /** Đồng bộ cờ Premium từ DB — một lần khi vào Dashboard (id ổn định), tránh lệch sau khi admin duyệt. */
   const userIdStable = user?.id ?? user?.userId ?? user?.Id;
   useEffect(() => {
     if (userIdStable == null) return undefined;
@@ -154,7 +176,7 @@ export default function Dashboard() {
           return next;
         });
       } catch {
-        /* im lặng */
+        /* ignore */
       }
     })();
     return () => {
@@ -162,13 +184,13 @@ export default function Dashboard() {
     };
   }, [userIdStable, setUser]);
 
-  const displayName = useMemo(() => {
-    return user?.displayName || user?.username || user?.name || user?.email?.split('@')[0] || 'bạn';
-  }, [user]);
+  const displayName = useMemo(
+    () => user?.displayName || user?.username || user?.name || user?.email?.split('@')[0] || 'bạn',
+    [user],
+  );
 
   const isPremium = useMemo(() => userIsPremium(user), [user]);
 
-  // Suy ra code level (N5/N4/N3) từ user; fallback 'N4' nếu thiếu.
   let levelCode = user?.levelCode || user?.level || null;
   const rawLevelId = user?.levelId ?? user?.LevelId ?? null;
   if (!levelCode && rawLevelId != null) {
@@ -194,72 +216,99 @@ export default function Dashboard() {
   const levelNumber = Math.max(1, Math.round(Number(exp || 0) / 65));
   const dailyGoalPct = Math.min(100, Math.max(8, rankInfo.barPct));
   const xpToNext = Math.max(0, 5000 - (Number(exp || 0) % 5000));
-  const quickActions = [
-    { title: `Tiếp tục học tập ${levelCode}`, sub: 'Tiến tới bài học tiếp theo', to: ROUTES.LEARN, icon: <Play size={20} /> },
-    { title: 'Chơi game', sub: 'Từ học bài & chơi game (API)', to: ROUTES.PLAY, icon: <Gamepad2 size={20} /> },
-    { title: 'Bảng xếp hạng', sub: 'Theo dõi thứ hạng tuần', to: `${ROUTES.PLAY}/leaderboard`, icon: <ChartColumn size={20} /> },
-    { title: 'Thành tích', sub: 'Hệ thống huy hiệu và EXP', to: `${ROUTES.PLAY}/achievements`, icon: <Trophy size={20} /> },
-  ];
-  const chatRooms = [
-    { name: 'Chat chung', sub: 'Phòng công cộng cho mọi học viên' },
-    { name: `Nhóm học ${levelCode}`, sub: `Phòng học theo cấp độ ${levelCode}` },
-    { name: 'Văn hoá Nhật', sub: 'Chia sẻ văn hóa và mẹo học' },
-  ];
   const topRows = levelRows.slice(0, 2);
 
+  const learnHome = learnRouteForJlpt(levelCode);
+
+  const quickActions = [
+    {
+      key: 'learn',
+      title: `Học ${levelCode}`,
+      sub: 'Bài mới & ôn tập',
+      to: learnHome,
+      icon: <Play size={18} />,
+      image: DASH_ACTION_IMAGES.learn,
+    },
+    {
+      key: 'play',
+      title: 'Chơi game',
+      sub: 'Ôn qua mini-game',
+      to: ROUTES.PLAY,
+      icon: <Gamepad2 size={18} />,
+      image: DASH_ACTION_IMAGES.play,
+    },
+    {
+      key: 'rank',
+      title: 'Xếp hạng',
+      sub: 'Bảng tuần',
+      to: `${ROUTES.PLAY}/leaderboard`,
+      icon: <ChartColumn size={18} />,
+      image: DASH_ACTION_IMAGES.leaderboard,
+    },
+    {
+      key: 'badge',
+      title: 'Thành tích',
+      sub: 'Huy hiệu & XP',
+      to: `${ROUTES.PLAY}/achievements`,
+      icon: <Trophy size={18} />,
+      image: DASH_ACTION_IMAGES.achievements,
+    },
+  ];
+
   return (
-    <div className="yume-dashboard yume-dashboard--mock yume-dashboard--crimson-sakura">
-      <SakuraRainLayer petalCount={26} />
+    <div className="yume-dashboard yume-dashboard--hub">
+      <SakuraRainLayer petalCount={14} />
       <Motion.div
-        className="yume-dashboard__motion-root"
+        className="yume-dashboard__motion-root yume-hub-shell"
         variants={dashRoot}
         initial={reduceMotion ? false : 'hidden'}
         animate="show"
       >
-        <Motion.section className="yume-mock-hero" variants={dashItem}>
-          <div className="yume-mock-hero__left">
-            <div className="yume-mock-tags">
-              {isPremium ? <span className="yume-mock-tag">Thành viên Premium</span> : null}
-              <span className="yume-mock-tag">Hạng: {rankInfo.currentLabel}</span>
+        <Motion.section className="yume-hub-hero" variants={dashItem}>
+          <div className="yume-hub-hero__panel">
+            <div className="yume-hub-hero__tags">
+              {isPremium ? <span className="yume-hub-tag yume-hub-tag--gold">Premium</span> : null}
+              <span className="yume-hub-tag">Hạng {rankInfo.currentLabel}</span>
+              <span className="yume-hub-tag yume-hub-tag--accent">{levelCode}</span>
             </div>
-            <h1 className="yume-mock-greet">
-              Xin chào, <span>{displayName}!</span>
+            <h1 className="yume-hub-hero__title">
+              Chào <em>{displayName}</em>
             </h1>
-            <p className="yume-mock-sub">
-              Sẵn sàng chinh phục Kanji hôm nay? Hành trình học của bạn đang tiến triển tốt.
+            <p className="yume-hub-hero__lead">
+              Ôn từ vựng, luyện kanji và chat cùng cộng đồng — mỗi ngày một chút là đủ.
             </p>
+            <div className="yume-hub-hero__cta">
+              <Link to={learnHome} className="yume-hub-btn yume-hub-btn--primary">
+                <Sparkles size={17} />
+                Học tiếp
+              </Link>
+              <Link to={ROUTES.PLAY} className="yume-hub-btn yume-hub-btn--ghost">
+                Chơi ôn
+              </Link>
+            </div>
           </div>
-          <aside className="yume-mock-rank-card">
-            <div className="yume-mock-rank-card__title">Rank hiện tại</div>
-            <div className="yume-mock-rank-card__name">{rankInfo.currentLabel} — bậc hiện tại</div>
-            <div className="yume-mock-rank-card__line">
-              <span>Tiến độ lên mốc tiếp</span>
-              <strong>{rankInfo.barPct}%</strong>
+          <div className="yume-hub-hero__visual" aria-hidden>
+            <img src={LEARN_VISUAL.hero} alt="" loading="eager" />
+          </div>
+          <dl className="yume-hub-kpis">
+            <div>
+              <dt>Cấp</dt>
+              <dd>{levelNumber}</dd>
             </div>
-            <div className="yume-mock-rank-card__track" role="progressbar" aria-valuenow={rankInfo.barPct} aria-valuemin={0} aria-valuemax={100}>
-              <span style={{ width: `${rankInfo.barPct}%` }} />
+            <div>
+              <dt>Chuỗi</dt>
+              <dd>{summaryLoading ? '…' : `${formatIntVi(streakDays)} ngày`}</dd>
             </div>
-          </aside>
+            <div>
+              <dt>XP</dt>
+              <dd>{summaryLoading ? '…' : formatIntVi(exp)}</dd>
+            </div>
+            <div>
+              <dt>Bài xong</dt>
+              <dd>{summaryLoading ? '…' : formatIntVi(completedLessons)}</dd>
+            </div>
+          </dl>
         </Motion.section>
-
-        <Motion.div className="yume-mock-stats" variants={dashStatGrid}>
-          <Motion.article className="yume-mock-stat" variants={dashItem}>
-            <div className="yume-mock-stat__label">Cấp hiện tại</div>
-            <div className="yume-mock-stat__value">Cấp {levelNumber}</div>
-          </Motion.article>
-          <Motion.article className="yume-mock-stat" variants={dashItem}>
-            <div className="yume-mock-stat__label">Chuỗi ngày học</div>
-            <div className="yume-mock-stat__value">{summaryLoading ? '…' : `${formatIntVi(streakDays)} ngày`}</div>
-          </Motion.article>
-          <Motion.article className="yume-mock-stat" variants={dashItem}>
-            <div className="yume-mock-stat__label">Tổng XP</div>
-            <div className="yume-mock-stat__value">{summaryLoading ? '…' : `${formatIntVi(exp)} XP`}</div>
-          </Motion.article>
-          <Motion.article className="yume-mock-stat" variants={dashItem}>
-            <div className="yume-mock-stat__label">Bài học đã hoàn thành</div>
-            <div className="yume-mock-stat__value">{summaryLoading ? '…' : formatIntVi(completedLessons)}</div>
-          </Motion.article>
-        </Motion.div>
 
         {summaryError ? (
           <Motion.p className="yume-dashboard__banner-error" role="alert" variants={dashItem}>
@@ -267,122 +316,93 @@ export default function Dashboard() {
           </Motion.p>
         ) : null}
 
-        <Motion.div className="yume-mock-main" variants={dashCol}>
-          <Motion.div className="yume-mock-main__left" variants={dashCol}>
-            <Motion.section className="yume-mock-panel" variants={dashItem}>
-              <div className="yume-mock-panel__title">Thao tác nhanh</div>
-              <div className="yume-mock-actions">
-                {quickActions.map((a) => (
-                  <Link key={a.title} to={a.to} className="yume-mock-action">
-                    <span className="yume-mock-action__icon">{a.icon}</span>
-                    <span>
-                      <strong>{a.title}</strong>
-                      <small>{a.sub}</small>
-                    </span>
-                  </Link>
-                ))}
-              </div>
-              {levelCode === 'N5' && (
-                <Link to="/level-up-test/N4" className="yume-mock-levelup">
-                  Thi lên N4 →
-                </Link>
-              )}
-              {levelCode === 'N4' && (
-                <Link to="/level-up-test/N3" className="yume-mock-levelup">
-                  Thi lên N3 →
-                </Link>
-              )}
-            </Motion.section>
+        <Motion.nav className="yume-hub-shortcuts" aria-label="Lối tắt" variants={dashItem}>
+          {quickActions.map((a) => (
+            <Motion.div key={a.key} variants={learnCardHover} initial="rest" whileHover="hover" whileTap="tap">
+              <ShortcutCard to={a.to} image={a.image} title={a.title} subtitle={a.sub} icon={a.icon} />
+            </Motion.div>
+          ))}
+        </Motion.nav>
 
-            <Motion.section className="yume-mock-panel" variants={dashItem}>
-              <div className="yume-mock-panel__title yume-mock-panel__title--row">
-                <span>Lộ trình JLPT</span>
-                <Link to={ROUTES.LEARN}>Xem chương trình →</Link>
+        <div className="yume-hub-body">
+          <Motion.section
+            className="yume-hub-card yume-hub-card--path"
+            variants={dashItem}
+            initial={reduceMotion ? false : 'hidden'}
+            animate="show"
+          >
+            <header className="yume-hub-card__head">
+              <h2>Lộ trình JLPT</h2>
+              <Link to={learnHome}>Xem tất cả →</Link>
+            </header>
+            {summaryLoading ? (
+              <ShimmerSkeleton lines={2} className="yume-shimmer--jlpt" />
+            ) : topRows.length === 0 ? (
+              <p className="yume-hub-empty">Bắt đầu từ bài N5 đầu tiên trong mục Học tập.</p>
+            ) : (
+              <div className="yume-hub-jlpt-list">
+                {topRows.map((row, idx) => {
+                  const code = pick(row, 'levelCode', 'LevelCode') ?? '';
+                  const name = pick(row, 'levelName', 'LevelName') ?? code;
+                  const pct = Math.round(Number(pick(row, 'completionPercent', 'CompletionPercent')) || 0);
+                  const done = pick(row, 'completedLessons', 'CompletedLessons') ?? 0;
+                  const total = pick(row, 'totalPublishedLessons', 'TotalPublishedLessons') ?? 0;
+                  const cover = idx === 0 ? LEARN_VISUAL.sakura : LEARN_VISUAL.study;
+                  return (
+                    <JlptPathRow
+                      key={String(pick(row, 'levelId', 'LevelId') ?? idx)}
+                      code={code}
+                      name={name}
+                      pct={pct}
+                      done={done}
+                      total={total}
+                      image={cover}
+                    />
+                  );
+                })}
               </div>
-              <div className="yume-mock-jlpt-list">
-                {summaryLoading ? (
-                  <div className="yume-mock-jlpt-empty">Đang tải tiến độ…</div>
-                ) : topRows.length === 0 ? (
-                  <div className="yume-mock-jlpt-empty">Chưa có dữ liệu lộ trình.</div>
-                ) : (
-                  topRows.map((row, idx) => {
-                    const code = pick(row, 'levelCode', 'LevelCode') ?? '';
-                    const name = pick(row, 'levelName', 'LevelName') ?? code;
-                    const pct = Math.round(Number(pick(row, 'completionPercent', 'CompletionPercent')) || 0);
-                    const done = pick(row, 'completedLessons', 'CompletedLessons') ?? 0;
-                    const total = pick(row, 'totalPublishedLessons', 'TotalPublishedLessons') ?? 0;
-                    return (
-                      <div key={String(pick(row, 'levelId', 'LevelId') ?? idx)} className="yume-mock-jlpt">
-                        <div className="yume-mock-jlpt__badge">{code || 'N?'}</div>
-                        <div className="yume-mock-jlpt__body">
-                          <div className="yume-mock-jlpt__head">
-                            <strong>{name}</strong>
-                            <span>{pct}% hoàn thành</span>
-                          </div>
-                          <div className="yume-mock-jlpt__track">
-                            <span style={{ width: `${Math.min(100, Math.max(0, pct))}%` }} />
-                          </div>
-                          <small>
-                            {done}/{total} bài đã xong
-                          </small>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            </Motion.section>
-          </Motion.div>
-
-          <Motion.div className="yume-mock-main__right" variants={dashCol}>
-            <Motion.section className="yume-mock-panel" variants={dashItem}>
-              <div className="yume-mock-panel__title">Phòng trò chuyện</div>
-              <div className="yume-mock-rooms">
-                {chatRooms.map((r) => (
-                  <Link key={r.name} to={ROUTES.CHAT} className="yume-mock-room">
-                    <span>
-                      <strong>{r.name}</strong>
-                      <small>{r.sub}</small>
-                    </span>
-                    <b>›</b>
-                  </Link>
-                ))}
-              </div>
-              <Link to={ROUTES.CHAT} className="yume-mock-room-all">
-                Xem tất cả phòng
+            )}
+            {levelCode === 'N5' ? (
+              <Link to="/level-up-test/N4" className="yume-hub-link-more">
+                Thi lên N4 →
               </Link>
-            </Motion.section>
+            ) : null}
+            {levelCode === 'N4' ? (
+              <Link to="/level-up-test/N3" className="yume-hub-link-more">
+                Thi lên N3 →
+              </Link>
+            ) : null}
+          </Motion.section>
 
-            <Motion.section className="yume-mock-goal" variants={dashItem}>
-              <div className="yume-mock-goal__title">Mục tiêu hôm nay</div>
-              <p>
-                Còn khoảng {formatIntVi(xpToNext)} XP nữa để đạt mốc hạng tiếp theo.
-              </p>
-              <div className="yume-mock-goal__bottom">
-                <div className="yume-mock-goal__ring">
-                  <span>{dailyGoalPct}%</span>
+          <Motion.aside
+            className="yume-hub-aside"
+            variants={dashCol}
+            initial={reduceMotion ? false : 'hidden'}
+            animate="show"
+          >
+            <section className="yume-hub-card yume-hub-card--goal">
+              <div className="yume-hub-goal__banner">
+                <img src={LEARN_VISUAL.heroAlt} alt="" loading="lazy" />
+                <div className="yume-hub-goal__overlay">
+                  <span className="yume-hub-goal__badge">{dailyGoalPct}%</span>
+                  <p>Mục tiêu hôm nay</p>
                 </div>
-                <Link to={ROUTES.LEARN} className="yume-mock-goal__btn">
+              </div>
+              <div className="yume-hub-goal__body">
+                <p>Còn khoảng {formatIntVi(xpToNext)} XP đến mốc hạng tiếp theo.</p>
+                <Link to={learnHome} className="yume-hub-btn yume-hub-btn--primary yume-hub-btn--block">
                   Học ngay
                 </Link>
               </div>
-            </Motion.section>
-            {isPremium ? (
-              <Motion.div variants={dashItem} className="yume-dashboard__premium-motion">
-                <div className="yume-dashboard__premium-strip">
-                  <PremiumBadge />
-                  <p className="yume-dashboard__premium-strip-hint">Bạn đang dùng gói Premium và đã mở khóa đầy đủ quyền học tập.</p>
-                </div>
-              </Motion.div>
-            ) : (
-              <Motion.div variants={dashItem}>
-                <Link className="yume-mock-upgrade" to={ROUTES.UPGRADE}>
-                  Nâng cấp Premium để mở toàn bộ tính năng →
-                </Link>
-              </Motion.div>
-            )}
-          </Motion.div>
-        </Motion.div>
+            </section>
+
+            {!isPremium ? (
+              <Link className="yume-hub-upgrade" to={ROUTES.UPGRADE}>
+                Nâng cấp Premium →
+              </Link>
+            ) : null}
+          </Motion.aside>
+        </div>
       </Motion.div>
 
       <ChatbotWidget />

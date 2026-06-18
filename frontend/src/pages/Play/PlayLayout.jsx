@@ -20,10 +20,12 @@ export default function PlayLayout() {
   const reduceMotion = useReducedMotion();
   const hubHome = /^\/play\/?$/.test(pathname);
   const showExp = showSessionExpBar(pathname);
+  const playSection = pathname.split('/').filter(Boolean)[1];
+  const hubish = playSection != null && PLAY_HUBISH.has(playSection);
 
   return (
     <div
-      className={`page page-play yume-page play-layout${hubHome ? ' play-layout--hub' : ''}${showExp ? ' play-layout--session' : ''}`}
+      className={`page page-play yume-page play-layout${hubHome ? ' play-layout--hub' : ''}${hubish ? ' play-layout--hubish' : ''}${showExp ? ' play-layout--session' : ''}`}
     >
       {showExp ? <PlayExpBar /> : null}
       <AnimatePresence mode="wait" initial={false}>

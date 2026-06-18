@@ -1,7 +1,11 @@
 import { Fragment } from 'react';
 import { NavLink, Link } from 'react-router-dom';
 import { ROUTES } from '../../../data/routes';
-import { getJlptLevelCodeFromUser, jlptRank } from '../../../utils/learnLevelCode';
+import {
+  LEARN_JLPT_LEVELS,
+  getLevelAccessMode,
+  learnRouteWithJlpt,
+} from '../../../utils/learnLevelAccess';
 import { BookUp, SpellCheck, Languages, MessageSquareText, Layers, BookA } from 'lucide-react';
 
 function IconRoadmap({ className }) {
@@ -87,14 +91,14 @@ function IconCheck({ className }) {
   );
 }
 
-const JLPT_LEVELS = ['N5', 'N4', 'N3'];
-
 /** Một thẻ trong cột sidebar (mẫu Hanami: nhiều khối bo góc tách nhau) */
 function ShellCard({ variant, children }) {
   return <div className={`learn-shell-card learn-shell-card--${variant}`}>{children}</div>;
 }
 
-function LessonListSection({ sectionFilter, goFilter, lessonGroups, visibleGroups, visibleDbLessons }) {
+const JLPT_LEVELS = LEARN_JLPT_LEVELS;
+
+function LessonListSection({ sectionFilter, goFilter, lessonGroups, visibleGroups, visibleDbLessons, activeLevelCode }) {
   return (
     <ShellCard variant="lessons">
       <div className="learn-nav__group-label learn-sidebar__list-label">Danh sách bài</div>
@@ -129,7 +133,7 @@ function LessonListSection({ sectionFilter, goFilter, lessonGroups, visibleGroup
               {group.items.map((lesson) => (
                 <li key={lesson.slug}>
                   <NavLink
-                    to={`${ROUTES.LEARN}/${lesson.slug}`}
+                    to={learnRouteWithJlpt(`${ROUTES.LEARN}/${lesson.slug}`, activeLevelCode)}
                     className={({ isActive }) => `learn-nav__link${isActive ? ' learn-nav__link--active' : ''}`}
                     end
                   >
@@ -151,7 +155,7 @@ function LessonListSection({ sectionFilter, goFilter, lessonGroups, visibleGroup
                 return (
                   <li key={row.id ?? row.Id}>
                     <NavLink
-                      to={`${ROUTES.LEARN}/${encodeURIComponent(slug)}`}
+                      to={learnRouteWithJlpt(`${ROUTES.LEARN}/${encodeURIComponent(slug)}`, activeLevelCode)}
                       className={({ isActive }) =>
                         `learn-nav__link learn-nav__link--stack${isActive ? ' learn-nav__link--active' : ''}`
                       }
@@ -187,9 +191,13 @@ export function LearnSidebarShell({
   lessonGroups,
   visibleGroups,
   visibleDbLessons,
+  activeLevelCode,
+  userLevelCode,
+  levelProgressMap,
+  onSwitchLevel,
+  staffBypass = false,
 }) {
-  const levelCode = getJlptLevelCodeFromUser(user);
-  const ur = jlptRank(levelCode);
+  const viewing = String(activeLevelCode || userLevelCode).toUpperCase();
 
   return (
     <aside className="learn-layout__nav learn-sidebar learn-sidebar--shell" aria-label="Điều hướng khóa học">
@@ -201,7 +209,7 @@ export function LearnSidebarShell({
           <div className="learn-shell-user">
             <div className="learn-shell-user__name">{displayName}</div>
             <div className="learn-shell-user__line">
-              Học viên — <strong>JLPT {levelCode}</strong>
+              Học viên — <strong>JLPT {userLevelCode}</strong>
               {isAuthenticated && sidebarTotal > 0 ? (
                 <>
                   {' '}
@@ -219,19 +227,45 @@ export function LearnSidebarShell({
         </ShellCard>
 
         <ShellCard variant="jlpt">
-          <div className="learn-shell-jlpt" aria-label="Cấp độ JLPT (theo hồ sơ)">
+          <div className="learn-shell-jlpt" role="group" aria-label="Chọn cấp JLPT">
             {JLPT_LEVELS.map((code) => {
-              const cr = jlptRank(code);
+              const access = staffBypass
+                ? 'study'
+                : getLevelAccessMode(code, userLevelCode, levelProgressMap);
+              const isViewing = code === viewing;
+              const isProfile = code === userLevelCode;
+              const locked = access === 'locked';
+              const review = access === 'review';
+
               let mod = 'learn-shell-jlpt__item--future';
-              if (cr === ur) mod = 'learn-shell-jlpt__item--current';
-              else if (cr > ur) mod = 'learn-shell-jlpt__item--done';
-              else if (cr < ur) mod = 'learn-shell-jlpt__item--locked';
+              if (locked) mod = 'learn-shell-jlpt__item--locked';
+              else if (isViewing) mod = 'learn-shell-jlpt__item--viewing';
+              else if (isProfile) mod = 'learn-shell-jlpt__item--current';
+              else if (review) mod = 'learn-shell-jlpt__item--done';
+
+              const title = locked
+                ? `Hoàn thành ${userLevelCode} để mở ${code}`
+                : review
+                  ? `Ôn tập ${code}`
+                  : isProfile
+                    ? `Đang học ${code}`
+                    : `Xem ${code}`;
+
               return (
-                <div key={code} className={`learn-shell-jlpt__item ${mod}`}>
+                <button
+                  key={code}
+                  type="button"
+                  className={`learn-shell-jlpt__item learn-shell-jlpt__btn ${mod}${isViewing ? ' learn-shell-jlpt__btn--active' : ''}`}
+                  disabled={locked}
+                  title={title}
+                  aria-pressed={isViewing}
+                  aria-label={title}
+                  onClick={() => onSwitchLevel?.(code)}
+                >
                   <span className="learn-shell-jlpt__code">{code}</span>
-                  {cr > ur ? <IconCheck className="learn-shell-jlpt__ico" /> : null}
-                  {cr < ur ? <IconLock className="learn-shell-jlpt__ico" /> : null}
-                </div>
+                  {review ? <IconCheck className="learn-shell-jlpt__ico" /> : null}
+                  {locked ? <IconLock className="learn-shell-jlpt__ico" /> : null}
+                </button>
               );
             })}
           </div>
@@ -278,7 +312,7 @@ export function LearnSidebarShell({
             </button>
           </nav>
           <NavLink
-            to={ROUTES.LEARN}
+            to={learnRouteWithJlpt(ROUTES.LEARN, activeLevelCode)}
             end
             className={({ isActive }) => `learn-shell-roadmap${isActive ? ' learn-shell-roadmap--active' : ''}`}
           >
@@ -293,6 +327,7 @@ export function LearnSidebarShell({
           lessonGroups={lessonGroups}
           visibleGroups={visibleGroups}
           visibleDbLessons={visibleDbLessons}
+          activeLevelCode={activeLevelCode}
         />
 
         <ShellCard variant="weekly">
