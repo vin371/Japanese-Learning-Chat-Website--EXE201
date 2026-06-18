@@ -4518,6 +4518,7 @@ html[data-theme='dark'] .learn-lesson--from-api .learn-doc-grammar-card {
 }
 
 @media (max-width: 640px) {
+
   .learn-vocab-table th:nth-child(3),
   .learn-vocab-table td:nth-child(3) {
     display: none;
@@ -4954,7 +4955,7 @@ html[data-theme='dark'] .learn-alpha-cell {
   scrollbar-width: thin;
 }
 
-.learn-vocab-swipe__track > div {
+.learn-vocab-swipe__track>div {
   flex: 0 0 auto;
   scroll-snap-align: center;
 }
@@ -5710,7 +5711,7 @@ html[data-theme='dark'] .learn-grammar-card {
 
 .learn-flashdeck__card-wrap {
   position: relative;
-  width: min(100%, 22rem);
+  width: min(100%, 34rem);
   margin: 0 auto;
 }
 
@@ -5739,7 +5740,7 @@ html[data-theme='dark'] .learn-grammar-card {
 .learn-flip-card__inner {
   position: relative;
   width: 100%;
-  min-height: 14rem;
+  min-height: 20rem;
   transform-style: preserve-3d;
   transition: transform 0.55s cubic-bezier(0.4, 0.15, 0.2, 1);
 }
@@ -5778,7 +5779,7 @@ html[data-theme='dark'] .learn-flip-card__face {
   align-items: center;
   justify-content: center;
   height: 100%;
-  min-height: 14rem;
+  min-height: 20rem;
   padding: 1.25rem 1.1rem 1.1rem;
   text-align: center;
 }
@@ -6038,6 +6039,7 @@ html[data-theme='dark'] .learn-flip-face--back {
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .learn-dashboard__hero--compact:hover,
   .learn-vocab-item:hover,
   .learn-grammar-card:hover {
@@ -6188,4 +6190,3 @@ html[data-theme='dark'] .learn-layout--crimson-blossom .learn-visual-hero {
     transform: none;
   }
 }
-
