@@ -250,6 +250,16 @@ export default function AccountPage() {
   const quickEmojis = ['👍', '❤️', '🌸', '🔥'];
   const [profileTab, setProfileTab] = useState('info');
 
+  const [profileForm, setProfileForm] = useState({
+    displayName: '',
+    bio: '',
+    dateOfBirth: '',
+  });
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileSaveSuccess, setProfileSaveSuccess] = useState(false);
+  const [profileSaveError, setProfileSaveError] = useState('');
+
   const displayName = useMemo(
     () => user?.displayName || user?.username || user?.name || user?.email?.split('@')[0] || 'Học viên',
     [user]
@@ -336,11 +346,18 @@ export default function AccountPage() {
           setAvatarPreview(buildImageUrl(profile.avatarUrl));
         }
 
-        if (user && (profile.avatarUrl || prem !== undefined)) {
+        setProfileForm({
+          displayName: profile.displayName || profile.DisplayName || '',
+          bio: profile.bio || profile.Bio || '',
+          dateOfBirth: profile.dateOfBirth || profile.DateOfBirth ? new Date(profile.dateOfBirth || profile.DateOfBirth).toISOString().split('T')[0] : '',
+        });
+
+        if (user) {
           const updatedUser = {
             ...user,
             ...(profile.avatarUrl ? { avatarUrl: profile.avatarUrl } : {}),
             ...(prem !== undefined ? { isPremium: !!prem, IsPremium: !!prem } : {}),
+            displayName: profile.displayName || profile.DisplayName || user.displayName,
           };
           setUser(updatedUser);
           authService.setStoredUser(updatedUser);
@@ -448,6 +465,33 @@ export default function AccountPage() {
     } finally {
       setCoverUploading(false);
       e.target.value = '';
+    }
+  };
+
+  const handleProfileSave = async (e) => {
+    e.preventDefault();
+    setProfileSaving(true);
+    setProfileSaveSuccess(false);
+    setProfileSaveError('');
+    try {
+      const dob = profileForm.dateOfBirth ? new Date(profileForm.dateOfBirth).toISOString() : null;
+      await authService.updateMyProfile({
+        displayName: profileForm.displayName,
+        bio: profileForm.bio,
+        dateOfBirth: dob,
+      });
+      if (user) {
+        const updatedUser = { ...user, displayName: profileForm.displayName };
+        setUser(updatedUser);
+        authService.setStoredUser(updatedUser);
+      }
+      setProfileSaveSuccess(true);
+      setIsEditingProfile(false);
+      setTimeout(() => setProfileSaveSuccess(false), 3000);
+    } catch {
+      setProfileSaveError('Không thể lưu thông tin. Vui lòng kiểm tra lại.');
+    } finally {
+      setProfileSaving(false);
     }
   };
 
@@ -868,22 +912,124 @@ export default function AccountPage() {
                 ) : null}
 
                 {profileTab === 'settings' ? (
-                  <div className="bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-5 sm:p-8 border border-slate-200 dark:border-slate-700/60 shadow-sm">
-                    <h2 className="text-[1.12rem] font-extrabold text-slate-900 dark:text-slate-100 mb-5 pb-3 border-b border-slate-200 dark:border-slate-700/60 m-0">Thông tin đăng nhập</h2>
-                    <dl className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-8 m-0">
-                      <div>
-                        <dt className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">Email</dt>
-                        <dd className="m-0 font-bold text-slate-900 dark:text-slate-100 break-all">{email || '—'}</dd>
+                  <div className="flex flex-col gap-6">
+                    <div className="bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-5 sm:p-8 border border-slate-200 dark:border-slate-700/60 shadow-sm">
+                      <div className="flex items-center justify-between mb-5 pb-3 border-b border-slate-200 dark:border-slate-700/60">
+                        <h2 className="text-[1.12rem] font-extrabold text-slate-900 dark:text-slate-100 m-0">Cập nhật hồ sơ</h2>
+                        {!isEditingProfile && (
+                          <button
+                            type="button"
+                            onClick={() => setIsEditingProfile(true)}
+                            className="px-4 py-1.5 rounded-lg text-sm font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 dark:text-rose-400 dark:bg-rose-900/30 dark:hover:bg-rose-900/50 transition-colors"
+                          >
+                            Sửa
+                          </button>
+                        )}
                       </div>
-                      <div>
-                        <dt className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">Tên đăng nhập</dt>
-                        <dd className="m-0 font-bold text-slate-900 dark:text-slate-100 break-all">{username || '—'}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">Cấp độ JLPT</dt>
-                        <dd className="m-0 font-bold text-slate-900 dark:text-slate-100">{levelCode}</dd>
-                      </div>
-                    </dl>
+
+                      {profileSaveSuccess && (
+                        <div className="mb-5 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-sm font-medium">
+                          Cập nhật hồ sơ thành công!
+                        </div>
+                      )}
+
+                      {!isEditingProfile ? (
+                        <dl className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-8 m-0">
+                          <div>
+                            <dt className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">Tên hiển thị</dt>
+                            <dd className="m-0 font-bold text-slate-900 dark:text-slate-100 break-all">{profileForm.displayName || '—'}</dd>
+                          </div>
+                          <div>
+                            <dt className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">Ngày sinh</dt>
+                            <dd className="m-0 font-bold text-slate-900 dark:text-slate-100">{profileForm.dateOfBirth ? new Date(profileForm.dateOfBirth).toLocaleDateString('vi-VN') : '—'}</dd>
+                          </div>
+                          <div className="sm:col-span-2">
+                            <dt className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">Giới thiệu bản thân (Bio)</dt>
+                            <dd className="m-0 font-bold text-slate-900 dark:text-slate-100 whitespace-pre-wrap">{profileForm.bio || '—'}</dd>
+                          </div>
+                        </dl>
+                      ) : (
+                      <form onSubmit={handleProfileSave} className="flex flex-col gap-5">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                          <div className="flex flex-col gap-1.5">
+                            <label htmlFor="displayName" className="text-sm font-bold text-slate-700 dark:text-slate-300">Tên hiển thị</label>
+                            <input
+                              id="displayName"
+                              type="text"
+                              className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-xl px-4 py-2.5 text-[0.95rem] text-slate-800 dark:text-slate-100 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-rose-500/50 focus:border-rose-500 transition-all"
+                              placeholder="Nhập tên hiển thị…"
+                              value={profileForm.displayName}
+                              onChange={(e) => setProfileForm(f => ({ ...f, displayName: e.target.value }))}
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1.5">
+                            <label htmlFor="dateOfBirth" className="text-sm font-bold text-slate-700 dark:text-slate-300">Ngày sinh</label>
+                            <input
+                              id="dateOfBirth"
+                              type="date"
+                              className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-xl px-4 py-2.5 text-[0.95rem] text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-rose-500/50 focus:border-rose-500 transition-all"
+                              value={profileForm.dateOfBirth}
+                              onChange={(e) => setProfileForm(f => ({ ...f, dateOfBirth: e.target.value }))}
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="flex flex-col gap-1.5">
+                          <label htmlFor="bio" className="text-sm font-bold text-slate-700 dark:text-slate-300">Giới thiệu bản thân (Bio)</label>
+                          <textarea
+                            id="bio"
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-xl px-4 py-2.5 text-[0.95rem] text-slate-800 dark:text-slate-100 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-rose-500/50 focus:border-rose-500 transition-all resize-y"
+                            rows={3}
+                            placeholder="Vài dòng về bản thân…"
+                            value={profileForm.bio}
+                            onChange={(e) => setProfileForm(f => ({ ...f, bio: e.target.value }))}
+                          />
+                        </div>
+
+                        {profileSaveError && (
+                          <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 text-sm font-medium">
+                            {profileSaveError}
+                          </div>
+                        )}
+
+                        <div className="flex justify-end gap-3 pt-2">
+                          <button
+                            type="button"
+                            onClick={() => setIsEditingProfile(false)}
+                            disabled={profileSaving}
+                            className="px-6 py-2.5 rounded-xl font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 dark:text-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 transition-all"
+                          >
+                            Hủy
+                          </button>
+                          <button
+                            type="submit"
+                            disabled={profileSaving}
+                            className={`px-6 py-2.5 rounded-xl font-bold text-white transition-all ${profileSaving ? 'bg-slate-400 cursor-not-allowed' : 'bg-rose-600 hover:bg-rose-700 shadow-md hover:shadow-lg hover:-translate-y-0.5'}`}
+                          >
+                            {profileSaving ? 'Đang lưu…' : 'Lưu thay đổi'}
+                          </button>
+                        </div>
+                      </form>
+                      )}
+                    </div>
+
+                    <div className="bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-5 sm:p-8 border border-slate-200 dark:border-slate-700/60 shadow-sm">
+                      <h2 className="text-[1.12rem] font-extrabold text-slate-900 dark:text-slate-100 mb-5 pb-3 border-b border-slate-200 dark:border-slate-700/60 m-0">Thông tin đăng nhập</h2>
+                      <dl className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-8 m-0">
+                        <div>
+                          <dt className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">Email</dt>
+                          <dd className="m-0 font-bold text-slate-900 dark:text-slate-100 break-all">{email || '—'}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">Tên đăng nhập</dt>
+                          <dd className="m-0 font-bold text-slate-900 dark:text-slate-100 break-all">{username || '—'}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">Cấp độ JLPT</dt>
+                          <dd className="m-0 font-bold text-slate-900 dark:text-slate-100">{levelCode}</dd>
+                        </div>
+                      </dl>
+                    </div>
                   </div>
                 ) : null}
               </div>

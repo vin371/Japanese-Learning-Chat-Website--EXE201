@@ -306,7 +306,7 @@ export default function VocabFlashcardPlayer({
         </div>
       ) : view === 'flip' ? (
         <motion.div
-          className="learn-flashdeck learn-flashdeck--flip learn-flashdeck--flip-compact"
+          className="learn-flashdeck learn-flashdeck--flip"
           variants={learnFlipEnter}
           initial="hidden"
           animate="show"
