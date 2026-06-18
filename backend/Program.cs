@@ -35,9 +35,21 @@ namespace backend
 
             // Railway / Docker: bắt buộc lắng nghe $PORT trên 0.0.0.0 (proxy không tới được localhost)
             var portEnv = Environment.GetEnvironmentVariable("PORT");
-            var listenPort = string.IsNullOrWhiteSpace(portEnv) ? "8080" : portEnv.Trim();
-            builder.WebHost.UseUrls($"http://0.0.0.0:{listenPort}");
-            Console.WriteLine($"[yumegoji] Kestrel -> http://0.0.0.0:{listenPort} (PORT env={(portEnv ?? "(null)")})");
+            if (!string.IsNullOrWhiteSpace(portEnv))
+            {
+                builder.WebHost.UseUrls($"http://0.0.0.0:{portEnv.Trim()}");
+                Console.WriteLine($"[yumegoji] Kestrel -> http://0.0.0.0:{portEnv.Trim()} (PORT env={portEnv})");
+            }
+            else if (builder.Environment.IsDevelopment())
+            {
+                // Khi chạy local ở Development, không ghi đè UseUrls để Kestrel dùng cấu hình trong launchSettings.json
+                Console.WriteLine("[yumegoji] Kestrel -> Sử dụng cấu hình trong launchSettings.json (mặc định http://localhost:5056)");
+            }
+            else
+            {
+                builder.WebHost.UseUrls("http://0.0.0.0:8080");
+                Console.WriteLine("[yumegoji] Kestrel -> http://0.0.0.0:8080 (Default fallback)");
+            }
 
             // OpenAI ApiKey: đặt trong appsettings.Secrets.json (đã .gitignore) hoặc User Secrets — xem OPENAI-CAU-HINH.txt
             builder.Configuration.AddJsonFile("appsettings.Secrets.json", optional: true, reloadOnChange: true);
