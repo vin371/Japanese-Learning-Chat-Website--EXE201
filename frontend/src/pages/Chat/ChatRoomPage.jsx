@@ -347,20 +347,22 @@ function pinnedBannerSnippet(m) {
 function MessageReactionDock({ disabled, busy, onPick }) {
   return (
     <div className="group/dock relative flex items-center bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm rounded-full p-0.5">
-      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 flex items-center gap-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-lg rounded-full p-1.5 opacity-0 scale-95 pointer-events-none group-hover/dock:opacity-100 group-hover/dock:scale-100 group-hover/dock:pointer-events-auto transition-all origin-bottom" role="menu">
-        {REACTION_PRESETS.map((p) => (
-          <button
-            key={p.id}
-            type="button"
-            role="menuitem"
-            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 text-lg transition-transform hover:scale-110 active:scale-95 disabled:opacity-50"
-            title={p.id}
-            disabled={disabled || busy}
-            onClick={() => onPick(p.id)}
-          >
-            {p.label}
-          </button>
-        ))}
+      <div className="absolute bottom-full left-1/2 -translate-x-1/2 pb-2 opacity-0 scale-95 pointer-events-none group-hover/dock:opacity-100 group-hover/dock:scale-100 group-hover/dock:pointer-events-auto transition-all duration-300 delay-150 group-hover/dock:delay-0 origin-bottom z-50">
+        <div className="flex items-center gap-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-lg rounded-full p-1.5" role="menu">
+          {REACTION_PRESETS.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              role="menuitem"
+              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 text-lg transition-transform hover:scale-110 active:scale-95 disabled:opacity-50"
+              title={p.id}
+              disabled={disabled || busy}
+              onClick={() => onPick(p.id)}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
       </div>
       <button
         type="button"
@@ -1489,7 +1491,7 @@ export default function ChatRoomPage() {
                                 <MessageBody m={m} />
                               </div>
                               {!needsJoin ? (
-                                <div className="absolute -bottom-3 -left-3 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                <div className="absolute -bottom-4 -left-4 p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-150 group-hover:delay-0 z-10">
                                   <MessageReactionDock
                                     disabled={needsJoin}
                                     busy={reactionBusyMid === mid}
@@ -1569,7 +1571,7 @@ export default function ChatRoomPage() {
                               <MessageBody m={m} />
                             </div>
                             {!needsJoin ? (
-                              <div className="absolute -bottom-3 -right-3 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                              <div className="absolute -bottom-4 -right-4 p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-150 group-hover:delay-0 z-10">
                                 <MessageReactionDock
                                   disabled={needsJoin}
                                   busy={reactionBusyMid === mid}

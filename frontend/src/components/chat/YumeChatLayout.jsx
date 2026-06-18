@@ -1221,19 +1221,71 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
                               <IconUserPlus size={16} />
                             </button>
                           </div>
-                          {directChats.length === 0 ? (
-                            <p className="text-sm text-slate-500 dark:text-slate-400 px-4 py-3 italic text-center bg-slate-50 dark:bg-slate-800/20 rounded-xl mx-2 border border-dashed border-slate-200 dark:border-slate-800">
-                              {inboxTab === 'unread' ? 'Không có chat riêng chưa đọc.' : 'Chưa có cuộc trò chuyện riêng.'}
-                            </p>
-                          ) : (
+                          {directChats.length > 0 && (
                             <Motion.ul
-                              className="flex flex-col gap-0.5"
+                              className="flex flex-col gap-0.5 mb-2"
                               variants={convListContainerVariants}
                               initial={reduceMotion ? false : 'hidden'}
                               animate={reduceMotion ? false : 'visible'}
                             >
                               {renderConvListItems(directChats)}
                             </Motion.ul>
+                          )}
+                          {friendRows.filter(f => !directChats.some(dc => String(dc.peerUserId) === String(f.id))).length > 0 && (
+                            <Motion.ul
+                              className="flex flex-col gap-0.5"
+                              variants={convListContainerVariants}
+                              initial={reduceMotion ? false : 'hidden'}
+                              animate={reduceMotion ? false : 'visible'}
+                            >
+                              {friendRows.filter(f => !directChats.some(dc => String(dc.peerUserId) === String(f.id))).map((f) => {
+                                const isDirectActive = directChats.some(
+                                  (dc) => String(dc.peerUserId) === String(f.id) && String(selectedRoomId) === String(dc.id)
+                                );
+                                return (
+                                  <Motion.li key={f.key} variants={convListItemVariants}>
+                                    <button
+                                      type="button"
+                                      className={`relative flex flex-row items-center w-full px-4 py-[0.85rem] gap-[0.85rem] text-left rounded-xl transition-colors hover:bg-rose-600/5 dark:hover:bg-rose-500/10 ${isDirectActive ? 'bg-rose-50/50 dark:bg-rose-900/10' : ''}`}
+                                      onClick={async () => {
+                                        try {
+                                          const room = await chatService.getOrCreateDirect(f.id);
+                                          const rid = room?.id ?? room?.Id;
+                                          if (rid) {
+                                            await loadRooms();
+                                            navigate(`/chat/room/${rid}`);
+                                          }
+                                        } catch (err) {
+                                          console.error('Lỗi khi mở chat', err);
+                                        }
+                                      }}
+                                    >
+                                      {isDirectActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r bg-[#dc143c] dark:bg-[#ff4d6d]" aria-hidden="true" />}
+                                      <div className="relative flex shrink-0" aria-hidden>
+                                        <span className="flex items-center justify-center w-[44px] h-[44px] rounded-full bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-100 font-bold">
+                                          {(f.name || f.username || 'B')[0].toUpperCase()}
+                                        </span>
+                                        {f.online && <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-green-500 border-[2.5px] border-white dark:border-slate-900 z-10" title="Đang hoạt động" />}
+                                      </div>
+                                      <div className="flex-1 flex flex-col min-w-0 gap-1">
+                                        <div className="flex justify-between items-baseline w-full">
+                                          <span className="font-bold text-[0.95rem] text-slate-800 dark:text-slate-100 truncate">{f.name}</span>
+                                          <span className="text-[0.72rem] shrink-0 ml-2 text-slate-500 dark:text-slate-400">{f.timeLabel}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center w-full">
+                                          <span className="text-[0.85rem] text-slate-500 dark:text-slate-400 truncate flex-1">{f.snippet}</span>
+                                        </div>
+                                      </div>
+                                    </button>
+                                  </Motion.li>
+                                );
+                              })}
+                            </Motion.ul>
+                          )}
+                          {directChats.length === 0 && friendRows.filter(f => !directChats.some(dc => String(dc.peerUserId) === String(f.id))).length === 0 && (
+                            <p className="text-sm text-slate-500 dark:text-slate-400 px-4 py-3 italic text-center bg-slate-50 dark:bg-slate-800/20 rounded-xl mx-2 border border-dashed border-slate-200 dark:border-slate-800">
+                              {inboxTab === 'unread' ? 'Không có tin nhắn chưa đọc.' : 'Chưa có bạn bè nào.'}
+                            </p>
                           )}
                         </section>
                       </div>
