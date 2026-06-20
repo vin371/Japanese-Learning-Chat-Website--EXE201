@@ -75,30 +75,17 @@ export default function ModeratorDashboard() {
     [reduceMotion],
   );
 
-  const initials = useMemo(() => String(displayName || 'M').slice(0, 2).toUpperCase(), [displayName]);
-
   return (
     <div className="mod-dash mod-dash--kurenai" lang="vi">
       <DashboardSidebar
         variant="moderator"
         isCollapsed={isCollapsed}
         onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
-        brandTitle="YumeGo-ji"
-        brandSub="Moderator Dojo"
+        brandTitle="Điều hành"
+        brandSub="Moderator"
         tabs={tabs.map((t) => ({ ...t, badge: tabBadge(t) }))}
         activeTab={tab}
         onTabChange={setTab}
-        footerNode={
-          <div className="mod-dash__k-user">
-            <span className="mod-dash__k-user-av" aria-hidden>
-              {initials}
-            </span>
-            <div className="mod-dash__k-user-info">
-              <div className="mod-dash__k-user-name">{displayName}</div>
-              <div className="mod-dash__k-user-role">Điều hành viên</div>
-            </div>
-          </div>
-        }
       />
 
       <div className="mod-dash__k-main">

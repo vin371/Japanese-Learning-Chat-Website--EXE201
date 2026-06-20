@@ -9,11 +9,12 @@ import { AppRoutes } from './routes';
 import { Header } from './layout/Header';
 import { LearnerTopNav } from './layout/LearnerTopNav';
 import { Footer } from './layout/Footer';
-import { ROUTES } from './data/routes';
+import { ROUTES, isAuthRoute } from './data/routes';
 import { SystemAnnouncementBanner } from './components/system/SystemAnnouncementBanner';
 import { ApiOfflineBanner } from './components/system/ApiOfflineBanner';
 import { ErrorBoundary } from './components/system/ErrorBoundary';
 import './styles/fonts.css';
+import './styles/components/yumegoji-ai-fab.css';
 import './index.css';
 import './styles/theme.css';
 import './styles/learner-nav.css';
@@ -53,6 +54,7 @@ function AppShell() {
   const { isAuthenticated } = useAuth();
   usePresenceHeartbeat();
   const chatFull = location.pathname.startsWith('/chat');
+  const authPage = isAuthRoute(location.pathname);
   const learnerShell =
     isAuthenticated &&
     (location.pathname === ROUTES.DASHBOARD ||
@@ -60,20 +62,22 @@ function AppShell() {
       location.pathname.startsWith(ROUTES.MODERATOR) ||
       location.pathname.startsWith(ROUTES.LEARN) ||
       location.pathname.startsWith(ROUTES.PLAY) ||
+      location.pathname.startsWith(ROUTES.ACCOUNT) ||
+      location.pathname.startsWith(ROUTES.UPGRADE) ||
       location.pathname.startsWith('/level-up-test') ||
       location.pathname.startsWith(ROUTES.PLACEMENT_TEST) ||
       chatFull);
 
   return (
     <div
-      className={`app ${chatFull ? 'app--chat-full' : ''} ${learnerShell ? 'app--learner' : ''}`}
+      className={`app ${chatFull ? 'app--chat-full' : ''} ${authPage ? 'app--auth' : ''} ${learnerShell ? 'app--learner' : ''}`}
     >
-      {learnerShell ? <LearnerTopNav /> : <Header />}
+      {!authPage && (learnerShell ? <LearnerTopNav /> : <Header />)}
       <main
-        className={`app-main ${chatFull ? 'app-main--chat' : ''} ${learnerShell ? 'app-main--learner' : ''}`}
+        className={`app-main ${chatFull ? 'app-main--chat' : ''} ${authPage ? 'app-main--auth' : ''} ${learnerShell ? 'app-main--learner' : ''}`}
       >
-        <ApiOfflineBanner />
-        <SystemAnnouncementBanner />
+        {!authPage && <ApiOfflineBanner />}
+        {!authPage && <SystemAnnouncementBanner />}
         <ErrorBoundary>
           {learnerShell ? (
           <AnimatePresence mode="wait" initial={false}>
@@ -100,7 +104,7 @@ function AppShell() {
           )}
         </ErrorBoundary>
       </main>
-      {!learnerShell && <Footer />}
+      {!authPage && !learnerShell && <Footer />}
     </div>
   );
 }

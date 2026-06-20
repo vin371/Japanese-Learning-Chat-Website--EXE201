@@ -1,10 +1,8 @@
 import { Link } from 'react-router-dom';
 import { ROUTES } from '../data/routes';
-import { HOMEPAGE_TESTIMONIALS } from '../data/homepageContent';
 
 export function Footer() {
   const year = new Date().getFullYear();
-  const faceItems = HOMEPAGE_TESTIMONIALS.items.filter((t) => t.avatarUrl);
   return (
     <footer id="site-footer" className="layout-footer">
       <div className="sn-container footer-grid">
@@ -13,13 +11,6 @@ export function Footer() {
           <p className="footer-desc">
             Nền tảng học tiếng Nhật dành cho người Việt — học vui, nhớ lâu, luyện giao tiếp mỗi ngày.
           </p>
-          <div className="footer-social" aria-label="Học viên tiêu biểu">
-            {faceItems.map((t) => (
-              <span key={t.name} className="footer-social__dot">
-                <img className="footer-social__img" src={t.avatarUrl} alt={t.name} width={34} height={34} loading="lazy" />
-              </span>
-            ))}
-          </div>
         </div>
         <div className="footer-col">
           <h4 className="footer-title">Học tập</h4>
@@ -40,9 +31,6 @@ export function Footer() {
           <h4 className="footer-title">Công ty</h4>
           <a className="footer-link" href={`${ROUTES.HOME}#why`}>
             Giới thiệu
-          </a>
-          <a className="footer-link" href={`${ROUTES.HOME}#testimonials`}>
-            Blog
           </a>
           <a className="footer-link" href={`${ROUTES.HOME}#lien-he`}>
             Tuyển dụng

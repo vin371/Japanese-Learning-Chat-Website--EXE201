@@ -5,6 +5,7 @@ import { SakuraRainLayer } from '../../components/effects/SakuraRainLayer';
 import { ROUTES } from '../../data/routes';
 import { extractLearnDocument, postLearnAiChat } from '../../services/learnAiService';
 import { getErrorMessageForUser } from '../../utils/apiErrorMessage';
+import { YumegojiAiSparklesIcon } from '../../components/support/YumegojiAiSparklesIcon';
 
 const Motion = motion;
 
@@ -43,18 +44,6 @@ function TypingDots({ label }) {
       <span />
       <span />
     </div>
-  );
-}
-
-function IconSparkles({ className }) {
-  return (
-    <svg className={className} width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M12 3l1.09 3.26L16 7l-2.91 1.74L12 12l-1.09-3.26L8 7l2.91-1.74L12 3zM5 14l.73 2.18L8 17l-2.27 1.36L5 21l-.73-2.64L2 17l2.27-1.36L5 14zm14 0l.73 2.18L22 17l-2.27 1.36L19 21l-.73-2.64L16 17l2.27-1.36L19 14z"
-        fill="currentColor"
-        opacity="0.92"
-      />
-    </svg>
   );
 }
 
@@ -235,7 +224,7 @@ export default function LearnAiWidget({ isAuthenticated }) {
       };
 
   return (
-    <div className="learn-ai-widget" aria-live="polite">
+    <div className="learn-ai-widget yumegoji-ai-widget" aria-live="polite">
       {open ? (
         <div className="learn-ai-widget__panel learn-ai-widget__panel--glass" role="dialog" aria-label="Yumegoji AI">
           <div className="learn-ai-widget__sakura" aria-hidden>
@@ -393,7 +382,7 @@ export default function LearnAiWidget({ isAuthenticated }) {
 
       <Motion.button
         type="button"
-        className={`learn-ai-widget__fab${open ? ' learn-ai-widget__fab--open' : ''}`}
+        className={`yumegoji-ai-fab${open ? ' yumegoji-ai-fab--open' : ''}`}
         aria-expanded={open}
         aria-label={open ? 'Đóng Yumegoji AI' : 'Mở Yumegoji AI'}
         onClick={() => setOpen((v) => !v)}
@@ -401,7 +390,7 @@ export default function LearnAiWidget({ isAuthenticated }) {
         whileTap={reduceMotion ? undefined : { scale: 0.95 }}
         transition={{ type: 'spring', stiffness: 400, damping: 22 }}
       >
-        <IconSparkles className="learn-ai-widget__fab-ico" />
+        <YumegojiAiSparklesIcon className="yumegoji-ai-fab__ico" />
       </Motion.button>
     </div>
   );

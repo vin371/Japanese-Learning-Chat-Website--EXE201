@@ -1,4 +1,5 @@
 
+import yumeLogo from '../../assets/yume-logo.png';
 
 export function DashboardSidebar({
   variant = 'admin',
@@ -24,18 +25,18 @@ export function DashboardSidebar({
         }`}>
         <button
           type="button"
-          className="w-12 h-12 rounded-xl bg-gradient-to-br from-[rgba(142,3,29,0.95)] to-rose-400 flex items-center justify-center text-[1.35rem] flex-shrink-0 mr-0 shadow-[0_8px_26px_rgba(0,0,0,0.25)] border-none cursor-pointer p-0 outline-none hover:scale-105 transition-transform duration-200"
+          className="w-12 h-12 rounded-xl bg-white dark:bg-slate-800 flex items-center justify-center flex-shrink-0 mr-0 shadow-[0_8px_26px_rgba(0,0,0,0.12)] border border-[rgba(142,3,29,0.12)] dark:border-slate-700 cursor-pointer p-1 outline-none hover:scale-105 transition-transform duration-200"
           onClick={onToggleCollapse}
           title={isCollapsed ? 'Mở rộng' : 'Thu gọn'}
         >
-          🌸
+          <img src={yumeLogo} alt="" className="w-full h-full object-contain rounded-lg" />
         </button>
         <div className={`flex flex-col min-w-0 transition-[max-width,opacity] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${isCollapsed ? 'min-[901px]:max-w-0 min-[901px]:opacity-0 min-[901px]:invisible min-[901px]:pointer-events-none min-[901px]:overflow-hidden' : 'min-[901px]:max-w-[200px] min-[901px]:opacity-100'
           }`}>
           <span className="block text-[1.45rem] font-extrabold text-[#8e031d] dark:text-rose-200 tracking-normal leading-tight">{brandTitle}</span>
-          {isMod && brandSub && (
+          {brandSub ? (
             <span className="block mt-0.5 text-[0.68rem] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{brandSub}</span>
-          )}
+          ) : null}
         </div>
       </div>
 
@@ -51,7 +52,7 @@ export function DashboardSidebar({
               } ${isCollapsed ? 'min-[901px]:gap-0 min-[901px]:justify-center min-[901px]:px-0' : ''}`}
             onClick={() => onTabChange(t.id)}
           >
-            <span className="w-6 h-6 inline-flex items-center justify-center flex-shrink-0 text-[1.1rem] min-[901px]:mr-0" aria-hidden>
+            <span className="w-6 h-6 inline-flex items-center justify-center flex-shrink-0 min-[901px]:mr-0 [&_svg]:w-5 [&_svg]:h-5" aria-hidden>
               {t.icon}
             </span>
             <span className={`flex-1 flex items-center justify-between gap-1.5 overflow-hidden text-ellipsis transition-[max-width,opacity] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${isCollapsed ? 'min-[901px]:max-w-0 min-[901px]:opacity-0 min-[901px]:invisible min-[901px]:pointer-events-none min-[901px]:overflow-hidden' : 'min-[901px]:max-w-[200px] min-[901px]:opacity-100'
@@ -76,11 +77,12 @@ export function DashboardSidebar({
         ))}
       </nav>
 
-      {/* Footer block */}
+      {footerNode ? (
       <div className={`flex flex-col gap-2.5 pt-3 mt-auto border-t border-[rgba(142,3,29,0.1)] dark:border-t-slate-800 overflow-hidden max-[900px]:w-full max-[900px]:mt-2 max-[900px]:flex-row max-[900px]:items-center max-[900px]:justify-between ${isCollapsed ? 'min-[901px]:hidden' : ''
         }`}>
         {footerNode}
       </div>
+      ) : null}
     </aside>
   );
 }

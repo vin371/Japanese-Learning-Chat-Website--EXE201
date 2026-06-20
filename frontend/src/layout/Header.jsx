@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
 import { ROUTES } from '../data/routes';
@@ -26,9 +26,10 @@ function buildAvatarSrc(user) {
 }
 
 export function Header() {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, logout, user } = useAuth();
   const { theme } = useTheme();
   const location = useLocation();
+  const navigate = useNavigate();
   const isMarketing = MARKETING_PATHS.includes(location.pathname);
   const displayName = user?.displayName || user?.username || user?.name || user?.email || 'Học viên';
   const roleNorm = String(user?.role ?? user?.Role ?? 'user').toLowerCase();
@@ -56,11 +57,10 @@ export function Header() {
             <Link to={`${ROUTES.HOME}#method`}>Khóa học</Link>
           )}
           {isAuthenticated ? (
-            <Link to={`${ROUTES.HOME}#testimonials`}>Blog</Link>
+            <Link to={ROUTES.CHAT}>Trò chuyện</Link>
           ) : (
             <>
               <Link to={`${ROUTES.HOME}#why`}>Giới thiệu</Link>
-              <Link to={`${ROUTES.HOME}#testimonials`}>Blog</Link>
               <Link to={`${ROUTES.HOME}#lien-he`}>Liên hệ</Link>
             </>
           )}
@@ -81,6 +81,10 @@ export function Header() {
                 initials={initials}
                 showPremiumBadge={showPremiumBadge}
                 accountTo={ROUTES.ACCOUNT}
+                onLogout={() => {
+                  logout();
+                  navigate(ROUTES.LOGIN);
+                }}
               />
             </div>
           ) : (
@@ -122,6 +126,10 @@ export function Header() {
               initials={initials}
               showPremiumBadge={showPremiumBadge}
               accountTo={ROUTES.ACCOUNT}
+              onLogout={() => {
+                logout();
+                navigate(ROUTES.LOGIN);
+              }}
             />
           </>
         ) : (

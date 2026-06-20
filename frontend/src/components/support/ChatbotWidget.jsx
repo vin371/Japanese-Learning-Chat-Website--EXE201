@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { postGuestChatbotMessage, createModeratorSupportRoom } from '../../services/chatbotService';
+import { YumegojiAiSparklesIcon } from './YumegojiAiSparklesIcon';
 
 const INTRO_GUEST =
   'Chào bạn! Mình là chatbot YumeGo-ji (không cần tài khoản). Hỏi mình về học Nhật, đăng ký, hoặc cách dùng web nhé.';
@@ -120,25 +121,15 @@ export function ChatbotWidget() {
 
   return (
     <>
-      <div className="support-chat-fab-wrap">
-        <span className="support-chat-fab__hint">
-          {isAuthenticated ? 'Trợ lý học tiếng Nhật (AI)' : 'Chatbot'}
-        </span>
+      <div className="yumegoji-ai-widget">
         <button
           type="button"
-          className="support-chat-fab"
+          className={`yumegoji-ai-fab${open ? ' yumegoji-ai-fab--open' : ''}`}
           aria-expanded={open}
-          aria-label="Trợ lý học tiếng Nhật và hỗ trợ"
+          aria-label={open ? 'Đóng Yumegoji AI' : 'Mở Yumegoji AI'}
           onClick={() => setOpen((o) => !o)}
         >
-          <img
-            className="support-chat-fab__mascot"
-            src={`${import.meta.env.BASE_URL}chatbot-mascot.png`}
-            alt=""
-            width={52}
-            height={52}
-            decoding="async"
-          />
+          <YumegojiAiSparklesIcon className="yumegoji-ai-fab__ico" />
         </button>
       </div>
 
@@ -152,7 +143,7 @@ export function ChatbotWidget() {
           aria-label="Chatbot và hỗ trợ"
         >
           <div className="support-chat-panel__head">
-            <h3 className="support-chat-panel__title">Chatbot YumeGo-ji</h3>
+            <h3 className="support-chat-panel__title">Yumegoji AI</h3>
             <button type="button" className="support-chat-panel__close" onClick={() => setOpen(false)} aria-label="Đóng">
               ×
             </button>

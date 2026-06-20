@@ -666,3 +666,7 @@ html[data-theme='dark'] .yume-nav-profile-premium-label {
   background: linear-gradient(135deg, #92400e, #b45309);
   border-color: color-mix(in srgb, #fcd34d 35%, transparent);
 }
+
+.learner-top-nav--staff-desk {
+  background: color-mix(in srgb, var(--bg) 98%, #fff 2%);
+}

@@ -24,6 +24,16 @@ export const ROUTES = {
   ACCOUNT: '/account',
 };
 
+/** Trang auth full-screen — ẩn header/footer site. */
+export function isAuthRoute(pathname) {
+  return (
+    pathname === ROUTES.LOGIN ||
+    pathname === ROUTES.REGISTER ||
+    pathname === ROUTES.RESET_PASSWORD ||
+    pathname === ROUTES.FORGOT_PASSWORD
+  );
+}
+
 export const ROUTE_NAMES = {
   [ROUTES.HOME]: 'Trang chủ',
   [ROUTES.LOGIN]: 'Đăng nhập',

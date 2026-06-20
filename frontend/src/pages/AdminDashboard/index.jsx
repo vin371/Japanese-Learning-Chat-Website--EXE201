@@ -58,16 +58,11 @@ export default function AdminDashboard() {
         variant="admin"
         isCollapsed={isCollapsed}
         onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
-        brandTitle="Admin"
+        brandTitle="Quản trị"
+        brandSub="Admin"
         tabs={TABS}
         activeTab={tab}
         onTabChange={setTab}
-        footerNode={
-          <div className="admin-dash__status-pill admin-dash__status-pill--sidebar" title="Trạng thái hệ thống">
-            <span className="admin-dash__pulse" aria-hidden />
-            Bình thường
-          </div>
-        }
       />
 
 

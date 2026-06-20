@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ROUTES } from '../../data/routes';
 import { ChatbotWidget } from '../../components/support/ChatbotWidget';
-import { HOMEPAGE_CTA, HOMEPAGE_HERO, HOMEPAGE_METHOD, HOMEPAGE_TESTIMONIALS, HOMEPAGE_WHY } from '../../data/homepageContent';
+import { HOMEPAGE_CTA, HOMEPAGE_HERO, HOMEPAGE_METHOD, HOMEPAGE_WHY } from '../../data/homepageContent';
 import { HeroImageCarousel } from '../../components/home/HeroImageCarousel';
 import { useAuth } from '../../hooks/useAuth';
 import { fetchMyProgressSummary } from '../../services/learningProgressService';
@@ -368,46 +368,6 @@ export default function Homepage() {
                 </div>
               ))}
             </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="testimonials" className="sn-section sn-section--testimonials sn-reveal">
-        <div className="sn-container">
-          <h2 className="sn-title">{HOMEPAGE_TESTIMONIALS.title}</h2>
-          <p className="sn-subtitle">{HOMEPAGE_TESTIMONIALS.subtitle}</p>
-          <div className="sn-grid-3">
-            {HOMEPAGE_TESTIMONIALS.items.map((t) => (
-              <article key={t.name} className="sn-testimonial sn-reveal">
-                <div className="sn-testimonial__stars" aria-label="5 sao">
-                  <span>★</span>
-                  <span>★</span>
-                  <span>★</span>
-                  <span>★</span>
-                  <span>★</span>
-                </div>
-                <p className="sn-testimonial__quote">“{t.quote}”</p>
-                <div className="sn-testimonial__meta">
-                  <div className="sn-testimonial__avatar">
-                    {t.avatarUrl ? (
-                      <img
-                        className="sn-testimonial__avatar-img"
-                        src={t.avatarUrl}
-                        alt={t.name}
-                        width={44}
-                        height={44}
-                        loading="lazy"
-                        decoding="async"
-                      />
-                    ) : null}
-                  </div>
-                  <div>
-                    <div className="sn-testimonial__name">{t.name}</div>
-                    <div className="sn-testimonial__level">{t.level}</div>
-                  </div>
-                </div>
-              </article>
-            ))}
           </div>
         </div>
       </section>
