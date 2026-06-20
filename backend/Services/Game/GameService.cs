@@ -90,7 +90,7 @@ public partial class GameService : IGameService
         await db.ExecuteAsync(
             $"""
             UPDATE user_inventory i
-            SET quantity = @qty, updated_at = (NOW() AT TIME ZONE 'utc')
+            SET quantity = @qty, updated_at = NOW()
             FROM power_ups p
             WHERE i.power_up_id = p.id AND i.user_id = @u
               AND {slugNorm} <> 'fifty-fifty'
@@ -100,7 +100,7 @@ public partial class GameService : IGameService
         await db.ExecuteAsync(
             $"""
             INSERT INTO user_inventory (user_id, power_up_id, quantity, created_at, updated_at)
-            SELECT @u, p.id, @qty, (NOW() AT TIME ZONE 'utc'), (NOW() AT TIME ZONE 'utc')
+            SELECT @u, p.id, @qty, NOW(), NOW()
             FROM power_ups p
             WHERE COALESCE(p.is_active, true)
               AND {slugNorm} <> 'fifty-fifty'

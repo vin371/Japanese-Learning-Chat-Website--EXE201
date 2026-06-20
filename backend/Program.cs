@@ -313,7 +313,12 @@ namespace backend
                     var log = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
                     using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
                     if (await db.Database.CanConnectAsync(cts.Token))
+                    {
                         log.LogInformation("Đã kết nối PostgreSQL (Supabase) thành công.");
+                        var cs = app.Configuration.GetConnectionString("DefaultConnection");
+                        if (!string.IsNullOrWhiteSpace(cs))
+                            await StartupDbPatches.ApplyUserInventoryTimestampDefaultsAsync(cs, log, cts.Token);
+                    }
                     else
                         log.LogWarning("Không kết nối được database — kiểm tra ConnectionStrings__DefaultConnection trên Railway.");
                 }

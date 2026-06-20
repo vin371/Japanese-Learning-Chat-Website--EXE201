@@ -656,8 +656,7 @@ public class ChatService : IChatService
         if (msg.UserId <= 0)
             throw new InvalidOperationException("userId người gửi không hợp lệ.");
         _db.Messages.Add(msg);
-        var room = await _db.ChatRooms.FindAsync(roomId);
-        if (room != null) room.UpdatedAt = now;
+        room.UpdatedAt = now;
         await _db.SaveChangesAsync();
 
         var user = await _db.Users.FindAsync(currentUserId);
