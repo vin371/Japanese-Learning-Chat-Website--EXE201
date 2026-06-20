@@ -35,7 +35,7 @@ export const chatService = {
     return Array.isArray(data) ? data : [];
   },
 
-  async getPublicRooms({ type = 'public', slug, levelId, limit = 50 } = {}) {
+  async getPublicRooms({ type, slug, levelId, limit = 50 } = {}) {
     const { data } = await chatApi.getPublicRooms({
       params: cleanParams({
         type,

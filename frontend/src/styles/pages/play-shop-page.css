@@ -21,7 +21,7 @@
   max-width: 1120px;
   padding: 1rem clamp(1rem, 3vw, 2rem) 2.5rem;
   color: var(--shop-ink);
-  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-vi);
 }
 
 .play-shop-page__sakura-stack {
@@ -119,12 +119,14 @@
 
 .play-shop-page__title {
   margin: 0 0 0.35rem;
-  font-family: Georgia, 'Times New Roman', Times, serif;
+  font-family: var(--font-vi-display);
   font-size: clamp(1.85rem, 4.5vw, 2.65rem);
   font-weight: 700;
   color: var(--shop-red);
-  letter-spacing: -0.02em;
-  line-height: 1.1;
+  letter-spacing: normal;
+  line-height: 1.15;
+  word-break: normal;
+  overflow-wrap: break-word;
 }
 
 .play-shop-page__lead {
@@ -422,10 +424,13 @@
 
 .play-shop-page__promo-title {
   margin: 0 0 0.5rem;
-  font-family: Georgia, 'Times New Roman', Times, serif;
+  font-family: var(--font-vi-display);
   font-size: clamp(1.35rem, 3.5vw, 1.85rem);
   font-weight: 700;
-  line-height: 1.2;
+  line-height: 1.25;
+  letter-spacing: normal;
+  word-break: normal;
+  overflow-wrap: break-word;
 }
 
 .play-shop-page__promo-text {

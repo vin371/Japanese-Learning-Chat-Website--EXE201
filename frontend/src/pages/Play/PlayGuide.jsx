@@ -13,45 +13,30 @@ export default function PlayGuide() {
 
       <div className="play-guide__body">
         <section className="play-guide__section">
-          <h2>9 trò chơi (đặc tả)</h2>
+          <h2>6 trò chơi (đặc tả)</h2>
           <ol className="play-guide__list play-guide__list--num">
             <li>
-              <strong>Hiragana Match</strong> — Chọn đúng romaji cho chữ Hiragana — <em>10 giây/câu</em> — <em>N5</em>
+              <strong>Ghép Hiragana</strong> — Chọn đúng romaji cho chữ Hiragana — <em>10 giây/câu</em> — <em>N5</em>
             </li>
             <li>
-              <strong>Katakana Match</strong> — Tương tự cho Katakana — <em>10 giây/câu</em> — <em>N5</em>
+              <strong>Ghép Katakana</strong> — Tương tự cho Katakana — <em>10 giây/câu</em> — <em>N5</em>
             </li>
             <li>
-              <strong>Kanji Memory</strong> — Lật thẻ ghép Kanji (hoặc từ) với nghĩa tiếng Việt — <em>memory game</em> —{' '}
-              <em>N5</em>
+              <strong>Lật thẻ Kanji</strong> — Lật thẻ ghép Kanji (hoặc từ) với nghĩa tiếng Việt — <em>N5</em>
             </li>
             <li>
-              <strong>Vocabulary Speed Quiz</strong> — Quiz từ vựng phản xạ nhanh — <em>8 giây/câu</em> —{' '}
+              <strong>Từ vựng tốc độ</strong> — Quiz từ vựng phản xạ nhanh — <em>8 giây/câu</em> —{' '}
               <em>N5–N3</em>
             </li>
             <li>
-              <strong>Sentence Builder</strong> — Sắp xếp từ thành câu hoàn chỉnh — <em>N5–N3</em>
+              <strong>Trợ từ đếm</strong> — Chọn cách đếm đúng (trợ từ đếm) — <em>N5–N4</em>
             </li>
             <li>
-              <strong>Counter Quest</strong> — Chọn cách đếm đúng (trợ từ đếm) — <em>N5–N4</em>
-            </li>
-            <li>
-              <strong>Flashcard Battle</strong> — Đấu với Bot AI (client mô phỏng ~70% “trúng”/câu); trận PvP người với
-              người qua <Link to={`${ROUTES.PLAY}/pvp`}>phòng PvP</Link> — <em>N5–N3</em>
-            </li>
-            <li>
-              <strong>Boss Battle</strong> — Đánh boss bằng kiến thức — thanh HP boss &amp; thanh người chơi (theo mạng) —{' '}
-              <em>N5–N3</em>
-            </li>
-            <li>
-              <strong>Daily Challenge</strong> — Mix <em>15 câu</em> từ nhiều chủ đề (cấu hình bộ đề DB) —{' '}
-              <em>N5–N3</em>
+              <strong>Đánh boss</strong> — Trả lời đúng để gây sát thương boss — <em>N5–N3</em>
             </li>
           </ol>
           <p className="play-guide__note">
-            Seed game + câu hỏi: <code>doc/sql/seed_games_playable_fix_v1.sql</code> và{' '}
-            <code>yumegoji_game_system_spec.sql</code>. Timer Hiragana/Katakana 10s, Vocab Speed 8s được áp thêm trên
-            client; Daily 15 câu cần <code>questions_per_round = 15</code> trong bộ đề.
+            Mỗi game có luật riêng trên màn hình trước khi chơi. Hiragana/Katakana: 10 giây/câu; Từ vựng tốc độ: 8 giây/câu.
           </p>
         </section>
 
@@ -64,7 +49,7 @@ export default function PlayGuide() {
               Combo liên tiếp: nhân điểm ×1.2, ×1.5, ×2.0 (trong <code>sp_SubmitAnswer</code> /{' '}
               <code>game_score_configs.combo_rules_json</code>).
             </li>
-            <li>Trả lời sai: mất 1 mạng, combo reset (trừ khi dùng <strong>Skip</strong> — không trừ mạng, xử lý phía API).</li>
+            <li>Trả lời sai: mất 1 mạng, combo reset (trừ khi dùng <strong>Bỏ qua</strong> — không trừ mạng).</li>
           </ul>
         </section>
 

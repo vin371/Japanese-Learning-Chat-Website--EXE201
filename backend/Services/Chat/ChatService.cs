@@ -30,6 +30,59 @@ public class ChatService : IChatService
 
     public IReadOnlyList<RoomCategoryDto> GetRoomCategories() => ChatRoomCatalog.Categories;
 
+    public async Task<IReadOnlyList<RoomCategoryDto>> GetRoomCategoriesForUserAsync(int currentUserId)
+    {
+        var me = await _db.Users.AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Id == currentUserId && u.DeletedAt == null);
+        if (IsStaffUser(me))
+            return ChatRoomCatalog.Categories;
+
+        var userLevel = me?.LevelId;
+        return ChatRoomCatalog.Categories
+            .Where(c =>
+                string.Equals(c.Key, "general", StringComparison.OrdinalIgnoreCase) ||
+                (string.Equals(c.RoomType, "level", StringComparison.OrdinalIgnoreCase) &&
+                 c.LevelId.HasValue &&
+                 userLevel.HasValue &&
+                 c.LevelId.Value == userLevel.Value))
+            .ToList();
+    }
+
+    private static bool IsStaffUser(User? user) =>
+        user != null &&
+        (string.Equals(user.Role, AppRoles.Admin, StringComparison.OrdinalIgnoreCase) ||
+         string.Equals(user.Role, AppRoles.Moderator, StringComparison.OrdinalIgnoreCase));
+
+    private static bool IsLearnerGeneralPublicRoom(ChatRoom room) =>
+        string.Equals(room.Type, "public", StringComparison.OrdinalIgnoreCase) &&
+        (string.Equals(room.Slug, "general", StringComparison.OrdinalIgnoreCase) ||
+         string.Equals(room.Slug, "common", StringComparison.OrdinalIgnoreCase));
+
+    private static bool LearnerCanAccessRoom(ChatRoom room, int? userLevelId, bool bypassJlptGate)
+    {
+        if (bypassJlptGate)
+            return true;
+
+        var type = room.Type?.ToLowerInvariant() ?? "";
+        if (type == PrivateRoomType || type == GroupRoomType)
+            return true;
+
+        if (IsLearnerGeneralPublicRoom(room))
+            return true;
+
+        if (type == "level")
+            return userLevelId.HasValue && room.LevelId == userLevelId.Value;
+
+        return false;
+    }
+
+    private async Task<(User? Me, bool BypassJlptGate)> GetUserAccessContextAsync(int userId)
+    {
+        var me = await _db.Users.AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Id == userId && u.DeletedAt == null);
+        return (me, IsStaffUser(me));
+    }
+
     public async Task<ChatRoomDto> GetOrCreateDirectRoomAsync(int currentUserId, int peerUserId)
     {
         if (currentUserId == peerUserId)
@@ -105,7 +158,7 @@ public class ChatService : IChatService
         return await GetOrCreateDirectRoomAsync(learnerUserId, modId);
     }
 
-    public async Task<IEnumerable<ChatRoomDto>> GetPublicRoomsAsync(int currentUserId, string? type = "public", string? slug = null, int? levelId = null, int limit = 50)
+    public async Task<IEnumerable<ChatRoomDto>> GetPublicRoomsAsync(int currentUserId, string? type = null, string? slug = null, int? levelId = null, int limit = 50)
     {
         var allowedTypes = new[] { "public", "level", "group" };
         var query = _db.ChatRooms.Where(r => r.IsActive && allowedTypes.Contains(r.Type));
@@ -122,11 +175,7 @@ public class ChatService : IChatService
             query = query.Where(r => r.CreatedBy == currentUserId);
         }
 
-        var me = await _db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == currentUserId && u.DeletedAt == null);
-        var bypassJlptGate =
-            me != null &&
-            (string.Equals(me.Role, AppRoles.Admin, StringComparison.OrdinalIgnoreCase) ||
-             string.Equals(me.Role, AppRoles.Moderator, StringComparison.OrdinalIgnoreCase));
+        var (me, bypassJlptGate) = await GetUserAccessContextAsync(currentUserId);
 
         // Nếu frontend không truyền levelId, tự suy ra từ user (admin/mod vẫn có level nhưng không dùng để khóa danh sách)
         if (!levelId.HasValue && me?.LevelId != null)
@@ -141,12 +190,15 @@ public class ChatService : IChatService
             {
                 var lvl = levelId.Value;
                 query = query.Where(r =>
-                    (r.Type == "public" && (r.Slug == "common" || r.LevelId == null)) ||
+                    (r.Type == "public" &&
+                     (r.Slug == "common" || r.Slug == "general")) ||
                     (r.Type == "level" && r.LevelId == lvl));
             }
             else
             {
-                query = query.Where(r => r.Type == "public" && (r.Slug == "common" || r.LevelId == null));
+                query = query.Where(r =>
+                    r.Type == "public" &&
+                    (r.Slug == "common" || r.Slug == "general"));
             }
         }
 
@@ -175,6 +227,16 @@ public class ChatService : IChatService
         query = query.Where(r => r.Type != GroupRoomType || r.CreatedBy == currentUserId);
 
         var rooms = await query.OrderByDescending(r => r.UpdatedAt).Take(limit).ToListAsync();
+
+        var (me, bypassJlptGate) = await GetUserAccessContextAsync(currentUserId);
+        if (!bypassJlptGate)
+        {
+            var userLevel = me?.LevelId;
+            rooms = rooms
+                .Where(r => LearnerCanAccessRoom(r, userLevel, false))
+                .ToList();
+        }
+
         return await BuildRoomDtosAsync(rooms.Select(r => r.Id).ToList(), currentUserId);
     }
 
@@ -185,6 +247,10 @@ public class ChatService : IChatService
 
         var room = await _db.ChatRooms.FindAsync(roomId);
         if (room == null) return null;
+
+        var (me, bypassJlptGate) = await GetUserAccessContextAsync(currentUserId);
+        if (!LearnerCanAccessRoom(room, me?.LevelId, bypassJlptGate))
+            return null;
 
         var list = await BuildRoomDtosAsync(new List<int> { roomId }, currentUserId);
         return list.FirstOrDefault();
@@ -197,6 +263,10 @@ public class ChatService : IChatService
 
         if (room.Type == PrivateRoomType)
             return await GetRoomByIdAsync(roomId, currentUserId);
+
+        var (me, bypassJlptGate) = await GetUserAccessContextAsync(currentUserId);
+        if (!LearnerCanAccessRoom(room, me?.LevelId, bypassJlptGate))
+            return null;
 
         var list = await BuildRoomDtosAsync(new List<int> { roomId }, currentUserId);
         return list.FirstOrDefault();
@@ -269,6 +339,10 @@ public class ChatService : IChatService
     {
         var room = await _db.ChatRooms.FirstOrDefaultAsync(r => r.Id == roomId && r.IsActive);
         if (room == null) return null;
+
+        var (me, bypassJlptGate) = await GetUserAccessContextAsync(currentUserId);
+        if (!LearnerCanAccessRoom(room, me?.LevelId, bypassJlptGate))
+            return null;
 
         if (room.Type == PrivateRoomType)
         {
@@ -410,6 +484,11 @@ public class ChatService : IChatService
         var room = await _db.ChatRooms.FindAsync(roomId);
         if (room == null || !room.IsActive) return false;
         if (room.Type == PrivateRoomType) return false;
+
+        var (me, bypassJlptGate) = await GetUserAccessContextAsync(currentUserId);
+        if (!LearnerCanAccessRoom(room, me?.LevelId, bypassJlptGate))
+            return false;
+
         if (room.MaxMembers.HasValue)
         {
             var count = await _db.ChatRoomMembers.CountAsync(m => m.RoomId == roomId);
@@ -487,6 +566,10 @@ public class ChatService : IChatService
         if (room == null)
             return new PagedMessagesResponse();
 
+        var (me, bypassJlptGate) = await GetUserAccessContextAsync(currentUserId);
+        if (!LearnerCanAccessRoom(room, me?.LevelId, bypassJlptGate))
+            return new PagedMessagesResponse();
+
         var isMember = await _db.ChatRoomMembers.AnyAsync(m => m.RoomId == roomId && m.UserId == currentUserId);
         if (!isMember)
         {
@@ -524,6 +607,14 @@ public class ChatService : IChatService
 
     public async Task<SendMessageResult> SendMessageAsync(int roomId, int currentUserId, SendMessageRequest request)
     {
+        var room = await _db.ChatRooms.FirstOrDefaultAsync(r => r.Id == roomId && r.IsActive);
+        if (room == null)
+            throw new InvalidOperationException("Phòng không tồn tại.");
+
+        var (me, bypassJlptGate) = await GetUserAccessContextAsync(currentUserId);
+        if (!LearnerCanAccessRoom(room, me?.LevelId, bypassJlptGate))
+            throw new InvalidOperationException("Bạn chưa đủ trình độ để chat trong phòng này.");
+
         var isMember = await _db.ChatRoomMembers.AnyAsync(m => m.RoomId == roomId && m.UserId == currentUserId);
         if (!isMember)
             throw new InvalidOperationException("Không phải thành viên phòng.");

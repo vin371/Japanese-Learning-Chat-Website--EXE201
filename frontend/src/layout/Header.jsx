@@ -1,5 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
 import { ROUTES } from '../data/routes';
@@ -27,13 +26,10 @@ function buildAvatarSrc(user) {
 }
 
 export function Header() {
-  const { isAuthenticated, logout, user } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const { theme } = useTheme();
   const location = useLocation();
-  const navigate = useNavigate();
   const isMarketing = MARKETING_PATHS.includes(location.pathname);
-  const [accountOpen, setAccountOpen] = useState(false);
-  const accountWrapRef = useRef(null);
   const displayName = user?.displayName || user?.username || user?.name || user?.email || 'Học viên';
   const roleNorm = String(user?.role ?? user?.Role ?? 'user').toLowerCase();
   const isAdminUser = roleNorm === 'admin';
@@ -43,24 +39,6 @@ export function Header() {
   const xuBalance = Number(user?.xu ?? user?.Xu ?? 0) || 0;
   const staffNav = isAdminUser || isModeratorUser;
   const showPremiumBadge = !staffNav && userIsPremium(user);
-
-  useEffect(() => {
-    if (!accountOpen) return undefined;
-    function onDocMouseDown(e) {
-      const el = accountWrapRef.current;
-      if (!el || el.contains(e.target)) return;
-      setAccountOpen(false);
-    }
-    function onKey(e) {
-      if (e.key === 'Escape') setAccountOpen(false);
-    }
-    document.addEventListener('mousedown', onDocMouseDown);
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('mousedown', onDocMouseDown);
-      document.removeEventListener('keydown', onKey);
-    };
-  }, [accountOpen]);
 
   if (isMarketing) {
     return (
@@ -96,20 +74,13 @@ export function Header() {
             title="Chuyển sáng/tối"
           />
           {isAuthenticated ? (
-            <div className="layout-header__account-wrap" ref={accountWrapRef}>
+            <div className="layout-header__account-wrap">
               <UserProfileDropdown
-                user={user}
                 displayName={displayName}
                 avatarSrc={avatarSrc}
                 initials={initials}
                 showPremiumBadge={showPremiumBadge}
-                logout={() => {
-                  logout();
-                  navigate(ROUTES.LOGIN);
-                }}
-                ROUTES={ROUTES}
-                menuOpen={accountOpen}
-                setMenuOpen={setAccountOpen}
+                accountTo={ROUTES.ACCOUNT}
               />
             </div>
           ) : (
@@ -146,18 +117,11 @@ export function Header() {
               title="Chuyển sáng/tối"
             />
             <UserProfileDropdown
-              user={user}
               displayName={displayName}
               avatarSrc={avatarSrc}
               initials={initials}
               showPremiumBadge={showPremiumBadge}
-              logout={() => {
-                logout();
-                navigate(ROUTES.LOGIN);
-              }}
-              ROUTES={ROUTES}
-              menuOpen={accountOpen}
-              setMenuOpen={setAccountOpen}
+              accountTo={ROUTES.ACCOUNT}
             />
           </>
         ) : (

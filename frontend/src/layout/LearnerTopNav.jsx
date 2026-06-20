@@ -1,11 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { NavLink, Link, useNavigate, useLocation } from 'react-router-dom';
+import { useEffect, useMemo, useCallback } from 'react';
+import { NavLink, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { ENV } from '../api/client';
 import { userIsPremium } from '../utils/userPremium';
 import { useChatUnreadTotal } from '../hooks/useChatUnreadTotal';
 import { useTheme } from '../hooks/useTheme';
 import { ROUTES } from '../data/routes';
+import { getDefaultChatRoomPath } from '../utils/chatRoomAccess';
+import { prefetchDefaultChatRoom, prefetchChatRoom } from '../utils/chatRoomPrefetch';
 import { MessageCircleMore, ShoppingCart, BookOpenText, Gamepad2 } from 'lucide-react';
 import yumeLogo from '../assets/yume-logo.png';
 import { AnimatedThemeToggler } from '../ui/animated-theme-toggler';
@@ -30,13 +32,14 @@ function buildAvatarSrc(user) {
  * Thanh trên YumeGo-ji: học viên — Học tập, Trò chơi, Chat; admin — Dashboard + Chat; moderator — Điều hành + Chat.
  */
 export function LearnerTopNav() {
-  const { user, logout, isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const { total: chatUnreadTotal, rooms: chatRooms, refresh: refreshChatUnread } = useChatUnreadTotal(
     !!isAuthenticated
   );
   const { theme } = useTheme();
-  const navigate = useNavigate();
   const { pathname } = useLocation();
+
+  const chatNavPath = getDefaultChatRoomPath();
 
   /** Trên nav: không tính unread phòng đang mở (đang xem = đã xử lý UI trong phòng). */
   const navChatUnread = useMemo(() => {
@@ -47,13 +50,6 @@ export function LearnerTopNav() {
     const here = Number(row?.unreadCount ?? row?.UnreadCount ?? 0) || 0;
     return Math.max(0, chatUnreadTotal - here);
   }, [pathname, chatUnreadTotal, chatRooms]);
-
-  useEffect(() => {
-    if (!isAuthenticated || !pathname.startsWith('/chat')) return;
-    void refreshChatUnread();
-  }, [pathname, isAuthenticated, refreshChatUnread]);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const wrapRef = useRef(null);
 
   const displayName = user?.displayName || user?.username || user?.name || user?.email || 'Học viên';
   const initials = initialsFromUser(user, displayName);
@@ -69,13 +65,22 @@ export function LearnerTopNav() {
   const showPremiumBadge = !staffNav && userIsPremium(user);
 
   useEffect(() => {
-    if (!menuOpen) return undefined;
-    function onDown(e) {
-      if (wrapRef.current && !wrapRef.current.contains(e.target)) setMenuOpen(false);
+    if (!isAuthenticated) return undefined;
+    const run = () => void prefetchDefaultChatRoom();
+    if (typeof requestIdleCallback !== 'undefined') {
+      const id = requestIdleCallback(run, { timeout: 2500 });
+      return () => cancelIdleCallback(id);
     }
-    document.addEventListener('mousedown', onDown);
-    return () => document.removeEventListener('mousedown', onDown);
-  }, [menuOpen]);
+    const t = window.setTimeout(run, 800);
+    return () => window.clearTimeout(t);
+  }, [isAuthenticated]);
+
+  const onChatLinkWarm = useCallback(() => {
+    const m = chatNavPath.match(/\/chat\/room\/(\d+)/);
+    const id = m?.[1];
+    if (id) void prefetchChatRoom(id);
+    else void prefetchDefaultChatRoom();
+  }, [chatNavPath]);
 
   return (
     <header className="sticky top-0 z-50 w-full bg-white/95 dark:bg-slate-900/95 border-b border-slate-200 dark:border-slate-800 shadow-sm backdrop-blur-md">
@@ -108,7 +113,10 @@ export function LearnerTopNav() {
                   {isAdminUser ? 'Bảng điều khiển' : 'Điều hành'}
                 </NavLink>
                 <NavLink
-                  to={ROUTES.CHAT}
+                  to={chatNavPath}
+                  isActive={(_, loc) => loc.pathname.startsWith('/chat')}
+                  onMouseEnter={onChatLinkWarm}
+                  onFocus={onChatLinkWarm}
                   className={({ isActive }) => `inline-flex items-center gap-1.5 px-2.5 md:px-4 py-2 rounded-xl no-underline font-semibold text-[0.92rem] border transition-all whitespace-nowrap ${
                     isActive 
                       ? 'bg-rose-500/15 text-red-900 border-rose-500/30 dark:bg-purple-500/20 dark:text-yellow-100 dark:border-purple-400/40' 
@@ -146,7 +154,10 @@ export function LearnerTopNav() {
                   Trò chơi
                 </NavLink>
                 <NavLink
-                  to={ROUTES.CHAT}
+                  to={chatNavPath}
+                  isActive={(_, loc) => loc.pathname.startsWith('/chat')}
+                  onMouseEnter={onChatLinkWarm}
+                  onFocus={onChatLinkWarm}
                   className={({ isActive }) => `inline-flex items-center gap-1.5 px-2.5 md:px-4 py-2 rounded-xl no-underline font-semibold text-[0.92rem] border transition-all whitespace-nowrap ${
                     isActive 
                       ? 'bg-rose-500/15 text-red-900 border-rose-500/30 dark:bg-purple-500/20 dark:text-yellow-100 dark:border-purple-400/40' 
@@ -186,20 +197,13 @@ export function LearnerTopNav() {
               aria-label={theme === 'dark' ? 'Chế độ sáng' : 'Chế độ tối'}
             />
 
-            <div className="relative min-w-0 shrink-0" ref={wrapRef}>
+            <div className="relative min-w-0 shrink-0">
               <UserProfileDropdown
-                user={user}
                 displayName={displayName}
                 avatarSrc={avatarSrc}
                 initials={initials}
                 showPremiumBadge={showPremiumBadge}
-                logout={() => {
-                  logout();
-                  navigate(ROUTES.LOGIN);
-                }}
-                ROUTES={ROUTES}
-                menuOpen={menuOpen}
-                setMenuOpen={setMenuOpen}
+                accountTo={ROUTES.ACCOUNT}
               />
             </div>
           </div>

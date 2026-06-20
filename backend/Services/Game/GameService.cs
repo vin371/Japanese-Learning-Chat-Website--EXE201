@@ -19,6 +19,16 @@ public partial class GameService : IGameService
     /// <summary>Gói Miễn phí: tối đa phiên game bắt đầu trong ngày (UTC). Premium không giới hạn.</summary>
     private const int FreeTierDailyGameSessionLimit = 20;
 
+    private static readonly HashSet<string> RetiredGameSlugs = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "sentence-builder",
+        "pvp-vocabulary",
+        "multiple-choice",
+        "flashcard-vocabulary",
+        "flashcard-battle",
+        "daily-challenge",
+    };
+
     private readonly string _connectionString;
     private readonly ILogger<GameService> _logger;
     private readonly ApplicationDbContext _learningDb;
@@ -58,9 +68,8 @@ public partial class GameService : IGameService
         return slug.Trim().Replace('_', '-').ToLowerInvariant();
     }
 
-    private static bool IsFlashcardBattleSlug(string normalizedSlug) =>
-        string.Equals(normalizedSlug, "flashcard-vocabulary", StringComparison.OrdinalIgnoreCase)
-        || string.Equals(normalizedSlug, "flashcard-battle", StringComparison.OrdinalIgnoreCase);
+    private static bool IsRetiredGameSlug(string normalizedSlug) =>
+        !string.IsNullOrEmpty(normalizedSlug) && RetiredGameSlugs.Contains(normalizedSlug);
 
     /// <summary>Swagger/UI hay gửi setId = 0; coi như không chọn bộ đề (dùng auto + nhánh bài học).</summary>
     private static int? NormalizeOptionalSetId(int? setId) =>
@@ -90,8 +99,8 @@ public partial class GameService : IGameService
 
         await db.ExecuteAsync(
             $"""
-            INSERT INTO user_inventory (user_id, power_up_id, quantity, updated_at)
-            SELECT @u, p.id, @qty, (NOW() AT TIME ZONE 'utc')
+            INSERT INTO user_inventory (user_id, power_up_id, quantity, created_at, updated_at)
+            SELECT @u, p.id, @qty, (NOW() AT TIME ZONE 'utc'), (NOW() AT TIME ZONE 'utc')
             FROM power_ups p
             WHERE COALESCE(p.is_active, true)
               AND {slugNorm} <> 'fifty-fifty'
@@ -114,7 +123,11 @@ public partial class GameService : IGameService
                    level_max AS LevelMax
             FROM games
             WHERE COALESCE(is_active, true)
-              AND LOWER(TRIM(slug)) NOT IN ('fill-in-blank', 'fill-blank')
+              AND LOWER(TRIM(slug)) NOT IN (
+                'fill-in-blank', 'fill-blank',
+                'sentence-builder', 'pvp-vocabulary', 'multiple-choice',
+                'flashcard-vocabulary', 'flashcard-battle', 'daily-challenge'
+              )
             ORDER BY COALESCE(sort_order, 0), id
             """;
         using var db = CreateConnection();
@@ -209,6 +222,8 @@ public partial class GameService : IGameService
         var gameSlug = NormalizeGameSlug(req.GameSlug);
         if (string.IsNullOrEmpty(gameSlug))
             throw new InvalidOperationException("Thiếu game slug.");
+        if (IsRetiredGameSlug(gameSlug))
+            throw new InvalidOperationException("Game này đã ngừng phát triển.");
 
         var effectiveSetId = NormalizeOptionalSetId(req.SetId);
 
@@ -234,7 +249,7 @@ public partial class GameService : IGameService
 
                 var isPvp = await db.PgExecuteScalarAsync<bool?>(
                     """
-                    SELECT CAST(ISNULL(is_pvp, 0) AS BIT)
+                    SELECT COALESCE(is_pvp, false)
                     FROM dbo.games
                     WHERE LOWER(LTRIM(RTRIM(slug))) = LOWER(@slug) AND ISNULL(is_active, 1) = 1
                     """,
@@ -263,15 +278,6 @@ public partial class GameService : IGameService
                     return fromLessons;
             }
 
-            if (IsFlashcardBattleSlug(gameSlug)
-                && effectiveSetId is null
-                && req.UseLessonVocabulary != false)
-            {
-                var fromLessons = await TryStartFlashcardBattleFromLessonsAsync(userId, req, gameSlug, db);
-                if (fromLessons is not null)
-                    return fromLessons;
-            }
-
             if (string.Equals(gameSlug, "boss-battle", StringComparison.OrdinalIgnoreCase)
                 && effectiveSetId is null
                 && req.UseLessonVocabulary != false)
@@ -282,22 +288,9 @@ public partial class GameService : IGameService
             }
 
             int? questionCountForSp = null;
-            if (string.Equals(gameSlug, "sentence-builder", StringComparison.OrdinalIgnoreCase)
-                && req.QuestionCount is int sbq && sbq > 0)
-                questionCountForSp = Math.Clamp(sbq, 1, 25);
-            else if (string.Equals(gameSlug, "daily-challenge", StringComparison.OrdinalIgnoreCase))
-            {
-                var want = req.QuestionCount is int dc && dc > 0 ? dc : 10;
-                questionCountForSp = Math.Clamp(want, 5, 25);
-            }
-            else if (string.Equals(gameSlug, "counter-quest", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(gameSlug, "counter-quest", StringComparison.OrdinalIgnoreCase))
             {
                 var want = req.QuestionCount is int cq && cq > 0 ? cq : 10;
-                questionCountForSp = Math.Clamp(want, 5, 25);
-            }
-            else if (IsFlashcardBattleSlug(gameSlug))
-            {
-                var want = req.QuestionCount is int fq && fq > 0 ? fq : 10;
                 questionCountForSp = Math.Clamp(want, 5, 25);
             }
             else if (string.Equals(gameSlug, "boss-battle", StringComparison.OrdinalIgnoreCase))
@@ -639,8 +632,8 @@ public partial class GameService : IGameService
             {
                 await db.PgExecuteAsync(
                     """
-                    INSERT INTO dbo.user_inventory (user_id, power_up_id, quantity, updated_at)
-                    VALUES (@uid, @pid, @q, SYSUTCDATETIME())
+                    INSERT INTO dbo.user_inventory (user_id, power_up_id, quantity, created_at, updated_at)
+                    VALUES (@uid, @pid, @q, SYSUTCDATETIME(), SYSUTCDATETIME())
                     """,
                     new { uid = userId, pid = pu.Id, q = qty },
                     tx);
@@ -1009,38 +1002,14 @@ public partial class GameService : IGameService
         public string? LevelCode { get; init; }
     }
 
-    public async Task<DailyChallengeDto?> GetTodayChallengeAsync(int userId)
-    {
-        var today = DateTime.UtcNow.Date;
-        const string sql = """
-            SELECT dc.id AS Id, g.slug AS GameSlug, dc.title AS Title,
-                   dc.bonus_exp AS BonusExp, dc.bonus_xu AS BonusXu,
-                   CAST(CASE WHEN udc.completed_at IS NOT NULL THEN 1 ELSE 0 END AS BIT) AS CompletedToday,
-                   udc.best_score AS BestScore
-            FROM dbo.daily_challenges dc
-            INNER JOIN dbo.games g ON g.id = dc.game_id
-            LEFT JOIN dbo.user_daily_challenges udc
-                   ON udc.daily_challenge_id = dc.id AND udc.user_id = @uid
-            WHERE dc.challenge_date = @today AND ISNULL(dc.is_active, 1) = 1
-            """;
-        try
-        {
-            using var db = CreateConnection();
-            return await db.PgQueryFirstOrDefaultAsync<DailyChallengeDto>(sql, new { uid = userId, today });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "GetTodayChallengeAsync failed for user {UserId}", userId);
-            return null;
-        }
-    }
-
     public async Task<PvpRoomDto> CreatePvpRoomAsync(int userId, CreatePvpRoomRequest req)
     {
         using var db = CreateConnection();
         await db.OpenAsync();
 
         var slug = NormalizeGameSlug(req.GameSlug);
+        if (IsRetiredGameSlug(slug))
+            throw new ArgumentException("Game PvP này đã ngừng phát triển.");
         var gameId = await db.PgExecuteScalarAsync<int?>(
             "SELECT id FROM dbo.games WHERE slug = @slug AND ISNULL(is_active, 1) = 1",
             new { slug });

@@ -1,0 +1,27 @@
+/**
+ * Font toàn hệ thống — tiếng Việt dùng Plus Jakarta Sans / Segoe UI;
+ * tiếng Nhật chỉ khi có lang="ja".
+ */
+:root {
+  --font-vi: 'Plus Jakarta Sans', 'Segoe UI', system-ui, -apple-system, 'Noto Sans', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+  --font-vi-display: 'Plus Jakarta Sans', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-ja: 'Yu Gothic UI', 'Meiryo', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+  --font-ja-serif: 'Yu Mincho', 'Hiragino Mincho ProN', 'MS PMincho', 'Noto Serif JP', ui-serif,
+    serif;
+}
+
+html {
+  font-family: var(--font-vi);
+}
+
+[lang='ja'] {
+  font-family: var(--font-ja);
+}
+
+[lang='ja'].learn-vocab-item__jp--kanji,
+[lang='ja'].learn-flip-face__jp--kanji,
+[lang='ja'].learn-table__kanji,
+.mod-import-studio__insight-kanji {
+  font-family: var(--font-ja-serif);
+}

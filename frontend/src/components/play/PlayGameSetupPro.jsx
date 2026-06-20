@@ -1,13 +1,9 @@
 import { SakuraRainLayer } from '../effects/SakuraRainLayer';
-import { PLAY_SETUP_BG } from './playSetupMotion';
 
-/**
- * Vỏ nền setup trò chơi — Sakura + ảnh zen nhạt (CSS).
- * Trang con bọc `Motion.div` (variants parent) ngay bên trong `children`.
- */
+/** Vỏ nền setup trò chơi — hoa anh đào + gradient nhẹ. */
 export function PlayGameSetupPro({ children }) {
   return (
-    <div className="relative isolate w-full py-0.5 pb-8 min-h-0" style={{ '--play-setup-zen-bg': `url("${PLAY_SETUP_BG}")` }}>
+    <div className="relative isolate w-full py-0.5 pb-8 min-h-0">
       <div className="absolute inset-x-0 -top-2 bottom-0 z-0 pointer-events-none overflow-hidden" aria-hidden>
         <SakuraRainLayer petalCount={22} buoyant />
       </div>

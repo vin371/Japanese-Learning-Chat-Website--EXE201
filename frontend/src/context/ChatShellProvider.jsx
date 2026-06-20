@@ -3,8 +3,6 @@ import { ChatShellContext } from './chatShellContext';
 import { notifyChatInboxRevised } from '../hooks/useChatUnreadTotal';
 
 export function ChatShellProvider({ children }) {
-  const [rightPanelOpen, setRightPanelOpen] = useState(false);
-  const [roomSummary, setRoomSummary] = useState(null);
   /**
    * Đồng bộ chấm online sidebar với header khi đang mở chat riêng: presence phòng (GET …/presence) có thể khớp trước GET /friends (poll 45s).
    * { peerUserId, online: true | false | null } — null = chưa biết, không ghi đè danh sách bạn bè.
@@ -23,15 +21,8 @@ export function ChatShellProvider({ children }) {
     setFriendsRevision((n) => n + 1);
   }, []);
 
-  const closeRightPanel = useCallback(() => setRightPanelOpen(false), []);
-
   const value = useMemo(
     () => ({
-      rightPanelOpen,
-      setRightPanelOpen,
-      closeRightPanel,
-      roomSummary,
-      setRoomSummary,
       directRoomPresence,
       setDirectRoomPresence,
       inboxRevision,
@@ -39,16 +30,7 @@ export function ChatShellProvider({ children }) {
       friendsRevision,
       bumpFriendsRevision,
     }),
-    [
-      rightPanelOpen,
-      closeRightPanel,
-      roomSummary,
-      directRoomPresence,
-      inboxRevision,
-      bumpInboxRevision,
-      friendsRevision,
-      bumpFriendsRevision,
-    ]
+    [directRoomPresence, inboxRevision, bumpInboxRevision, friendsRevision, bumpFriendsRevision]
   );
 
   return <ChatShellContext.Provider value={value}>{children}</ChatShellContext.Provider>;

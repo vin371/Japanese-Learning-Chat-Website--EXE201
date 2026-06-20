@@ -66,7 +66,7 @@
 }
 
 .forge-chat__brand-title {
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: var(--font-vi-display);
   font-weight: 700;
   font-size: 1.05rem;
   color: var(--forge-red);
@@ -193,7 +193,7 @@
 
 .forge-chat__room-title {
   margin: 0;
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: var(--font-vi-display);
   font-size: 1.35rem;
   font-weight: 700;
   color: var(--forge-red);
@@ -201,7 +201,7 @@
 
 .forge-chat__room-forge {
   margin: 0.15rem 0 0;
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: var(--font-vi-display);
   font-size: 1.05rem;
   font-weight: 700;
   color: var(--forge-red);
@@ -872,7 +872,7 @@
 }
 
 .forge-chat__event-title {
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: var(--font-vi-display);
   font-size: 1.1rem;
   font-weight: 700;
   margin: 0.35rem 0;
@@ -1006,7 +1006,7 @@ html[data-theme='dark'] .moji-chat--path .moji-chat__list-panel {
   background: var(--moji-panel);
 }
 
-/* Sakura 3 cột: một sidebar trái + khung chat + panel thông tin */
+/* Sakura 2 cột: sidebar trái + khung chat */
 .moji-chat--sakura-3col {
   --moji-purple: #b31b3b;
   --moji-pink: #e04555;
@@ -4372,7 +4372,7 @@ html[data-theme='dark'] .moji-chat__reaction-trigger {
 .moji-chat__msg-quick-btn-ico--reply {
   font-size: 1.05rem;
   font-weight: 800;
-  font-family: Georgia, 'Times New Roman', 'DejaVu Serif', serif;
+  font-family: var(--font-vi-display);
   color: var(--moji-purple);
   transform: translateY(1px);
   letter-spacing: 0.02em;

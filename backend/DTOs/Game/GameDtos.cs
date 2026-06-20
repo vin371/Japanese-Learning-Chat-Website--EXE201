@@ -162,15 +162,6 @@ public record XuLeaderboardEntryDto(
     int Xu,
     string? LevelCode);
 
-public record DailyChallengeDto(
-    int Id,
-    string GameSlug,
-    string Title,
-    int BonusExp,
-    int BonusXu,
-    bool CompletedToday,
-    int? BestScore);
-
 public record PvpRoomDto(
     int RoomId,
     string RoomCode,

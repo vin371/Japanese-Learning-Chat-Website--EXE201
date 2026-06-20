@@ -21,16 +21,20 @@ export function PlacementSidebar({ totalQuestions }) {
             <strong>{totalQuestions}</strong>
           </li>
           <li>
+            <span>Phân bổ</span>
+            <strong>7 N5 · 7 N4 · 6 N3</strong>
+          </li>
+          <li>
             <span>Gợi ý level</span>
             <span className="placement-info__bands">Theo số câu đúng</span>
           </li>
         </ul>
         <p className="placement-info__rule">
-          ≤ 15 đúng → <strong>N5</strong>
+          ≤ 7 đúng → <strong>N5</strong>
           <br />
-          16–30 đúng → <strong>N4</strong>
+          8–14 đúng → <strong>N4</strong>
           <br />
-          ≥ 31 đúng → <strong>N3</strong>
+          ≥ 15 đúng → <strong>N3</strong>
         </p>
       </div>
     </aside>

@@ -5,11 +5,8 @@ import {
   artBadgeCyanHolo,
   artBadgeNeonPink,
   artBossBattle,
-  artCardFlashcardVocab,
   artCardHiragana,
   artCardKatakana,
-  artCardMultipleChoice,
-  artDailyChallenge,
   artKanjiMemoryStones,
   artKanjiPuzzle,
   artPowerup5050,
@@ -18,7 +15,6 @@ import {
   artPowerupSkip,
   artPowerupTimeFreeze,
   artPvpSamurai,
-  artSentenceBuilder,
   artVocabSpeed,
 } from '../../../assets/play';
 import { Gem, Coins, Medal, Award, Palette, Crown, Image as ImageIcon } from 'lucide-react';
@@ -26,8 +22,8 @@ import { Gem, Coins, Medal, Award, Palette, Crown, Image as ImageIcon } from 'lu
 export const STATIC_FALLBACK = [
   {
     slug: 'hiragana-match',
-    name: 'Hiragana Match',
-    description: 'Chọn đúng romaji cho chữ Hiragana (mỗi câu 10 giây).',
+    name: 'Ghép Hiragana',
+    description: 'Chọn đúng romaji cho chữ Hiragana — mỗi câu 10 giây.',
     skillType: 'hiragana',
     levelMin: 'N5',
     levelMax: 'N5',
@@ -35,8 +31,8 @@ export const STATIC_FALLBACK = [
   },
   {
     slug: 'katakana-match',
-    name: 'Katakana Match',
-    description: 'Tương tự Hiragana — chọn romaji đúng cho Katakana (10 giây/câu).',
+    name: 'Ghép Katakana',
+    description: 'Chọn đúng romaji cho chữ Katakana — mỗi câu 10 giây.',
     skillType: 'katakana',
     levelMin: 'N5',
     levelMax: 'N5',
@@ -44,8 +40,8 @@ export const STATIC_FALLBACK = [
   },
   {
     slug: 'kanji-memory',
-    name: 'Kanji Memory',
-    description: 'Lật thẻ ghép Kanji (hoặc từ) với nghĩa tiếng Việt — memory game.',
+    name: 'Lật thẻ Kanji',
+    description: 'Lật thẻ ghép Kanji hoặc từ với nghĩa tiếng Việt.',
     skillType: 'kanji',
     levelMin: 'N5',
     levelMax: 'N5',
@@ -53,62 +49,59 @@ export const STATIC_FALLBACK = [
   },
   {
     slug: 'vocabulary-speed-quiz',
-    name: 'Vocabulary Speed Quiz',
-    description: 'Quiz từ vựng phản xạ nhanh (8 giây mỗi câu).',
+    name: 'Từ vựng tốc độ',
+    description: 'Trả lời nhanh câu hỏi từ vựng — mỗi câu 8 giây.',
     skillType: 'vocabulary',
     levelMin: 'N5',
     levelMax: 'N3',
     sortOrder: 4,
   },
   {
-    slug: 'sentence-builder',
-    name: 'Sentence Builder',
-    description: 'Sắp xếp các từ tiếng Nhật thành câu hoàn chỉnh.',
-    skillType: 'grammar',
-    levelMin: 'N5',
-    levelMax: 'N3',
-    sortOrder: 5,
-  },
-  {
     slug: 'counter-quest',
-    name: 'Counter Quest',
-    description: 'Chọn cách đếm đúng với trợ từ đếm (〜人、〜枚、〜本…).',
+    name: 'Trợ từ đếm',
+    description: 'Chọn cách đếm đúng (〜人、〜枚、〜本…).',
     skillType: 'counters',
     levelMin: 'N5',
     levelMax: 'N4',
     sortOrder: 6,
   },
   {
-    slug: 'flashcard-vocabulary',
-    name: 'Flashcard Battle',
-    description: 'Đấu tốc độ với Bot AI (bot trả lời đúng ~70% số vòng).',
-    skillType: 'vocabulary',
-    levelMin: 'N5',
-    levelMax: 'N3',
-    sortOrder: 7,
-  },
-  {
     slug: 'boss-battle',
-    name: 'Boss Battle',
-    description: 'Đánh Boss bằng kiến thức — có thanh HP Boss và thanh “Bạn” (theo mạng).',
+    name: 'Đánh boss',
+    description: 'Trả lời đúng để gây sát thương boss — cẩn thận mất mạng!',
     skillType: 'mixed',
     levelMin: 'N5',
     levelMax: 'N3',
     sortOrder: 8,
     isBossMode: true,
   },
-  {
-    slug: 'daily-challenge',
-    name: 'Daily Challenge',
-    description: 'Mix 15 câu hỏi từ nhiều chủ đề — thử thách mỗi ngày.',
-    skillType: 'mixed',
-    levelMin: 'N5',
-    levelMax: 'N3',
-    sortOrder: 9,
-  },
 ];
 
-export const HUB_HIDDEN_GAME_SLUGS = new Set(['fill-in-blank', 'fill-blank']);
+export const SKILL_TYPE_LABELS = {
+  hiragana: 'Bảng Hiragana',
+  katakana: 'Bảng Katakana',
+  kanji: 'Kanji',
+  vocabulary: 'Từ vựng',
+  counters: 'Trợ từ đếm',
+  grammar: 'Ngữ pháp',
+  mixed: 'Tổng hợp',
+};
+
+export function skillTypeLabel(skillType) {
+  const k = String(skillType || '').trim().toLowerCase();
+  return SKILL_TYPE_LABELS[k] || 'Luyện tập';
+}
+
+export const HUB_HIDDEN_GAME_SLUGS = new Set([
+  'fill-in-blank',
+  'fill-blank',
+  'sentence-builder',
+  'pvp-vocabulary',
+  'multiple-choice',
+  'flashcard-vocabulary',
+  'flashcard-battle',
+  'daily-challenge',
+]);
 
 export const HUB_STATIC_META_BY_SLUG = Object.fromEntries(
   STATIC_FALLBACK.map((row) => [
@@ -138,32 +131,32 @@ export const POWERUP_ROWS = [
     label: '50:50',
     desc: 'Loại bỏ 2 đáp án sai',
     img: artPowerup5050,
-    hint: 'Dùng trong phiên game (API)',
+    hint: 'Dùng trong lúc chơi',
   },
   {
     slug: 'time-freeze',
-    label: 'Time Freeze',
-    desc: 'Mỗi lần dùng: +5 giây cho đồng hồ câu hiện tại',
+    label: 'Đóng băng thời gian',
+    desc: 'Thêm 5 giây cho câu hiện tại',
     img: artPowerupTimeFreeze,
     hint: null,
   },
   {
     slug: 'double-points',
-    label: 'Double Points',
+    label: 'Nhân đôi điểm',
     desc: 'Nhân đôi điểm câu đúng kế tiếp',
     img: artPowerupDouble,
     hint: null,
   },
   {
     slug: 'skip',
-    label: 'Skip',
+    label: 'Bỏ qua',
     desc: 'Bỏ qua câu (không mất mạng)',
     img: artPowerupSkip,
     hint: null,
   },
   {
     slug: 'heart',
-    label: 'Heart',
+    label: 'Hồi mạng',
     desc: 'Hồi phục 1 mạng',
     img: artPowerupHeart,
     hint: null,
@@ -243,17 +236,12 @@ export function coverForGame(g) {
   const map = {
     'hiragana-match': artCardHiragana,
     'katakana-match': artCardKatakana,
-    'flashcard-vocabulary': artCardFlashcardVocab,
-    'flashcard-battle': artCardFlashcardVocab,
-    'multiple-choice': artCardMultipleChoice,
     'fill-in-blank': artBadgeCyanHolo,
     'listen-choose': artBadgeNeonPink,
     'kanji-memory': artKanjiMemoryStones,
     'vocabulary-speed-quiz': artVocabSpeed,
-    'sentence-builder': artSentenceBuilder,
     'counter-quest': artKanjiPuzzle,
     'boss-battle': artBossBattle,
-    'daily-challenge': artDailyChallenge,
   };
   return map[g.slug] || artBadgeCyanHolo;
 }
@@ -265,9 +253,7 @@ export function themeClass(g) {
   if (slug === 'hiragana-match') return 'play-dash__gcard--pink';
   if (slug === 'katakana-match') return 'play-dash__gcard--green';
   if (slug === 'kanji-memory' || slug === 'counter-quest') return 'play-dash__gcard--gold';
-  if (slug === 'vocabulary-speed-quiz' || slug === 'listen-choose' || slug === 'flashcard-battle')
-    return 'play-dash__gcard--blue';
-  if (slug === 'sentence-builder') return 'play-dash__gcard--purple';
+  if (slug === 'vocabulary-speed-quiz' || slug === 'listen-choose') return 'play-dash__gcard--blue';
   return 'play-dash__gcard--neutral';
 }
 

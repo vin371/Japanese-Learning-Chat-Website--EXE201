@@ -1,18 +1,32 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useCurrentUserId } from '../../hooks/useCurrentUserId';
-import { useTheme } from '../../hooks/useTheme';
 import { ROUTES } from '../../data/routes';
 import { notifyChatInboxRevised } from '../../hooks/useChatUnreadTotal';
 import { chatService } from '../../services/chatService';
 import { socialService } from '../../services/socialService';
+import { fetchMyRoomsCached, getCachedMyRoomsSnapshot, invalidateMyRoomsCache, upsertRoomInInboxCache } from '../../utils/chatInboxCache';
+import { resolveDirectRoom, getCachedDirectRoomId } from '../../utils/directRoomCache';
+import { prefetchChatRoom } from '../../utils/chatRoomPrefetch';
+import {
+  allowedShortcutKinds,
+  cacheGeneralRoomId,
+  cacheShortcutRoomId,
+  cacheShortcutRoomsFromList,
+  resolveShortcutRoomId,
+  canShowRoomInInbox,
+  filterPublicRoomsForUser,
+  findRoomByShortcutKind,
+  getCachedGeneralRoomId,
+  SHORTCUT_UI,
+  shortcutKindForRoom,
+  getDefaultChatRoomPath,
+} from '../../utils/chatRoomAccess';
 import { ChatShellProvider } from '../../context/ChatShellProvider';
 import { useChatShell } from '../../hooks/useChatShell';
-import { SakuraRainLayer } from '../effects/SakuraRainLayer';
-import { AnimatedThemeToggler } from '../../ui/animated-theme-toggler';
-import { User, LogOut, BellPlus, BookText, MessageCircle, Moon, Sun, Settings, NotepadText, House, MessageSquare, Search } from 'lucide-react';
+import { MessageSquare, Search } from 'lucide-react';
 import yumeLogo from '../../assets/yume-logo.png';
 
 
@@ -167,26 +181,20 @@ export function YumeChatLayout({ children, selectedRoomId = null, variant = 'ful
 function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full' }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const isChatLobby = /^\/chat\/?$/.test(location.pathname);
-  const { user, logout } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  const { user } = useAuth();
   const {
-    rightPanelOpen,
-    setRightPanelOpen,
-    closeRightPanel,
-    roomSummary,
     inboxRevision,
     bumpInboxRevision,
     directRoomPresence,
     friendsRevision,
+    bumpFriendsRevision,
   } = useChatShell();
 
-  const [rooms, setRooms] = useState([]);
+  const [rooms, setRooms] = useState(() => getCachedMyRoomsSnapshot());
   const [friends, setFriends] = useState([]);
+  const [joinablePublicRooms, setJoinablePublicRooms] = useState([]);
   const [roomsLoading, setRoomsLoading] = useState(true);
-  const [friendsLoading, setFriendsLoading] = useState(true);
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const menuRef = useRef(null);
+  const [friendsLoading, setFriendsLoading] = useState(false);
 
   const [inboxTab, setInboxTab] = useState('all');
   const [listSearch, setListSearch] = useState('');
@@ -208,7 +216,7 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
   const [sidebarNotice, setSidebarNotice] = useState('');
   const [incomingRequests, setIncomingRequests] = useState([]);
   const [outgoingRequests, setOutgoingRequests] = useState([]);
-  const [requestsLoading, setRequestsLoading] = useState(true);
+  const [requestsLoading, setRequestsLoading] = useState(false);
   const [requestsError, setRequestsError] = useState(null);
   const [requestActionId, setRequestActionId] = useState(null);
   const [invitesModalOpen, setInvitesModalOpen] = useState(false);
@@ -249,40 +257,12 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
     [reduceMotion],
   );
 
-  const pathAsideContainerVariants = useMemo(
-    () => ({
-      hidden: {},
-      visible: {
-        transition: {
-          staggerChildren: reduceMotion ? 0 : 0.08,
-          delayChildren: reduceMotion ? 0 : 0.06,
-        },
-      },
-    }),
-    [reduceMotion],
-  );
-
-  const pathAsideCardVariants = useMemo(
-    () => ({
-      hidden: reduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 18 },
-      visible: {
-        opacity: 1,
-        y: 0,
-        transition: { duration: 0.38, ease: [0.16, 1, 0.3, 1] },
-      },
-    }),
-    [reduceMotion],
-  );
-
-  const displayName = user?.displayName || user?.username || user?.name || user?.email || 'Bạn';
-  const handle = user?.username || user?.email?.split('@')[0] || 'user';
-  const avatarLetter = (displayName || 'U').slice(0, 1).toUpperCase();
   const myId = useCurrentUserId(user);
 
   const loadRooms = useCallback(async () => {
     setRoomsLoading(true);
     try {
-      const my = await chatService.getMyRooms({ limit: 50 });
+      const my = await fetchMyRoomsCached(chatService, { limit: 25 });
       setRooms(safeArray(my));
     } catch {
       setRooms([]);
@@ -290,6 +270,20 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
       setRoomsLoading(false);
     }
   }, []);
+
+  const loadJoinablePublicRooms = useCallback(async () => {
+    try {
+      const list = await chatService.getPublicRooms({ limit: 12 });
+      const filtered = filterPublicRoomsForUser(list, user);
+      setJoinablePublicRooms(filtered);
+      cacheShortcutRoomsFromList(filtered);
+      const general = findRoomByShortcutKind(filtered, 'general');
+      const gid = general?.id ?? general?.Id;
+      if (gid != null) cacheGeneralRoomId(gid);
+    } catch {
+      setJoinablePublicRooms([]);
+    }
+  }, [user]);
 
   const loadFriends = useCallback(async (opts = {}) => {
     const silent = opts.silent === true;
@@ -337,66 +331,45 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
     }
   }, []);
 
-  const goChatLobbyPreservePath = useCallback(() => {
-    if (location.pathname.startsWith('/chat/room')) {
-      navigate(ROUTES.CHAT);
-    }
-  }, [location.pathname, navigate]);
-
   useEffect(() => {
-    void Promise.all([loadRooms(), loadFriends(), loadIncomingRequests(), loadOutgoingRequests()]);
-  }, [loadRooms, loadFriends, loadIncomingRequests, loadOutgoingRequests]);
+    void loadJoinablePublicRooms();
+    const run = () => {
+      void loadRooms();
+    };
+    if (typeof requestIdleCallback !== 'undefined') {
+      const id = requestIdleCallback(run, { timeout: 1500 });
+      return () => cancelIdleCallback(id);
+    }
+    const t = window.setTimeout(run, 300);
+    return () => window.clearTimeout(t);
+  }, [loadRooms, loadJoinablePublicRooms]);
 
   useEffect(() => {
     if (!inboxRevision) return;
-    loadRooms();
-  }, [inboxRevision, loadRooms]);
+    void (async () => {
+      try {
+        const my = await fetchMyRoomsCached(chatService, { limit: 25, force: true });
+        setRooms(safeArray(my));
+      } catch {
+        setRooms([]);
+      }
+    })();
+  }, [inboxRevision]);
 
   useEffect(() => {
-    if (selectedRoomId == null || String(selectedRoomId).startsWith('demo-')) return;
-    void loadFriends({ silent: true });
-  }, [selectedRoomId, loadFriends]);
+    if (!invitesModalOpen && !friendModalOpen && !groupModalOpen) return;
+    void loadFriends();
+    if (invitesModalOpen) {
+      void loadIncomingRequests();
+      void loadOutgoingRequests();
+    }
+  }, [invitesModalOpen, friendModalOpen, groupModalOpen, loadFriends, loadIncomingRequests, loadOutgoingRequests]);
 
-  /** Sau khi presence phòng đổi (ChatRoomPage) — cập nhật chấm xanh danh sách bạn bè. */
   useEffect(() => {
     const fr = friendsRevision ?? 0;
     if (fr < 1) return;
     void loadFriends({ silent: true });
   }, [friendsRevision, loadFriends]);
-
-  /** Làm mới IsOnline của bạn bè (sau khi họ gửi heartbeat). */
-  useEffect(() => {
-    const t = window.setInterval(() => {
-      void loadFriends({ silent: true });
-    }, 45_000);
-    return () => window.clearInterval(t);
-  }, [loadFriends]);
-
-  useEffect(() => {
-    if (!invitesModalOpen) return;
-    void loadIncomingRequests();
-    void loadOutgoingRequests();
-  }, [invitesModalOpen, loadIncomingRequests, loadOutgoingRequests]);
-
-  useEffect(() => {
-    if (!groupModalOpen) return;
-    void loadFriends();
-  }, [groupModalOpen, loadFriends]);
-
-  useEffect(() => {
-    closeRightPanel();
-  }, [selectedRoomId, closeRightPanel]);
-
-  useEffect(() => {
-    if (!userMenuOpen) return undefined;
-    function onDocMouseDown(e) {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
-        setUserMenuOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', onDocMouseDown);
-    return () => document.removeEventListener('mousedown', onDocMouseDown);
-  }, [userMenuOpen]);
 
   useEffect(() => {
     if (sidebarRoomMenuId == null) return undefined;
@@ -461,8 +434,15 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
     return m;
   }, [friendOnlineByUserId, directRoomPresence]);
 
+  const accessibleRooms = useMemo(
+    () => rooms.filter((r) => canShowRoomInInbox(r, user)),
+    [rooms, user],
+  );
+
+  const sidebarShortcutKinds = useMemo(() => allowedShortcutKinds(user), [user]);
+
   const conversationRows = useMemo(() => {
-    const fromApi = rooms.map((r) => {
+    const fromApi = accessibleRooms.map((r) => {
       const peer = r.peerUser ?? r.PeerUser;
       const rawType = String(r.type || r.Type || '').toLowerCase();
       const isDirect = rawType === 'private';
@@ -502,7 +482,7 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
       };
     });
     return fromApi.sort((a, b) => b.lastAtMs - a.lastAtMs);
-  }, [rooms, effectiveFriendOnlineByUserId]);
+  }, [accessibleRooms, effectiveFriendOnlineByUserId]);
 
   const visibleConversations = useMemo(() => {
     let rows = conversationRows;
@@ -565,14 +545,30 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
       }
       return null;
     }
-    return {
+    const out = {
       ai: pick([/yume\s*ai|^ai\b|trợ lý|chatbot|bot\b|sakura|assistant/i]),
       n5: pick([/\bn5\b|jlpt\s*n5|phòng\s*n5/i]),
       n4: pick([/\bn4\b|jlpt\s*n4|phòng\s*n4/i]),
       n3: pick([/\bn3\b|jlpt\s*n3|phòng\s*n3/i]),
       general: pick([/chung|general|tổng|lobby|cộng đồng/i]),
     };
-  }, [conversationRows]);
+
+    for (const r of joinablePublicRooms) {
+      const kind = shortcutKindForRoom(r);
+      if (!kind || out[kind]) continue;
+      const id = r.id ?? r.Id;
+      if (id == null) continue;
+      out[kind] = {
+        id,
+        name: r.name ?? r.Name ?? SHORTCUT_UI[kind]?.label ?? 'Phòng chat',
+        isPlaceholder: false,
+        isDirect: false,
+        unreadCount: 0,
+      };
+    }
+
+    return out;
+  }, [conversationRows, joinablePublicRooms]);
 
   const assistantRowForList = useMemo(() => {
     const ai = shortcutRooms.ai;
@@ -599,63 +595,45 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
     navigate(`/chat/room/${roomId}`);
   }
 
+  function warmShortcutRoom(kind, roomId) {
+    if (roomId == null) return;
+    cacheShortcutRoomId(kind, roomId);
+    if (kind === 'general') cacheGeneralRoomId(roomId);
+    void prefetchChatRoom(roomId);
+    void chatService.joinRoom(roomId).catch(() => {});
+    void loadRooms();
+  }
+
   const goShortcutKind = useCallback(
     async (kind) => {
-      const row = shortcutRooms[kind];
-      if (row && !row.isPlaceholder) {
-        goRoom(row.id);
-        return;
-      }
+      if (shortcutBusyKey === kind) return;
       setShortcutBusyKey(kind);
       try {
-        const [pubs, levels] = await Promise.all([
-          chatService.getPublicRooms({ type: 'public', limit: 80 }),
-          chatService.getPublicRooms({ type: 'level', limit: 80 }),
-        ]);
-        const all = [...safeArray(pubs), ...safeArray(levels)];
-        const slugMap = {
-          general: ['common', 'general'],
-          n5: ['level-n5'],
-          n4: ['level-n4'],
-          n3: ['level-n3'],
-        };
-        const wantSlugs = slugMap[kind];
-        let found =
-          wantSlugs &&
-          all.find((r) => {
-            const slug = String(r.slug ?? r.Slug ?? '').toLowerCase();
-            return wantSlugs.some((s) => slug === s);
-          });
-        if (!found && kind === 'general') {
-          found = all.find((r) =>
-            /phòng\s*chung|^\s*chung\s*$|cộng\s*đồng/i.test(String(r.name ?? r.Name ?? ''))
-          );
+        let id = resolveShortcutRoomId(kind, shortcutRooms[kind]);
+        if (id == null) {
+          const list = await chatService.getPublicRooms({ limit: 12 });
+          const filtered = filterPublicRoomsForUser(list, user);
+          setJoinablePublicRooms(filtered);
+          cacheShortcutRoomsFromList(filtered);
+          const found = findRoomByShortcutKind(filtered, kind);
+          id = found?.id ?? found?.Id ?? resolveShortcutRoomId(kind, null);
         }
-        if (!found && (kind === 'n5' || kind === 'n4' || kind === 'n3')) {
-          const re = new RegExp(`\\b${kind}\\b`, 'i');
-          found = all.find((r) => re.test(String(r.name ?? r.Name ?? '')));
-        }
-        const id = found?.id ?? found?.Id;
-        if (id != null) {
-          await chatService.joinRoom(id);
-          notifyChatInboxRevised();
-          await loadRooms();
-          navigate(`/chat/room/${id}`);
+        if (id == null) {
+          setSidebarNotice('Không tìm thấy phòng này.');
           return;
         }
-      } catch {
-        /* noop */
+        cacheShortcutRoomId(kind, id);
+        if (kind === 'general') cacheGeneralRoomId(id);
+        navigate(`/chat/room/${id}`);
+        warmShortcutRoom(kind, id);
+      } catch (err) {
+        setSidebarNotice(err?.response?.data?.message || err?.message || 'Không mở được phòng.');
       } finally {
         setShortcutBusyKey(null);
       }
-      navigate(ROUTES.CHAT);
     },
-    [shortcutRooms, navigate, loadRooms]
+    [shortcutRooms, user, navigate, loadRooms, shortcutBusyKey],
   );
-
-  function handleCreateChat() {
-    navigate(ROUTES.CHAT);
-  }
 
   function openGroupModal() {
     setGroupError('');
@@ -781,13 +759,93 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
     }
   }
 
-  async function acceptRequest(requestId) {
+  async function openDirectChat(peerUserId, { closeModal = false, closeInvites = false } = {}) {
+    if (peerUserId == null) return;
+    try {
+      const room = await resolveDirectRoom(chatService, peerUserId);
+      const rid = room?.id ?? room?.Id;
+      if (rid == null) return;
+
+      const merged = upsertRoomInInboxCache(room);
+      setRooms(safeArray(merged));
+      void prefetchChatRoom(rid);
+
+      if (closeModal) closeFriendModal();
+      if (closeInvites) setInvitesModalOpen(false);
+      navigate(`/chat/room/${rid}`);
+
+      void (async () => {
+        invalidateMyRoomsCache();
+        bumpInboxRevision?.();
+        notifyChatInboxRevised();
+        try {
+          const my = await fetchMyRoomsCached(chatService, { limit: 25, force: true });
+          setRooms(safeArray(my));
+        } catch {
+          /* giữ optimistic */
+        }
+      })();
+    } catch (err) {
+      setFriendToast(err?.response?.data?.message || err?.message || 'Không mở được chat riêng.');
+    }
+  }
+
+  function warmDirectChat(peerUserId) {
+    if (peerUserId == null) return;
+    const cachedRid = getCachedDirectRoomId(peerUserId);
+    if (cachedRid) {
+      void prefetchChatRoom(cachedRid);
+      return;
+    }
+    void resolveDirectRoom(chatService, peerUserId).then((room) => {
+      const rid = room?.id ?? room?.Id;
+      if (rid) void prefetchChatRoom(rid);
+    });
+  }
+
+  async function acceptRequest(requestId, reqRow) {
     if (requestId == null) return;
+    const from = reqRow?.fromUser ?? reqRow?.FromUser;
+    const peerUserId =
+      from?.id ?? from?.Id ?? reqRow?.fromUserId ?? reqRow?.FromUserId ?? null;
+
     setRequestActionId(requestId);
+    setIncomingRequests((prev) => prev.filter((r) => (r.id ?? r.Id) !== requestId));
+
     try {
       await socialService.acceptFriendRequest(requestId);
-      await Promise.all([loadFriends(), loadIncomingRequests(), loadOutgoingRequests()]);
+
+      if (from) {
+        setFriends((prev) => {
+          const uid = from.id ?? from.Id;
+          if (uid == null) return prev;
+          if (prev.some((row) => (row.friend ?? row.Friend)?.id === uid || (row.friend ?? row.Friend)?.Id === uid)) {
+            return prev;
+          }
+          return [
+            {
+              friend: from,
+              Friend: from,
+              friendshipId: `new-${uid}`,
+              FriendshipId: `new-${uid}`,
+            },
+            ...prev,
+          ];
+        });
+      }
+
+      bumpFriendsRevision?.();
+      void loadFriends();
+
+      if (peerUserId != null) {
+        await openDirectChat(peerUserId, { closeInvites: true });
+      } else {
+        void loadIncomingRequests();
+      }
+
+      setSidebarNotice('Đã kết bạn — mở chat riêng.');
     } catch (err) {
+      void loadIncomingRequests();
       window.alert(err?.response?.data?.message || err?.message || 'Không chấp nhận được.');
     } finally {
       setRequestActionId(null);
@@ -820,18 +878,8 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
     }
   }
 
-  async function openDirectChat(peerUserId) {
-    if (peerUserId == null) return;
-    try {
-      const room = await chatService.getOrCreateDirect(peerUserId);
-      const rid = room?.id ?? room?.Id;
-      if (rid != null) {
-        closeFriendModal();
-        navigate(`/chat/room/${rid}`);
-      }
-    } catch (err) {
-      setFriendToast(err?.response?.data?.message || err?.message || 'Không mở được chat riêng.');
-    }
+  async function openDirectChatFromModal(peerUserId) {
+    await openDirectChat(peerUserId, { closeModal: true });
   }
 
   function leaveLabelForRoomType(rt) {
@@ -992,10 +1040,6 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
     });
   }
 
-  function primaryLobbyActive() {
-    return isChatLobby && (selectedRoomId == null || selectedRoomId === '');
-  }
-
   function primaryItemActive(row) {
     return (
       row &&
@@ -1014,10 +1058,6 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
       </span>
     );
   }
-
-  const roleHint =
-    String(user?.roleName ?? user?.RoleName ?? user?.role ?? user?.Role ?? '')
-      .trim() || 'Học viên';
 
   const isLobbySolo = variant === 'lobby';
 
@@ -1040,84 +1080,60 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
                   <div className="flex flex-col gap-1 pb-4 border-b border-slate-200 dark:border-slate-800">
                     <div className="overflow-x-hidden overflow-y-visible">
                       <ul className="flex flex-col gap-1">
-                        <li>
-                          <button
-                            type="button"
-                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors font-semibold text-sm ${primaryLobbyActive() ? 'bg-gradient-to-r from-[#c41e4a] to-[#7f1430] text-white shadow-md shadow-rose-900/20' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/50'}`}
-                            onClick={goChatLobbyPreservePath}
-                          >
-                            <span className="opacity-70" aria-hidden>
-                              <House size={18} />
-                            </span>
-                            <span>Sảnh chat</span>
-                          </button>
-                        </li>
-                        <li>
-                          <button
-                            type="button"
-                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors font-semibold text-sm ${primaryItemActive(shortcutRooms.n5) ? 'bg-gradient-to-r from-[#c41e4a] to-[#7f1430] text-white shadow-md shadow-rose-900/20' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/50'}`}
-                            onClick={() => goShortcutKind('n5')}
-                            disabled={shortcutBusyKey != null}
-                            aria-busy={shortcutBusyKey === 'n5'}
-                          >
-                            <span className="font-bold text-xs tracking-wider opacity-70" aria-hidden>
-                              N5
-                            </span>
-                            <span>Phòng N5</span>
-                            {primaryUnreadPill(shortcutRooms.n5)}
-                          </button>
-                        </li>
-                        <li>
-                          <button
-                            type="button"
-                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors font-semibold text-sm ${primaryItemActive(shortcutRooms.n4) ? 'bg-gradient-to-r from-[#c41e4a] to-[#7f1430] text-white shadow-md shadow-rose-900/20' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/50'}`}
-                            onClick={() => goShortcutKind('n4')}
-                            disabled={shortcutBusyKey != null}
-                            aria-busy={shortcutBusyKey === 'n4'}
-                          >
-                            <span className="font-bold text-xs tracking-wider opacity-70" aria-hidden>
-                              N4
-                            </span>
-                            <span>Phòng N4</span>
-                            {primaryUnreadPill(shortcutRooms.n4)}
-                          </button>
-                        </li>
-                        <li>
-                          <button
-                            type="button"
-                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors font-semibold text-sm ${primaryItemActive(shortcutRooms.n3) ? 'bg-gradient-to-r from-[#c41e4a] to-[#7f1430] text-white shadow-md shadow-rose-900/20' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/50'}`}
-                            onClick={() => goShortcutKind('n3')}
-                            disabled={shortcutBusyKey != null}
-                            aria-busy={shortcutBusyKey === 'n3'}
-                          >
-                            <span className="font-bold text-xs tracking-wider opacity-70" aria-hidden>
-                              N3
-                            </span>
-                            <span>Phòng N3</span>
-                            {primaryUnreadPill(shortcutRooms.n3)}
-                          </button>
-                        </li>
-                        <li>
-                          <button
-                            type="button"
-                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors font-semibold text-sm ${primaryItemActive(shortcutRooms.general) ? 'bg-gradient-to-r from-[#c41e4a] to-[#7f1430] text-white shadow-md shadow-rose-900/20' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/50'}`}
-                            onClick={() => goShortcutKind('general')}
-                            disabled={shortcutBusyKey != null}
-                            aria-busy={shortcutBusyKey === 'general'}
-                          >
-                            <span className="opacity-70" aria-hidden>
-                              <MessageSquare size={18} />
-                            </span>
-                            <span>Phòng chung</span>
-                            {primaryUnreadPill(shortcutRooms.general)}
-                          </button>
-                        </li>
+                        {sidebarShortcutKinds.map((kind) => {
+                          const ui = SHORTCUT_UI[kind];
+                          if (!ui) return null;
+                          const row = shortcutRooms[kind];
+                          const roomId = resolveShortcutRoomId(kind, row);
+                          const active = primaryItemActive(row ?? (roomId ? { id: roomId } : null));
+                          const itemClass = `w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors font-semibold text-sm no-underline ${
+                            active
+                              ? 'bg-gradient-to-r from-[#c41e4a] to-[#7f1430] text-white shadow-md shadow-rose-900/20'
+                              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/50'
+                          }`;
+                          const inner = (
+                            <>
+                              {ui.badge ? (
+                                <span className="font-bold text-xs tracking-wider opacity-70" aria-hidden>
+                                  {ui.badge}
+                                </span>
+                              ) : (
+                                <span className="opacity-70" aria-hidden>
+                                  <MessageSquare size={18} />
+                                </span>
+                              )}
+                              <span>{ui.label}</span>
+                              {primaryUnreadPill(row)}
+                            </>
+                          );
+                          return (
+                            <li key={kind}>
+                              {roomId != null ? (
+                                <Link
+                                  to={`/chat/room/${roomId}`}
+                                  className={itemClass}
+                                  aria-current={active ? 'page' : undefined}
+                                  onMouseEnter={() => warmShortcutRoom(kind, roomId)}
+                                  onFocus={() => warmShortcutRoom(kind, roomId)}
+                                  onClick={() => warmShortcutRoom(kind, roomId)}
+                                >
+                                  {inner}
+                                </Link>
+                              ) : (
+                                <button
+                                  type="button"
+                                  className={itemClass}
+                                  onClick={() => void goShortcutKind(kind)}
+                                  disabled={shortcutBusyKey === kind}
+                                  aria-busy={shortcutBusyKey === kind}
+                                >
+                                  {inner}
+                                </button>
+                              )}
+                            </li>
+                          );
+                        })}
                       </ul>
-                    </div>
-                    <div className="mt-2 shrink-0">
-                      <button type="button" className="w-full py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm rounded-xl transition-colors" onClick={handleCreateChat}>
-                        + Tin nhắn mới
-                      </button>
                     </div>
                   </div>
 
@@ -1235,18 +1251,9 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
                                     <button
                                       type="button"
                                       className={`relative flex flex-row items-center w-full px-4 py-[0.85rem] gap-[0.85rem] text-left rounded-xl transition-colors hover:bg-rose-600/5 dark:hover:bg-rose-500/10 ${isDirectActive ? 'bg-rose-50/50 dark:bg-rose-900/10' : ''}`}
-                                      onClick={async () => {
-                                        try {
-                                          const room = await chatService.getOrCreateDirect(f.id);
-                                          const rid = room?.id ?? room?.Id;
-                                          if (rid) {
-                                            await loadRooms();
-                                            navigate(`/chat/room/${rid}`);
-                                          }
-                                        } catch (err) {
-                                          console.error('Lỗi khi mở chat', err);
-                                        }
-                                      }}
+                                      onMouseEnter={() => warmDirectChat(f.id)}
+                                      onFocus={() => warmDirectChat(f.id)}
+                                      onClick={() => void openDirectChat(f.id)}
                                     >
                                       {isDirectActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r bg-[#dc143c] dark:bg-[#ff4d6d]" aria-hidden="true" />}
                                       <div className="relative flex shrink-0" aria-hidden>
@@ -1282,222 +1289,17 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
                 </Motion.div>
               </AnimatePresence>
             </div>
-
-            <div className="flex justify-between items-center p-2 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
-              <button
-                type="button"
-                className="flex flex-col items-center justify-center w-[4.5rem] h-14 rounded-xl transition-colors text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/20"
-                onClick={goChatLobbyPreservePath}
-              >
-                <span className="mb-0.5 opacity-90" aria-hidden>
-                  <MessageCircle size={20} />
-                </span>
-                <span className="text-[0.65rem] font-bold">Tin nhắn</span>
-              </button>
-              <AnimatedThemeToggler
-                className="flex flex-col items-center justify-center w-[4.5rem] h-14 rounded-xl transition-colors text-slate-500 hover:text-slate-800 hover:bg-slate-200/50 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800"
-                title={theme === 'dark' ? 'Chế độ sáng' : 'Chế độ tối'}
-                aria-label="Chuyển sáng/tối"
-              >
-                <span className="mb-0.5 opacity-80" aria-hidden>
-                  {theme === 'dark' ? <Moon size={20} /> : <Sun size={20} />}
-                </span>
-                <span className="text-[0.65rem] font-medium">Giao diện</span>
-              </AnimatedThemeToggler>
-              <div className="relative" ref={menuRef}>
-                <button type="button" className="flex flex-col items-center justify-center w-[4.5rem] h-14 rounded-xl transition-colors text-slate-500 hover:text-slate-800 hover:bg-slate-200/50 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800" title="Cài đặt" onClick={() => setUserMenuOpen((o) => !o)}>
-                  <span className="mb-0.5 opacity-80" aria-hidden>
-                    <Settings size={20} />
-                  </span>
-                  <span className="text-[0.65rem] font-medium">Cài đặt</span>
-                </button>
-                {userMenuOpen && (
-                  <div className="absolute bottom-[4.5rem] right-0 w-64 bg-white dark:bg-slate-800 rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-200 dark:border-slate-700 p-2 z-50 flex flex-col origin-bottom-right animate-in fade-in zoom-in-95 duration-150" role="menu">
-                    <div className="flex items-center gap-3 p-3 border-b border-slate-100 dark:border-slate-700 mb-2">
-                      <span className="w-10 h-10 rounded-full bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 flex items-center justify-center font-bold text-lg shrink-0">{avatarLetter}</span>
-                      <div className="min-w-0">
-                        <div className="font-bold text-slate-800 dark:text-slate-200 text-sm truncate">{displayName}</div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400 truncate">@{handle}</div>
-                      </div>
-                    </div>
-                    <button type="button" className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors" role="menuitem">
-                      <span className="opacity-70" aria-hidden>
-                        <User size={18} />
-                      </span>
-                      Tài khoản
-                    </button>
-                    <button
-                      type="button"
-                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-                      role="menuitem"
-                      onClick={() => {
-                        setUserMenuOpen(false);
-                        setInvitesModalOpen(true);
-                      }}
-                    >
-                      <span className="opacity-70 relative" aria-hidden>
-                        <BellPlus size={18} />
-                        {incomingRequests.length > 0 && <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-rose-500" />}
-                      </span>
-                      Lời mời kết bạn
-                      {incomingRequests.length > 0 ? ` (${incomingRequests.length})` : ''}
-                    </button>
-                    <button
-                      type="button"
-                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors mt-1"
-                      role="menuitem"
-                      onClick={() => {
-                        setUserMenuOpen(false);
-                        logout();
-                        navigate(ROUTES.LOGIN);
-                      }}
-                    >
-                      <span className="opacity-70" aria-hidden>
-                        <LogOut size={18} />
-                      </span>
-                      Đăng xuất
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-            <div className="flex justify-center items-center gap-2 py-2.5 text-[0.75rem] text-slate-500 dark:text-slate-400 border-t border-slate-200 dark:border-slate-800 bg-slate-100/50 dark:bg-slate-950/50">
-              <button type="button" className="hover:text-slate-800 dark:hover:text-slate-200 hover:underline transition-colors" onClick={() => navigate(ROUTES.LEARN)}>
-                Học tập
-              </button>
-              <span className="opacity-50" aria-hidden>
-                ·
-              </span>
-              <button type="button" className="hover:text-slate-800 dark:hover:text-slate-200 hover:underline transition-colors" onClick={() => navigate(ROUTES.ACCOUNT)}>
-                Tài khoản
-              </button>
-            </div>
           </aside>
         </>
       ) : null}
 
       <section className={`moji-chat__main ${isLobbySolo ? 'moji-chat__main--solo' : ''}`}>
-        {!isLobbySolo ? (
-          <div className="moji-chat__main-sakura-wrap" aria-hidden>
-            <div className="moji-chat__main-sakura moji-chat__main-sakura--far">
-              <SakuraRainLayer petalCount={14} />
-            </div>
-            <div className="moji-chat__main-sakura moji-chat__main-sakura--mid">
-              <SakuraRainLayer petalCount={22} buoyant />
-            </div>
-          </div>
-        ) : null}
         <div className="moji-chat__main-surface">
-          <AnimatePresence mode="wait">
-            <Motion.div
-              key={mainPaneKey}
-              className="moji-chat__main-motion"
-              initial={reduceMotion ? false : { opacity: 0, y: 18 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={reduceMotion ? undefined : { opacity: 0, y: -14 }}
-              transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-            >
-              {children}
-            </Motion.div>
-          </AnimatePresence>
+          <div key={mainPaneKey} className="moji-chat__main-motion">
+            {children}
+          </div>
         </div>
       </section>
-
-      {!isLobbySolo && rightPanelOpen ? (
-        <aside className="moji-chat__info-panel moji-chat__info-panel--path" aria-label="Thông tin hội thoại">
-          <div className="moji-chat__info-panel-head">
-            <h2 className="moji-chat__info-panel-title">Thông tin</h2>
-            <button
-              type="button"
-              className="moji-chat__info-panel-close"
-              aria-label="Đóng"
-              onClick={() => setRightPanelOpen(false)}
-            >
-              ×
-            </button>
-          </div>
-          <div className="moji-chat__info-panel-cover">
-            <div className="moji-chat__info-panel-avatar">
-              {(roomSummary?.letter || roomSummary?.title || '?').toString().slice(0, 1).toUpperCase()}
-            </div>
-            <div className="moji-chat__info-panel-names">
-              <div className="moji-chat__info-panel-name">{roomSummary?.title || `Hội thoại #${selectedRoomId}`}</div>
-              <div className="moji-chat__info-panel-sub">{roomSummary?.subtitle || 'YumeGo-ji chat'}</div>
-            </div>
-          </div>
-          <ul className="moji-chat__info-panel-sections">
-            <li className="moji-chat__info-muted">Ảnh / file đã gửi — sắp có khi backend hỗ trợ.</li>
-            <li className="moji-chat__info-muted">Link đã chia sẻ — sắp có.</li>
-          </ul>
-          <div className="moji-chat__info-panel-actions">
-            <button type="button" className="moji-chat__info-action-btn" disabled>
-              Ghim hội thoại
-            </button>
-            <button type="button" className="moji-chat__info-action-btn" disabled>
-              Tắt thông báo
-            </button>
-          </div>
-        </aside>
-      ) : !isLobbySolo ? (
-        <aside className="moji-chat__path-aside" aria-label="Tiến độ và tài liệu">
-          <Motion.div
-            className="moji-chat__path-aside-motion"
-            variants={pathAsideContainerVariants}
-            initial={reduceMotion ? false : 'hidden'}
-            animate={reduceMotion ? false : 'visible'}
-          >
-            <Motion.div className="moji-chat__path-card moji-chat__path-card--profile" variants={pathAsideCardVariants}>
-              <div className="moji-chat__path-profile-avatar" aria-hidden>
-                {avatarLetter}
-              </div>
-              <div className="moji-chat__path-profile-body">
-                <div className="moji-chat__path-profile-name">{displayName}</div>
-                <div className="moji-chat__path-profile-role">{roleHint}</div>
-                <p className="moji-chat__path-profile-tag">Lộ trình JLPT trên YumeGo-ji</p>
-              </div>
-              <button type="button" className="moji-chat__path-pill-btn" onClick={() => navigate(ROUTES.LEARN)}>
-                Ôn bài trên Học tập
-              </button>
-            </Motion.div>
-            <Motion.div className="moji-chat__path-card" variants={pathAsideCardVariants}>
-              <div className="moji-chat__path-card-head">
-                <span className="moji-chat__path-card-title">Tiến độ gợi ý</span>
-                <span className="moji-chat__path-card-meta">minh họa</span>
-              </div>
-              <div className="moji-chat__path-progress-num">68%</div>
-              <div className="moji-chat__path-progress-bar" role="presentation">
-                <span className="moji-chat__path-progress-fill" style={{ width: '68%' }} />
-              </div>
-              <p className="moji-chat__path-card-desc">Tiếp tục hội thoại và phòng level để tăng độ nói và nghe.</p>
-            </Motion.div>
-            <Motion.div className="moji-chat__path-card" variants={pathAsideCardVariants}>
-              <div className="moji-chat__path-card-head">
-                <span className="moji-chat__path-card-title">Tài liệu nhanh</span>
-                <button type="button" className="moji-chat__path-text-link" onClick={() => navigate(ROUTES.LEARN)}>
-                  Xem tất cả
-                </button>
-              </div>
-              <div className="moji-chat__path-materials">
-                <button type="button" className="moji-chat__path-material-tile" onClick={() => navigate(ROUTES.LEARN)}>
-                  <span className="moji-chat__path-material-ico" aria-hidden>
-                    <NotepadText />
-                  </span>
-                  <span className="moji-chat__path-material-name">Bảng chữ Hiragana</span>
-                </button>
-                <button type="button" className="moji-chat__path-material-tile" onClick={() => navigate(ROUTES.LEARN)}>
-                  <span className="moji-chat__path-material-ico" aria-hidden>
-                    <BookText />
-                  </span>
-                  <span className="moji-chat__path-material-name">Ngữ pháp N5</span>
-                </button>
-              </div>
-            </Motion.div>
-            <Motion.div className="moji-chat__path-milestones" variants={pathAsideCardVariants} aria-label="Mốc minh họa">
-
-            </Motion.div>
-          </Motion.div>
-        </aside>
-      ) : null}
 
       {groupModalOpen && (
         <div
@@ -1669,7 +1471,7 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
                             type="button"
                             className="moji-chat__invite-btn moji-chat__invite-btn--accept"
                             disabled={busy}
-                            onClick={() => acceptRequest(rid)}
+                            onClick={() => acceptRequest(rid, req)}
                           >
                             {busy ? '…' : 'Chấp nhận'}
                           </button>

@@ -31,8 +31,6 @@ export const gameApi = {
 
   useInventoryPowerUp: (body) => http.post('/api/game/inventory/use', body),
 
-  fetchDailyChallenge: () => http.get('/api/game/daily-challenge'),
-
   createPvpRoom: (body) => http.post('/api/game/pvp/create', body),
 
   joinPvpRoom: (body) => http.post('/api/game/pvp/join', body),

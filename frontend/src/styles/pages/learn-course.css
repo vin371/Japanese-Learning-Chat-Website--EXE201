@@ -477,7 +477,6 @@ html[data-theme='dark'] .learn-layout--shodo .learn-nav__link--active {
   margin: 0 0 0.2rem;
   font-size: 1.02rem;
   line-height: 1.55;
-  font-family: 'Yu Gothic UI', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
 }
 
 .learn-phrases__romaji {
@@ -522,7 +521,6 @@ html[data-theme='dark'] .learn-layout--shodo .learn-nav__link--active {
   margin: 0 0 0.25rem;
   font-size: 1.05rem;
   line-height: 1.65;
-  font-family: 'Yu Gothic UI', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
 }
 
 .learn-dialogue__romaji {
@@ -543,7 +541,6 @@ html[data-theme='dark'] .learn-layout--shodo .learn-nav__link--active {
   margin: 0 0 0.75rem;
   font-size: 1.05rem;
   line-height: 1.85;
-  font-family: 'Yu Gothic UI', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
 }
 
 .learn-reading__vi {
@@ -563,7 +560,6 @@ html[data-theme='dark'] .learn-layout--shodo .learn-nav__link--active {
 
 .learn-comprehension__jp {
   margin: 0 0 0.2rem;
-  font-family: 'Yu Gothic UI', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
 }
 
 .learn-comprehension__vi {
@@ -596,7 +592,6 @@ html[data-theme='dark'] .learn-layout--shodo .learn-nav__link--active {
 
 .learn-reveal__jp {
   margin: 0 0 0.25rem;
-  font-family: 'Yu Gothic UI', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
 }
 
 .learn-reveal__vi {
@@ -630,7 +625,6 @@ html[data-theme='dark'] .learn-layout--shodo .learn-nav__link--active {
 .learn-table__kanji {
   font-size: 1.35rem;
   font-weight: 600;
-  font-family: 'Yu Mincho', 'MS Mincho', 'Noto Serif JP', serif;
 }
 
 .learn-table--kanji .learn-table__ex {
@@ -648,7 +642,6 @@ html[data-theme='dark'] .learn-layout--shodo .learn-nav__link--active {
 
 .learn-keywords__jp {
   margin: 0;
-  font-family: 'Yu Gothic UI', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
   font-weight: 500;
 }
 
@@ -731,7 +724,6 @@ html[data-theme='dark'] .learn-layout--shodo .learn-nav__link--active {
 
 .learn-grammar-examples__jp {
   margin: 0 0 0.2rem;
-  font-family: 'Yu Gothic UI', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
 }
 
 .learn-grammar-examples__romaji {
@@ -1737,7 +1729,6 @@ html[data-theme='light'] .learn-dialogue__turn--b {
 .learn-vocab-card__word {
   font-size: 1.15rem;
   font-weight: 700;
-  font-family: 'Yu Gothic UI', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
   line-height: 1.3;
 }
 
@@ -6141,29 +6132,99 @@ html[data-theme='dark'] .learn-layout--crimson-blossom .learn-visual-hero {
 .learn-track-card--visual {
   padding: 0;
   overflow: hidden;
+  border: 1px solid rgba(192, 38, 38, 0.08);
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 8px 24px rgba(192, 38, 38, 0.06);
+  transition:
+    box-shadow 0.35s ease,
+    transform 0.35s ease,
+    border-color 0.35s ease;
+}
+
+.learn-track-card--visual:hover {
+  border-color: rgba(192, 38, 38, 0.18);
+  box-shadow:
+    0 4px 8px rgba(15, 23, 42, 0.06),
+    0 16px 40px rgba(192, 38, 38, 0.12);
 }
 
 .learn-track-card--visual .learn-track-card__thumb {
   position: relative;
-  height: 5.5rem;
+  aspect-ratio: 3 / 2;
+  min-height: 7.5rem;
   overflow: hidden;
+  background: linear-gradient(135deg, #fef2f2 0%, #fff1f2 48%, #fce7f3 100%);
 }
 
+.learn-track-card__thumb--vocab {
+  --learn-thumb-tint: rgba(219, 39, 119, 0.14);
+}
+
+.learn-track-card__thumb--grammar {
+  --learn-thumb-tint: rgba(37, 99, 235, 0.14);
+}
+
+.learn-track-card__thumb--kanji {
+  --learn-thumb-tint: rgba(217, 119, 6, 0.16);
+}
+
+.learn-track-card__thumb--default {
+  --learn-thumb-tint: rgba(192, 38, 38, 0.12);
+}
+
+.learn-track-card--visual .learn-track-card__thumb::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    145deg,
+    var(--learn-thumb-tint, rgba(192, 38, 38, 0.12)) 0%,
+    transparent 52%
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+.learn-track-card__thumb-img,
 .learn-track-card--visual .learn-track-card__thumb img {
+  position: absolute;
+  inset: 0;
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.4s ease;
+  object-position: center center;
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  filter: saturate(1.04) contrast(1.01);
 }
 
+.learn-track-card--visual:hover .learn-track-card__thumb-img,
 .learn-track-card--visual:hover .learn-track-card__thumb img {
-  transform: scale(1.05);
+  transform: scale(1.04);
 }
 
 .learn-track-card__thumb-shade {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, transparent 20%, rgba(15, 23, 42, 0.35) 100%);
+  background: linear-gradient(
+    180deg,
+    rgba(15, 23, 42, 0.04) 0%,
+    transparent 42%,
+    rgba(15, 23, 42, 0.28) 100%
+  );
+  z-index: 2;
+  pointer-events: none;
+}
+
+
+html[data-theme='dark'] .learn-track-card--visual {
+  border-color: rgba(248, 250, 252, 0.08);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+}
+
+html[data-theme='dark'] .learn-track-card--visual .learn-track-card__thumb {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
 }
 
 .learn-track-card--visual .learn-track-card__head,
@@ -6186,6 +6247,7 @@ html[data-theme='dark'] .learn-layout--crimson-blossom .learn-visual-hero {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .learn-track-card--visual:hover .learn-track-card__thumb-img,
   .learn-track-card--visual:hover .learn-track-card__thumb img {
     transform: none;
   }

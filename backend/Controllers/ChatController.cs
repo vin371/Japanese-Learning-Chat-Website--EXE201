@@ -36,11 +36,14 @@ public class ChatController : ControllerBase
     private bool IsSiteModerator() =>
         User.IsInRole(AppRoles.Admin) || User.IsInRole(AppRoles.Moderator);
 
-    /// <summary>Đặc tả phòng 5.1 (slug/level seed trong DB).</summary>
+    /// <summary>Đặc tả phòng 5.1 (slug/level seed trong DB) — lọc theo JLPT của học viên.</summary>
     [HttpGet("room-catalog")]
-    public ActionResult GetRoomCatalog()
+    public async Task<IActionResult> GetRoomCatalog()
     {
-        return Ok(_chatService.GetRoomCategories());
+        var currentUserId = GetCurrentUserId();
+        if (currentUserId == 0) return Unauthorized();
+        var categories = await _chatService.GetRoomCategoriesForUserAsync(currentUserId);
+        return Ok(categories);
     }
 
     [HttpPost("direct")]
@@ -85,10 +88,10 @@ public class ChatController : ControllerBase
         return Ok(rooms);
     }
 
-    /// <summary>Phòng công khai (public/level/group); lọc slug, levelId (N5/N4/N3).</summary>
+    /// <summary>Phòng công khai (public/level/group); lọc slug, levelId (N5/N4/N3). Bỏ trống type để lấy public+level (đã lọc JLPT).</summary>
     [HttpGet("public-rooms")]
     public async Task<IActionResult> GetPublicRooms(
-        [FromQuery] string? type = "public",
+        [FromQuery] string? type = null,
         [FromQuery] string? slug = null,
         [FromQuery] int? levelId = null,
         [FromQuery] int limit = 50)
@@ -186,7 +189,7 @@ public class ChatController : ControllerBase
         var currentUserId = GetCurrentUserId();
         if (currentUserId == 0) return Unauthorized();
         var ok = await _chatService.JoinRoomAsync(roomId, currentUserId);
-        if (!ok) return BadRequest(new { message = "Không thể tham gia phòng." });
+        if (!ok) return BadRequest(new { message = "Không thể tham gia phòng (có thể bạn chưa đủ trình độ JLPT)." });
         return NoContent();
     }
 

@@ -26,7 +26,30 @@ public class AssessmentService : IAssessmentService
         public (string Key, string Text)[] Options { get; init; } = Array.Empty<(string, string)>();
     }
 
-    // Ngân hàng 40 câu cố định – chỉ lưu ở backend.
+    /// <summary>Đề đầu vào: 20 câu — 7 N5, 7 N4, 6 N3 (cân bằng trình độ).</summary>
+    private static readonly int[] PlacementActiveQuestionIds =
+    {
+        1, 3, 5, 8, 10, 12, 15,
+        16, 18, 20, 23, 26, 28, 30,
+        31, 33, 36, 37, 39, 40,
+    };
+
+    private const int PlacementTimeLimitSeconds = 15 * 60;
+
+    private static IReadOnlyList<QuestionDef> GetPlacementQuestions()
+    {
+        var byId = Questions.ToDictionary(q => q.Id);
+        return PlacementActiveQuestionIds.Select(id => byId[id]).ToList();
+    }
+
+    private static string ResolvePlacementLevel(int correct)
+    {
+        if (correct <= 7) return "N5";
+        if (correct <= 14) return "N4";
+        return "N3";
+    }
+
+    // Ngân hàng 40 câu — đề đầu vào chỉ lấy 20 câu theo PlacementActiveQuestionIds.
     private static readonly IReadOnlyList<QuestionDef> Questions = new List<QuestionDef>
     {
         new()
@@ -553,7 +576,8 @@ public class AssessmentService : IAssessmentService
 
     public Task<PlacementTestDefinitionDto> GetPlacementTestAsync()
     {
-        var qs = Questions
+        var active = GetPlacementQuestions();
+        var qs = active
             .Select(q => new PlacementQuestionDto
             {
                 Id = q.Id,
@@ -567,7 +591,7 @@ public class AssessmentService : IAssessmentService
         var dto = new PlacementTestDefinitionDto
         {
             TotalQuestions = qs.Length,
-            TimeLimitSeconds = 1200,
+            TimeLimitSeconds = PlacementTimeLimitSeconds,
             Questions = qs
         };
         return Task.FromResult(dto);
@@ -575,21 +599,19 @@ public class AssessmentService : IAssessmentService
 
     public async Task<PlacementTestResultDto> SubmitPlacementTestAsync(int userId, PlacementTestSubmitRequest request)
     {
+        var active = GetPlacementQuestions();
         var answerMap = request.Answers?.ToDictionary(a => a.QuestionId, a => a.SelectedKey?.Trim().ToLowerInvariant() ?? "") 
                         ?? new Dictionary<int, string>();
-        var total = Questions.Count;
+        var total = active.Count;
         var correct = 0;
-        foreach (var q in Questions)
+        foreach (var q in active)
         {
             if (!answerMap.TryGetValue(q.Id, out var sel)) continue;
             if (string.Equals(sel, q.CorrectKey, StringComparison.OrdinalIgnoreCase))
                 correct++;
         }
 
-        string levelLabel;
-        if (correct <= 15) levelLabel = "N5";
-        else if (correct <= 30) levelLabel = "N4";
-        else levelLabel = "N3";
+        var levelLabel = ResolvePlacementLevel(correct);
 
         var now = DateTime.UtcNow;
 

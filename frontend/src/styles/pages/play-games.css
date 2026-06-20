@@ -424,7 +424,7 @@ html[data-theme='dark'] .play-layout--session .play-expbar__rank-text {
   line-height: 1.1;
   margin: 0;
   color: var(--text-h, #0f172a);
-  font-family: 'Yu Gothic UI', 'Meiryo', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+  font-family: var(--font-ja);
 }
 
 .play-game__kana-row .learn-speak-btn {
@@ -1022,7 +1022,7 @@ html[data-theme='dark'] .play-layout--session .play-expbar__rank-text {
   border-radius: 12px 12px 12px 4px;
   box-shadow: 0 3px 0 rgba(139, 92, 246, 0.25);
   z-index: 5;
-  font-family: 'Yu Gothic UI', 'Meiryo', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+  font-family: var(--font-ja);
 }
 
 .play-kana-battle__bubble::after {
@@ -2632,10 +2632,44 @@ html[data-theme='dark'] .play-lb-page__panel {
 }
 
 .play-pvp__lead {
+  max-width: 40rem;
+  line-height: 1.55;
+  color: var(--color-text-secondary, #5c5c76);
+}
+
+.play-pvp__notice {
+  max-width: 40rem;
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
   font-size: 0.88rem;
-  color: var(--color-text-secondary, #6b7280);
   line-height: 1.5;
-  max-width: 36rem;
+}
+
+.play-pvp__notice--info {
+  background: rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.22);
+  color: var(--text, #334155);
+}
+
+.play-pvp__notice--warn {
+  background: rgba(251, 191, 36, 0.12);
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  color: var(--text, #334155);
+}
+
+.play-pvp__hint {
+  margin: 0.5rem 0 0;
+  font-size: 0.82rem;
+  color: var(--color-text-secondary, #64748b);
+}
+
+.play-pvp__field select {
+  width: 100%;
+  padding: 0.5rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid var(--pd-border, rgba(15, 23, 42, 0.12));
+  font: inherit;
 }
 
 .play-pvp__panel {
@@ -5174,14 +5208,19 @@ html[data-theme='dark'] .play-game--arcade.play-arcade-shell--light.play-game--s
   font-weight: 800;
   color: #fff;
   line-height: 1.15;
-  font-family: 'Yu Gothic UI', 'Meiryo', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans', 'Helvetica Neue', Arial, sans-serif;
+}
+
+.play-arcade__q-main[lang='ja'],
+.play-arcade__q-sub[lang='ja'] {
+  font-family: var(--font-ja);
 }
 
 .play-arcade__q-sub {
   margin-top: 0.35rem;
   font-size: 1.05rem;
   color: #9ca3af;
-  font-family: 'Yu Gothic UI', 'Meiryo', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans', 'Helvetica Neue', Arial, sans-serif;
 }
 
 .play-arcade__speak {
@@ -5206,6 +5245,11 @@ html[data-theme='dark'] .play-game--arcade.play-arcade-shell--light.play-game--s
   font-weight: 700;
   cursor: pointer;
   transition: border-color 0.15s, transform 0.1s;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans', 'Helvetica Neue', Arial, sans-serif;
+}
+
+.play-arcade__opt[lang='ja'] {
+  font-family: var(--font-ja);
 }
 
 .play-arcade__opt:hover:not(:disabled) {
@@ -5980,4 +6024,160 @@ html[data-theme='dark'] .play-setup-pro__banner-cap {
   margin: 0;
   border: none;
   background: transparent;
+}
+
+/* Banner động viên cuối màn setup — gradient, không ảnh mờ */
+.play-setup-motivation {
+  position: relative;
+  overflow: hidden;
+  margin-top: 0.25rem;
+  padding: 1.35rem 1.25rem 1.25rem;
+  min-height: 7.5rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(225, 29, 72, 0.18);
+  background: linear-gradient(125deg, #fff1f2 0%, #ffe4e6 28%, #fdf2f8 55%, #fff7ed 100%);
+  box-shadow:
+    0 12px 32px -16px rgba(190, 18, 60, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+html[data-theme='dark'] .play-setup-motivation {
+  border-color: rgba(251, 113, 133, 0.22);
+  background: linear-gradient(125deg, #1a0a12 0%, #2a1020 40%, #1f1528 100%);
+  box-shadow:
+    0 12px 36px -14px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.play-setup-motivation__aurora {
+  position: absolute;
+  inset: -40% -20%;
+  background:
+    radial-gradient(ellipse 55% 45% at 18% 30%, rgba(251, 113, 133, 0.45), transparent 58%),
+    radial-gradient(ellipse 50% 40% at 82% 22%, rgba(251, 191, 36, 0.35), transparent 55%),
+    radial-gradient(ellipse 45% 38% at 55% 88%, rgba(167, 139, 250, 0.28), transparent 52%);
+  pointer-events: none;
+  animation: play-setup-motivation-shimmer 8s ease-in-out infinite alternate;
+}
+
+@keyframes play-setup-motivation-shimmer {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.85;
+  }
+  100% {
+    transform: translate3d(2%, -1%, 0) scale(1.04);
+    opacity: 1;
+  }
+}
+
+.play-setup-motivation__glyph {
+  position: absolute;
+  font-family: var(--font-ja-serif);
+  font-weight: 900;
+  line-height: 1;
+  pointer-events: none;
+  user-select: none;
+  color: rgba(190, 18, 60, 0.1);
+}
+
+html[data-theme='dark'] .play-setup-motivation__glyph {
+  color: rgba(251, 113, 133, 0.12);
+}
+
+.play-setup-motivation__glyph--a {
+  right: 0.75rem;
+  top: 0.35rem;
+  font-size: clamp(4.5rem, 14vw, 6.5rem);
+}
+
+.play-setup-motivation__glyph--b {
+  left: 0.5rem;
+  bottom: -0.65rem;
+  font-size: clamp(3rem, 10vw, 4.5rem);
+  opacity: 0.65;
+}
+
+.play-setup-motivation__petals span {
+  position: absolute;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50% 0 50% 50%;
+  background: linear-gradient(135deg, #fda4af, #fb7185);
+  opacity: 0.55;
+  transform: rotate(45deg);
+}
+
+.play-setup-motivation__petals span:nth-child(1) {
+  top: 1rem;
+  left: 42%;
+}
+.play-setup-motivation__petals span:nth-child(2) {
+  top: 2.1rem;
+  right: 28%;
+  width: 0.4rem;
+  height: 0.4rem;
+  opacity: 0.4;
+}
+.play-setup-motivation__petals span:nth-child(3) {
+  bottom: 1.1rem;
+  right: 38%;
+  width: 0.48rem;
+  height: 0.48rem;
+}
+.play-setup-motivation__petals span:nth-child(4) {
+  bottom: 1.6rem;
+  left: 35%;
+  width: 0.35rem;
+  height: 0.35rem;
+  opacity: 0.35;
+}
+
+.play-setup-motivation__content {
+  position: relative;
+  z-index: 1;
+  max-width: 28rem;
+}
+
+.play-setup-motivation__kicker {
+  margin: 0 0 0.2rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #e11d48;
+}
+
+html[data-theme='dark'] .play-setup-motivation__kicker {
+  color: #fb7185;
+}
+
+.play-setup-motivation__title {
+  margin: 0 0 0.35rem;
+  font-size: clamp(1.15rem, 3.2vw, 1.45rem);
+  font-weight: 900;
+  line-height: 1.2;
+  color: #881337;
+}
+
+html[data-theme='dark'] .play-setup-motivation__title {
+  color: #ffe4e6;
+}
+
+.play-setup-motivation__sub {
+  margin: 0;
+  font-size: 0.86rem;
+  line-height: 1.55;
+  font-weight: 600;
+  color: #9f1239;
+}
+
+html[data-theme='dark'] .play-setup-motivation__sub {
+  color: #fecdd3;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .play-setup-motivation__aurora {
+    animation: none;
+  }
 }

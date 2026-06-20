@@ -15,9 +15,10 @@ public interface IChatService
 
     // --- Catalog (đặc tả 5.1) ---
     IReadOnlyList<RoomCategoryDto> GetRoomCategories();
+    Task<IReadOnlyList<RoomCategoryDto>> GetRoomCategoriesForUserAsync(int currentUserId);
 
     // --- Rooms CRUD ---
-    Task<IEnumerable<ChatRoomDto>> GetPublicRoomsAsync(int currentUserId, string? type = "public", string? slug = null, int? levelId = null, int limit = 50);
+    Task<IEnumerable<ChatRoomDto>> GetPublicRoomsAsync(int currentUserId, string? type = null, string? slug = null, int? levelId = null, int limit = 50);
     Task<IEnumerable<ChatRoomDto>> GetMyRoomsAsync(int currentUserId, string? type = null, int limit = 50);
     Task<ChatRoomDto?> GetRoomByIdAsync(int roomId, int currentUserId);
     Task<ChatRoomDto?> GetPublicRoomByIdAsync(int roomId, int currentUserId);

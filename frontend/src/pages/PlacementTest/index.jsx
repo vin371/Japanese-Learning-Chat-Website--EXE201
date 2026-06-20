@@ -12,7 +12,8 @@ import { LevelUpExamBar } from '../LevelUpTest/LevelUpExamBar';
 import { LevelUpQuestionCard } from '../LevelUpTest/LevelUpQuestionCard';
 import { LevelUpBottomBar } from '../LevelUpTest/LevelUpBottomBar';
 
-const TEST_DURATION_SECONDS = 20 * 60;
+/** Thời gian mặc định — API trả timeLimitSeconds (15 phút cho 20 câu). */
+const TEST_DURATION_SECONDS = 15 * 60;
 
 function readDraft() {
   try {

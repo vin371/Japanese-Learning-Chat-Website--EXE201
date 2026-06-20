@@ -20,7 +20,7 @@
   padding: clamp(1.25rem, 4vw, 2.5rem) clamp(1rem, 3vw, 1.5rem) 2.5rem;
   text-align: center;
   color: var(--kn-ink);
-  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-vi);
 }
 
 .play-kurenai-summary__sakura-stack {
@@ -210,7 +210,7 @@
 
 .play-kurenai-summary__perfect {
   margin: 0.15rem 0 0;
-  font-family: Georgia, 'Times New Roman', Times, serif;
+  font-family: var(--font-vi-display);
   font-size: 1.15rem;
   font-style: italic;
   font-weight: 700;

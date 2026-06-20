@@ -103,7 +103,7 @@ public partial class GameService
 
             Shuffle(questionIds);
 
-            var sessionId = await db.QuerySingleAsync<int>(
+            var sessionId = await db.PgQueryFirstAsync<int>(
                 """
                 INSERT INTO dbo.game_sessions (user_id, game_id, score, correct_count, total_questions, hearts_remaining, set_id, started_at)
                 OUTPUT INSERTED.id

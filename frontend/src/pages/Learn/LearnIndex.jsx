@@ -17,7 +17,8 @@ import { learnCardHover } from '../../utils/learnMotion';
 import { LearnProgressRing } from './components/LearnProgressRing';
 import { LearnImageCarousel } from './components/LearnImageCarousel';
 import LearnAlphabet from './components/LearnAlphabet';
-import { LEARN_TOPIC_IMAGES, LEARN_VISUAL } from '../../data/learnVisualAssets';
+import { resolveLearnLessonThumb, resolveLearnLevelHero } from '../../utils/learnLessonThumb';
+import { LearnTrackThumb } from './components/LearnTrackThumb';
 
 /** Ảnh minh họa banner «Kiểm tra trình độ» — luân phiên (crossfade) */
 const LEARN_PROMO_ART_CAROUSEL_URLS = [
@@ -139,17 +140,18 @@ function rowStatesGuest(lessons) {
   return lessons.map((lesson) => ({ lesson, state: 'guest-open' }));
 }
 
-function topicImage(section) {
-  if (section === 'vocab') return LEARN_TOPIC_IMAGES.vocab;
-  if (section === 'grammar') return LEARN_TOPIC_IMAGES.grammar;
-  if (section === 'kanji') return LEARN_TOPIC_IMAGES.kanji;
-  return LEARN_VISUAL.study;
-}
-
-/** Thẻ bài học — có ảnh minh họa theo chủ đề */
-function TrackCard({ lesson, state, to, progressPercent }) {
+/** Thẻ bài học — ảnh minh họa theo title / cấp JLPT */
+function TrackCard({ lesson, state, to, progressPercent, levelCode }) {
   const isLocked = state === 'locked';
   const accent = categoryAccent(lesson.section);
+  const thumbSrc = resolveLearnLessonThumb({
+    title: lesson.title,
+    slug: lesson.slug,
+    section: lesson.section,
+    levelCode,
+    sortOrder: lesson.sortOrder,
+    lessonId: lesson.id,
+  });
   const badge =
     state === 'completed'
       ? { cls: 'learn-track-card__badge--done', text: 'Xong' }
@@ -174,8 +176,8 @@ function TrackCard({ lesson, state, to, progressPercent }) {
       whileHover="hover"
       whileTap="tap"
     >
-      <div className="learn-track-card__thumb">
-        <img src={topicImage(lesson.section)} alt="" loading="lazy" />
+      <div className={`learn-track-card__thumb learn-track-card__thumb--${accent}`}>
+        <LearnTrackThumb src={thumbSrc} className="learn-track-card__thumb-img" />
         <div className="learn-track-card__thumb-shade" aria-hidden />
       </div>
       <div className="learn-track-card__accent-bar" aria-hidden />
@@ -229,6 +231,7 @@ function LessonGrid({ rows, viewMode, lessonProgressPercent, activeLevelCode }) 
             state={state}
             to={learnRouteWithJlpt(`${ROUTES.LEARN}/${encodeURIComponent(lesson.slug)}`, activeLevelCode)}
             progressPercent={state === 'active' ? lessonProgressPercent(lesson.id) ?? 40 : null}
+            levelCode={activeLevelCode}
           />
         </Motion.div>
       ))}
@@ -396,7 +399,7 @@ export default function LearnIndex() {
           </div>
         </div>
         <div className="learn-visual-hero__media">
-          <img src={LEARN_VISUAL.sakura} alt="" className="learn-visual-hero__photo" loading="lazy" />
+          <img src={resolveLearnLevelHero(activeLevelCode)} alt="" className="learn-visual-hero__photo" loading="lazy" decoding="async" />
           <div className="learn-visual-hero__ring">
             <LearnProgressRing size={100} percent={totalTrack ? progressPct : null} />
             <p className="learn-hero-ring__kicker">Tiến độ tổng</p>

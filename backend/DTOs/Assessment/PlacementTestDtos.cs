@@ -19,7 +19,7 @@ public class PlacementQuestionDto
 public class PlacementTestDefinitionDto
 {
     public int TotalQuestions { get; set; }
-    public int TimeLimitSeconds { get; set; } = 1200;
+    public int TimeLimitSeconds { get; set; } = 900;
     public IReadOnlyList<PlacementQuestionDto> Questions { get; set; } = Array.Empty<PlacementQuestionDto>();
 }
 

@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace backend.Controllers;
 
-/// <summary>Mô-đun kiểm tra đầu vào: bài test 40 câu phân trình độ N5/N4/N3.</summary>
+/// <summary>Mô-đun kiểm tra đầu vào: bài test 20 câu phân trình độ N5/N4/N3.</summary>
 [ApiController]
 [Route("api/[controller]")]
 [Authorize(Policy = AuthPolicies.Member)]
@@ -29,7 +29,7 @@ public class PlacementTestController : ControllerBase
         return int.TryParse(sub, out var id) ? id : 0;
     }
 
-    /// <summary>Lấy đề test 40 câu và thời gian làm (20 phút).</summary>
+    /// <summary>Lấy đề test 20 câu và thời gian làm (15 phút).</summary>
     [HttpGet]
     public async Task<ActionResult<PlacementTestDefinitionDto>> GetTest()
     {

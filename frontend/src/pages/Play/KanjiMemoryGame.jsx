@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
 import { PlayGameSetupPro } from '../../components/play/PlayGameSetupPro';
+import { PlaySetupMotivationBanner } from '../../components/play/PlaySetupMotivationBanner';
 import { playSetupChildVariants, playSetupParentVariants } from '../../components/play/playSetupMotion';
 import SpeakJaButton from '../../components/learn/SpeakJaButton';
 import { ROUTES } from '../../data/routes';
@@ -108,7 +109,7 @@ export default function KanjiMemoryGame() {
       } catch {
         if (!cancelled) {
           setApiPool([]);
-          setPoolLoadErr('Không tải được từ vựng/kanji từ API — kiểm tra backend đang chạy.');
+          setPoolLoadErr('Không tải được bộ thẻ — vui lòng thử lại sau.');
         }
       } finally {
         if (!cancelled) setPoolLoading(false);
@@ -307,8 +308,7 @@ export default function KanjiMemoryGame() {
               ← Trò chơi
             </Link>
             <h1 className="m-0 text-[clamp(1.45rem,4vw,1.85rem)] font-black tracking-tight leading-tight text-slate-900 dark:text-slate-100">
-              <span className="font-extrabold">Kanji </span>
-              <span className="text-rose-700">Memory</span>
+              Lật thẻ <span className="text-rose-700">Kanji</span>
             </h1>
           </Motion.header>
 
@@ -335,9 +335,9 @@ export default function KanjiMemoryGame() {
                     <Star />
                   </span>
                   <div>
-                    <div className="font-extrabold text-[0.82rem] text-slate-900 dark:text-slate-100 mb-0.5">EXP sau phiên</div>
+                    <div className="font-extrabold text-[0.82rem] text-slate-900 dark:text-slate-100 mb-0.5">Phần thưởng</div>
                     <div className="text-[0.78rem] leading-relaxed text-slate-500 dark:text-slate-400">
-                      Hoàn thành vòng để ghi nhận phần thưởng lên server (cần đăng nhập).
+                      Hoàn thành vòng để nhận EXP và xu (cần đăng nhập).
                     </div>
                   </div>
                 </li>
@@ -387,18 +387,22 @@ export default function KanjiMemoryGame() {
             </section>
           </Motion.div>
 
-          <Motion.p variants={childV} className="m-0 mb-3 text-[0.88rem] text-slate-600 dark:text-slate-300">
-            {poolLoading ? (
-              <>
-                Đang đồng bộ thêm từ bài học… (đã có <strong>{poolAll.length}</strong> cặp sẵn sàng)
-              </>
-            ) : (
-              <>
-                Đang có <strong>{poolAll.length}</strong> cặp unique trong toàn khóa; bài chọn:{' '}
-                <strong>{maxPairsAvailable}</strong> cặp.
-              </>
-            )}
-          </Motion.p>
+          <Motion.div variants={childV} className="mb-4 rounded-2xl border border-rose-200/60 bg-rose-50/50 dark:bg-slate-900/40 dark:border-slate-400/15 px-4 py-3">
+            <p className="m-0 mb-1 text-[0.72rem] font-extrabold uppercase tracking-wide text-rose-700 dark:text-rose-400">Luật chơi</p>
+            <p className="m-0 text-[0.88rem] text-slate-700 dark:text-slate-300 leading-relaxed">
+              Lật từng thẻ để tìm cặp Kanji/từ và nghĩa tiếng Việt. Hai thẻ cùng cặp sẽ được giữ lại. Ghép hết cặp trong ít lượt mở nhất có thể.
+            </p>
+          </Motion.div>
+
+          {poolLoading ? (
+            <Motion.p variants={childV} className="m-0 mb-3 text-[0.85rem] text-slate-500 italic">
+              Đang tải bộ thẻ…
+            </Motion.p>
+          ) : (
+            <Motion.p variants={childV} className="m-0 mb-3 text-[0.85rem] text-slate-600 dark:text-slate-400">
+              Kho thẻ: <strong>{poolAll.length}</strong> cặp · Bài đã chọn: <strong>{maxPairsAvailable}</strong> cặp
+            </Motion.p>
+          )}
 
           {poolLoadErr ? (
             <Motion.p variants={childV} className="m-0 mb-4 text-amber-700 bg-amber-50 border border-amber-200 p-3 rounded-lg text-sm font-medium">
@@ -416,7 +420,7 @@ export default function KanjiMemoryGame() {
             <Motion.div variants={childV}>
               <Motion.button
                 type="button"
-                className="flex items-center justify-center gap-1.5 w-full max-w-3xl mx-auto mb-4 px-5 py-3 rounded-2xl font-black text-[1rem] text-white bg-gradient-to-br from-rose-700 to-rose-600 shadow-[0_12px_28px_rgba(190,18,60,0.28)] transition-all hover:brightness-105 border-none cursor-pointer"
+                className="flex items-center justify-center gap-1.5 w-full max-w-xs mx-auto mb-4 px-6 py-3 rounded-2xl font-bold text-[0.95rem] text-white bg-gradient-to-br from-rose-700 to-rose-600 shadow-[0_8px_22px_rgba(190,18,60,0.22)] transition-all hover:brightness-105 border-none cursor-pointer"
                 onClick={startGame}
                 whileHover={reduceMotion ? undefined : { scale: 1.02, y: -1 }}
                 whileTap={reduceMotion ? undefined : { scale: 0.98 }}
@@ -427,10 +431,7 @@ export default function KanjiMemoryGame() {
             </Motion.div>
           ) : null}
 
-          <Motion.section variants={childV} className="relative rounded-2xl overflow-hidden min-h-[clamp(11rem,32vw,20rem)] border border-slate-900/5 bg-rose-50 dark:bg-slate-900" aria-label="Cảm hứng học tập">
-            <div className="absolute inset-0 bg-transparent bg-[url('../../assets/images/zen-bg.jpg')] bg-cover bg-center bg-no-repeat opacity-40 mix-blend-multiply dark:mix-blend-screen dark:opacity-20 pointer-events-none" style={{ backgroundImage: `linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.22) 100%), var(--play-setup-zen-bg, none)` }} />
-            <p className="relative z-10 m-0 px-4 pt-5 pb-4 max-w-sm font-extrabold text-[0.95rem] text-slate-900 dark:text-slate-100 drop-shadow-sm dark:drop-shadow-[0_1px_8px_rgba(0,0,0,0.5)]">Cảm hứng học tập từ thiên nhiên</p>
-          </Motion.section>
+          <PlaySetupMotivationBanner variants={childV} />
         </Motion.div>
       </PlayGameSetupPro>
     );
@@ -449,7 +450,7 @@ export default function KanjiMemoryGame() {
       <PlayKurenaiSummary
         navBack={{ to: ROUTES.PLAY, label: '← Quay lại trò chơi' }}
         kicker="Bài tập hoàn tất"
-        headline="Hoàn thành Kanji Memory!"
+        headline="Hoàn thành Lật thẻ Kanji!"
         subline={`Đã ghép đúng ${totalPairs} cặp sau ${turns} lượt mở thẻ.`}
         ring={{ value: finalScore ?? 0, max: 100, centerLabel: 'ĐIỂM' }}
         showPerfect={perfectGuess}

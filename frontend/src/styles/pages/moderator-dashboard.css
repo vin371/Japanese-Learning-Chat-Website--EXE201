@@ -3459,7 +3459,7 @@ html[data-theme='dark'] .mod-import-studio__insight-card {
   font-size: 1.15rem;
   font-weight: 900;
   padding-right: 2.5rem;
-  font-family: 'Yu Mincho', 'Hiragino Mincho ProN', 'MS PMincho', serif;
+  font-family: var(--font-ja-serif);
 }
 
 .mod-import-studio__insight-meta {
@@ -4228,7 +4228,7 @@ html[data-theme='light'] .mod-recon__vocab-tile {
   font-weight: 900;
   color: var(--mod-text);
   padding: 0.15rem 2.2rem 0 0;
-  font-family: 'Yu Mincho', 'Hiragino Mincho ProN', 'MS PMincho', ui-serif, serif;
+  font-family: var(--font-ja-serif);
 }
 
 .mod-recon__vocab-read {

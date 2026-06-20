@@ -310,7 +310,7 @@ public class AuthService : IAuthService
     }
 
     /// <summary>
-    /// Trả về <c>true</c> khi học viên phải làm placement 40 câu (chưa có kết quả trong DB).
+    /// Trả về <c>true</c> khi học viên phải làm placement 20 câu (chưa có kết quả trong DB).
     /// Trả về <c>false</c> cho admin/moderator, hoặc khi admin đã gán <see cref="User.LevelId"/>.
     /// </summary>
     private async Task<bool> ComputeNeedsPlacementTestAsync(User user)

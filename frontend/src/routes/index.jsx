@@ -14,15 +14,14 @@ const PlacementTest = lazy(() => import('../pages/PlacementTest'));
 const LevelUpTest = lazy(() => import('../pages/LevelUpTest'));
 const AdminDashboard = lazy(() => import('../pages/AdminDashboard'));
 const ModeratorDashboard = lazy(() => import('../pages/ModeratorDashboard'));
-const Chat = lazy(() => import('../pages/Chat/ChatPage'));
-const ChatRoom = lazy(() => import('../pages/Chat/ChatRoomPage'));
+import ChatRoom from '../pages/Chat/ChatRoomPage';
+import ChatDefaultRedirect from '../pages/Chat/ChatDefaultRedirect';
 const UpgradePage = lazy(() => import('../pages/Upgrade'));
 const PlayLayout = lazy(() => import('../pages/Play/PlayLayout'));
 const PlayHub = lazy(() => import('../pages/Play/PlayHub'));
 const PlayLeaderboard = lazy(() => import('../pages/Play/PlayLeaderboard'));
 const PlayAchievements = lazy(() => import('../pages/Play/PlayAchievements'));
 const PlayGuide = lazy(() => import('../pages/Play/PlayGuide'));
-const PlayDailyChallenge = lazy(() => import('../pages/Play/PlayDailyChallenge'));
 const PlayPvpLobby = lazy(() => import('../pages/Play/PlayPvpLobby'));
 const PlayShop = lazy(() => import('../pages/Play/PlayShop'));
 const KanaMatchGame = lazy(() => import('../pages/Play/KanaMatchGame'));
@@ -91,7 +90,7 @@ function AppRoutes() {
           path={ROUTES.CHAT}
           element={
             <PrivateRoute>
-              <Chat />
+              <ChatDefaultRedirect />
             </PrivateRoute>
           }
         />
@@ -121,7 +120,7 @@ function AppRoutes() {
         >
           <Route index element={<PlayHub />} />
           <Route path="guide" element={<PlayGuide />} />
-          <Route path="daily" element={<PlayDailyChallenge />} />
+          <Route path="daily" element={<Navigate to={ROUTES.PLAY} replace />} />
           <Route path="pvp" element={<PlayPvpLobby />} />
           <Route path="leaderboard" element={<PlayLeaderboard />} />
           <Route path="achievements" element={<PlayAchievements />} />

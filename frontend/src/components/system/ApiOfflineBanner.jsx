@@ -18,7 +18,7 @@ export function ApiOfflineBanner() {
   const probe = useCallback(async () => {
     setChecking(true);
     try {
-      await http.get('/api/Public/system-announcements/latest', {
+      await http.get('/api/Public/health', {
         timeout: PROBE_TIMEOUT_MS,
         validateStatus: (s) => s >= 200 && s < 500,
       });

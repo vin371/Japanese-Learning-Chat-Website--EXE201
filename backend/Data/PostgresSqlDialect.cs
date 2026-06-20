@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace backend.Data;
@@ -16,7 +17,6 @@ public static class PostgresSqlDialect
         s = Regex.Replace(s, @"\bSYSUTCDATETIME\s*\(\s*\)", "NOW() AT TIME ZONE 'utc'", RegexOptions.IgnoreCase);
         s = Regex.Replace(s, @"\bGETDATE\s*\(\s*\)", "NOW()", RegexOptions.IgnoreCase);
         s = Regex.Replace(s, @"\bN'", "'");
-        s = Regex.Replace(s, @"CAST\s*\(\s*([^)]+?)\s+AS\s+BIT\s*\)", "($1)::boolean", RegexOptions.IgnoreCase);
         s = Regex.Replace(s, @"CAST\s*\(\s*([^)]+?)\s+AS\s+NVARCHAR\s*\(\s*\d+\s*\)\s*\)", "$1", RegexOptions.IgnoreCase);
         s = Regex.Replace(s, @"LTRIM\s*\(\s*RTRIM\s*\(([^)]+)\)\s*\)", "TRIM($1)", RegexOptions.IgnoreCase);
         s = Regex.Replace(s, @"\[\s*([^\]]+)\s*\]", "\"$1\"", RegexOptions.IgnoreCase);
@@ -29,6 +29,7 @@ public static class PostgresSqlDialect
 
         s = AdaptIsActiveBoolean(s);
         s = AdaptBooleanCoalesce(s);
+        s = AdaptCastAsBit(s);
         s = AdaptInsertReturning(s);
         s = AdaptSelectTop(s);
         return s;
@@ -42,7 +43,7 @@ public static class PostgresSqlDialect
             sql = Regex.Replace(
                 sql,
                 $@"COALESCE\(((\w+\.)?{col}),\s*0\)",
-                $"COALESCE($1{col}, false)",
+                "COALESCE($1, false)",
                 RegexOptions.IgnoreCase);
         }
 
@@ -60,6 +61,56 @@ public static class PostgresSqlDialect
         sql = Regex.Replace(sql, @"\bis_active\s*=\s*0\b", "is_active = false", RegexOptions.IgnoreCase);
         sql = Regex.Replace(sql, @"\bis_active\s*=\s*1\b", "is_active = true", RegexOptions.IgnoreCase);
         return sql;
+    }
+
+    /// <summary>
+    /// SQL Server CAST(x AS BIT) → PostgreSQL (x)::boolean.
+    /// Dùng cân bằng ngoặc — regex [^)]+ không đủ cho COALESCE(...)/CASE(...).
+    /// Chạy lại sau AdaptBooleanCoalesce để gỡ CAST(... AS BIT) còn sót.
+    /// </summary>
+    private static string AdaptCastAsBit(string sql)
+    {
+        var result = new StringBuilder(sql.Length);
+        var pos = 0;
+
+        while (pos < sql.Length)
+        {
+            var castMatch = Regex.Match(sql[pos..], @"CAST\s*\(", RegexOptions.IgnoreCase);
+            if (!castMatch.Success)
+            {
+                result.Append(sql.AsSpan(pos));
+                break;
+            }
+
+            var absCastStart = pos + castMatch.Index;
+            result.Append(sql.AsSpan(pos, castMatch.Index));
+
+            var p = absCastStart + castMatch.Length;
+            var depth = 1;
+            while (p < sql.Length && depth > 0)
+            {
+                if (sql[p] == '(') depth++;
+                else if (sql[p] == ')') depth--;
+                p++;
+            }
+
+            if (depth != 0)
+            {
+                result.Append(sql.AsSpan(absCastStart));
+                break;
+            }
+
+            var inner = sql.Substring(absCastStart + castMatch.Length, p - absCastStart - castMatch.Length - 1).Trim();
+            var asBit = Regex.Match(inner, @"^(.+?)\s+AS\s+BIT\s*$", RegexOptions.IgnoreCase | RegexOptions.Singleline);
+            if (asBit.Success)
+                result.Append('(').Append(asBit.Groups[1].Value.Trim()).Append(")::boolean");
+            else
+                result.Append(sql.AsSpan(absCastStart, p - absCastStart));
+
+            pos = p;
+        }
+
+        return result.ToString();
     }
 
     /// <summary>SQL Server OUTPUT INSERTED.col → PostgreSQL VALUES ... RETURNING col (đúng vị trí cú pháp).</summary>

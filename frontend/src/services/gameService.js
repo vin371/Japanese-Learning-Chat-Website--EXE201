@@ -62,8 +62,6 @@ export async function deleteAdminGame(gameId) {
 /** Slug có nhánh lấy từ vựng/kanji/quiz bài học — mặc định ưu tiên bài học nếu client không gửi cờ. */
 const LESSON_FIRST_GAME_SLUGS = new Set([
   'vocabulary-speed-quiz',
-  'flashcard-vocabulary',
-  'flashcard-battle',
   'counter-quest',
   'boss-battle',
 ]);
@@ -231,12 +229,6 @@ export async function postInventoryPowerUp(body) {
   }
   const { data } = await gameApi.useInventoryPowerUp(payload);
   return data ?? {};
-}
-
-export async function fetchDailyChallenge() {
-  const res = await gameApi.fetchDailyChallenge();
-  if (res.status === 204) return null;
-  return res.data ?? null;
 }
 
 export async function createPvpRoom(body) {

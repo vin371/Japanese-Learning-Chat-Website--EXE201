@@ -102,7 +102,7 @@ public partial class GameService
 
             Shuffle(questionIds);
 
-            var sessionId = await db.QuerySingleAsync<int>(
+            var sessionId = await db.PgQueryFirstAsync<int>(
                 """
                 INSERT INTO dbo.game_sessions (user_id, game_id, score, correct_count, total_questions, hearts_remaining, set_id, started_at)
                 OUTPUT INSERTED.id
@@ -356,7 +356,7 @@ public partial class GameService
         var optsJson = JsonSerializer.Serialize(options.Select(t => new { text = t }));
         var expl = string.IsNullOrWhiteSpace(v.Reading) ? right : $"{word} ({v.Reading}) — {right}";
 
-        var inserted = await db.QuerySingleAsync<int>(
+        var inserted = await db.PgQueryFirstAsync<int>(
             """
             INSERT INTO dbo.game_questions (set_id, question_type, question_text, options_json, correct_index, explanation, base_score, difficulty, is_active, sort_order)
             OUTPUT INSERTED.id

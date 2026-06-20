@@ -272,14 +272,6 @@ public class GameController : ControllerBase
         return Ok(await _game.GetXuLeaderboardAsync(limit));
     }
 
-    [HttpGet("daily-challenge")]
-    [Authorize(Policy = AuthPolicies.Member)]
-    public async Task<ActionResult<DailyChallengeDto>> GetDailyChallenge()
-    {
-        var dto = await _game.GetTodayChallengeAsync(GetUserId());
-        return dto is null ? NoContent() : Ok(dto);
-    }
-
     [HttpPost("pvp/create")]
     [Authorize(Policy = AuthPolicies.Member)]
     public async Task<ActionResult<PvpRoomDto>> CreatePvpRoom([FromBody] CreatePvpRoomRequest req)

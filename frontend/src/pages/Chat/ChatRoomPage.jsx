@@ -1,14 +1,55 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { flushSync } from 'react-dom';
 import { chatService } from '../../services/chatService';
 import { startChatRoomConnection } from '../../services/chatRealtime';
+import { loadChatRoomBootstrap, CHAT_INITIAL_MSG_LIMIT } from './chatRoomLoad';
+import { readChatRoomCache, writeChatRoomCache } from '../../utils/chatRoomSessionCache';
 import { useAuth } from '../../hooks/useAuth';
 import { useCurrentUserId } from '../../hooks/useCurrentUserId';
 import { YumeChatLayout } from '../../components/chat/YumeChatLayout';
 import { useChatShell } from '../../hooks/useChatShell';
-import { ROUTES } from '../../data/routes';
 import { notifyChatInboxRevised } from '../../hooks/useChatUnreadTotal';
+import { Smile, ImagePlus, Paperclip, AtSign, Sparkles, Share2, Send, ChevronDown } from 'lucide-react';
+
+function formatRoomDisplayName(name) {
+  const s = String(name ?? '').trim();
+  if (!s) return 'Phòng chat';
+  return s
+    .replace(/\s+/g, ' ')
+    .replace(/^phòngchung$/i, 'Phòng chung')
+    .replace(/^phòng\s*n5$/i, 'Phòng N5')
+    .replace(/^phòng\s*n4$/i, 'Phòng N4')
+    .replace(/^phòng\s*n3$/i, 'Phòng N3');
+}
+
+function roomSubtitleParts({ isDirectRoom, peerSocialOnline, roomTypeNorm, onlineCount }) {
+  if (isDirectRoom) {
+    if (peerSocialOnline === true) return ['Đang hoạt động', 'Tin nhắn riêng'];
+    if (peerSocialOnline === false) return ['Offline', 'Tin nhắn riêng'];
+    return ['Tin nhắn riêng'];
+  }
+  const parts = [roomTypeNorm ? roomTypeLabelVi(roomTypeNorm) : 'Phòng chat', 'Đang tham gia'];
+  if (onlineCount != null && Number.isFinite(Number(onlineCount))) {
+    parts.push(`${Number(onlineCount)} đang online`);
+  }
+  return parts;
+}
+
+function roomTypeLabelVi(type) {
+  switch (String(type || '').toLowerCase()) {
+    case 'public':
+      return 'Công khai';
+    case 'level':
+      return 'Theo cấp độ';
+    case 'group':
+      return 'Nhóm chat';
+    case 'private':
+      return 'Tin nhắn riêng';
+    default:
+      return 'Phòng chat';
+  }
+}
 
 function toNum(v) {
   if (v == null || v === '') return null;
@@ -394,16 +435,12 @@ function MessageReactionDock({ disabled, busy, onPick }) {
 
 export default function ChatRoomPage() {
   const { roomId } = useParams();
-  const navigate = useNavigate();
   const { user } = useAuth();
   const myId = useCurrentUserId(user);
   const myDisplay =
     user?.displayName || user?.username || user?.name || user?.email || 'Bạn';
 
   const {
-    setRoomSummary,
-    setRightPanelOpen,
-    rightPanelOpen,
     bumpInboxRevision,
     setDirectRoomPresence,
     bumpFriendsRevision,
@@ -424,10 +461,7 @@ export default function ChatRoomPage() {
   const bottomRef = useRef(null);
   const feedRef = useRef(null);
   const loadingOlderRef = useRef(false);
-  /** true = đang xem gần đáy → tin realtime / gửi tin sẽ tự cuộn xuống. */
   const stickToBottomRef = useRef(true);
-  const roomMenuRef = useRef(null);
-  const [roomMenuOpen, setRoomMenuOpen] = useState(false);
   const [showJumpLatest, setShowJumpLatest] = useState(false);
   const [presence, setPresence] = useState(null);
   const [roomMembers, setRoomMembers] = useState([]);
@@ -478,87 +512,63 @@ export default function ChatRoomPage() {
   useEffect(() => {
     if (!roomId) return;
     let cancelled = false;
-    async function load() {
-      setLoading(true);
+
+    const cached = readChatRoomCache(roomId);
+    if (cached) {
+      setRoom(cached.room);
+      setMessages(cached.messages);
+      setHasMore(cached.hasMore);
+      setNextCursor(cached.nextCursor);
+      setNeedsJoin(!cached.asMember);
+      setLoading(false);
       setError('');
-      setNeedsJoin(false);
-      setKeywordWarning('');
-      const msgPromise = chatService.getRoomMessages(roomId, { limit: 50 });
+      requestAnimationFrame(() => scrollFeedToEnd(feedRef.current, { smooth: false }));
+    } else {
+      setLoading(true);
+    }
+
+    async function load() {
+      if (!cached) {
+        setError('');
+        setNeedsJoin(false);
+        setKeywordWarning('');
+      }
       try {
-        let roomRes = null;
-        let asMember = false;
-        try {
-          roomRes = await chatService.getRoom(roomId);
-          asMember = true;
-        } catch (err) {
-          /** Chỉ 404 = không phải thành viên / không có quyền GET rooms/{id}. Lỗi khác (500, network) không được coi là "chưa tham gia". */
-          const st = err?.response?.status;
-          if (st === 404) {
-            roomRes = await chatService.getPublicRoom(roomId).catch(() => null);
-            asMember = false;
-          } else {
-            throw err;
-          }
-        }
+        const { room: roomRes, asMember: member, msgRes } = await loadChatRoomBootstrap(roomId, {
+          msgLimit: CHAT_INITIAL_MSG_LIMIT,
+        });
         if (cancelled) return;
         if (!roomRes) {
-          setError('Không tìm thấy phòng hoặc bạn chưa có quyền xem.');
-          setRoom(null);
-          setMessages([]);
-          setHasMore(false);
-          setNextCursor(null);
+          if (!cached) {
+            setError('Không tìm thấy phòng hoặc bạn chưa có quyền xem.');
+            setRoom(null);
+            setMessages([]);
+            setHasMore(false);
+            setNextCursor(null);
+          }
           return;
         }
 
-        const msgRes = await msgPromise;
-        if (cancelled) return;
         const parsed = parsePagedMessagesResponse(msgRes);
-
-        /**
-         * Đồng bộ "đã tham gia" với backend:
-         * - GET messages chỉ trả tin khi đã là thành viên → có tin ⇒ chắc chắn là member.
-         * - Phòng public: GET members có thể xem list → kiểm tra myId (phòng mới chưa có tin).
-         */
-        let member = asMember;
-        if (!member && parsed.items.length > 0) {
-          member = true;
-          try {
-            roomRes = await chatService.getRoom(roomId);
-          } catch {
-            /* giữ DTO public; vẫn coi là member để ẩn banner tham gia */
-          }
-        }
-        if (!member && myId != null && parsed.items.length === 0) {
-          try {
-            const mems = await chatService.getRoomMembers(roomId, { limit: 200 });
-            const mid = Number(myId);
-            if (
-              mems.some((m) => {
-                const uid = m.userId ?? m.UserId;
-                return uid != null && Number(uid) === mid;
-              })
-            ) {
-              member = true;
-              try {
-                roomRes = await chatService.getRoom(roomId);
-              } catch {
-                /* noop */
-              }
-            }
-          } catch {
-            /* noop */
-          }
-        }
 
         setRoom(roomRes);
         setNeedsJoin(!member);
         setMessages(parsed.items);
         setHasMore(parsed.hasMore);
         setNextCursor(parsed.nextCursor);
+        writeChatRoomCache(roomId, {
+          room: roomRes,
+          messages: parsed.items,
+          hasMore: parsed.hasMore,
+          nextCursor: parsed.nextCursor,
+          asMember: member,
+        });
         if (member) {
           const last = parsed.items.length > 0 ? parsed.items[parsed.items.length - 1] : null;
           const lid = last ? last.id ?? last.Id : null;
-          void markReadAndSyncSidebar(roomId, lid, member);
+          window.setTimeout(() => {
+            void markReadAndSyncSidebar(roomId, lid, member);
+          }, 0);
         }
         if (!cancelled) {
           stickToBottomRef.current = true;
@@ -566,7 +576,7 @@ export default function ChatRoomPage() {
           scrollFeedToEnd(feedRef.current, { smooth: false });
         }
       } catch (e) {
-        if (!cancelled) {
+        if (!cancelled && !cached) {
           const msg = e?.response?.data?.message || e?.message || 'Không tải được phòng.';
           const detail = e?.response?.data?.detail;
           setError(detail ? `${msg} (${detail})` : msg);
@@ -579,7 +589,7 @@ export default function ChatRoomPage() {
     return () => {
       cancelled = true;
     };
-  }, [roomId, myId, markReadAndSyncSidebar]);
+  }, [roomId, markReadAndSyncSidebar]);
 
   useEffect(() => {
     stickToBottomRef.current = true;
@@ -603,7 +613,7 @@ export default function ChatRoomPage() {
       try {
         const [p, mems] = await Promise.all([
           chatService.getRoomPresence(roomId).catch(() => null),
-          chatService.getRoomMembers(roomId, { limit: 200 }).catch(() => []),
+          chatService.getRoomMembers(roomId, { limit: 40 }).catch(() => []),
         ]);
         if (cancelled) return;
         setPresence(p || null);
@@ -615,10 +625,13 @@ export default function ChatRoomPage() {
         }
       }
     }
-    void loadPresenceMembers();
-    const t = window.setInterval(() => void loadPresenceMembers(), 30000);
+    const deferId = window.setTimeout(() => {
+      void loadPresenceMembers();
+    }, 2000);
+    const t = window.setInterval(() => void loadPresenceMembers(), 45000);
     return () => {
       cancelled = true;
+      window.clearTimeout(deferId);
       window.clearInterval(t);
     };
   }, [roomId, needsJoin, loading]);
@@ -691,11 +704,11 @@ export default function ChatRoomPage() {
 
     let cancelled = false;
     let disconnect = () => Promise.resolve();
-
-    (async () => {
-      try {
-        const stop = await startChatRoomConnection(roomId, {
-          onReceiveMessage: (msg) => {
+    const deferId = window.setTimeout(() => {
+      void (async () => {
+        try {
+          const stop = await startChatRoomConnection(roomId, {
+            onReceiveMessage: (msg) => {
             if (cancelled || !msg) return;
             const normalized = normalizeMessageShape(msg);
             const newId = normalized.id ?? normalized.Id;
@@ -737,25 +750,18 @@ export default function ChatRoomPage() {
           },
         });
         disconnect = stop;
-      } catch {
-        /* SignalR tùy chọn — gửi/nhận qua REST vẫn hoạt động */
-      }
-    })();
+        } catch {
+          /* SignalR tùy chọn — gửi/nhận qua REST vẫn hoạt động */
+        }
+      })();
+    }, 250);
 
     return () => {
       cancelled = true;
+      window.clearTimeout(deferId);
       void disconnect();
     };
   }, [roomId, needsJoin, loading, bumpInboxRevision]);
-
-  useEffect(() => {
-    if (!roomMenuOpen) return undefined;
-    function onDocDown(e) {
-      if (roomMenuRef.current && !roomMenuRef.current.contains(e.target)) setRoomMenuOpen(false);
-    }
-    document.addEventListener('mousedown', onDocDown);
-    return () => document.removeEventListener('mousedown', onDocDown);
-  }, [roomMenuOpen]);
 
   async function handleJoin() {
     if (!roomId) return;
@@ -1031,12 +1037,23 @@ export default function ChatRoomPage() {
     isDirectRoom && peerUser
       ? peerUser.displayName || peerUser.DisplayName || peerUser.username || peerUser.Username || room?.name
       : room?.name || 'Phòng chat';
+  const roomTitleDisplay = formatRoomDisplayName(roomTitle);
   const onlineCount = presence != null ? (presence.onlineCount ?? presence.OnlineCount) : null;
   const memberCount = presence != null ? (presence.memberCount ?? presence.MemberCount) : null;
   const peerSocialOnline =
     isDirectRoom && onlineCount != null && memberCount != null
       ? Number(memberCount) >= 2 && Number(onlineCount) >= 2
       : null;
+  const headerSubtitleParts = useMemo(
+    () =>
+      roomSubtitleParts({
+        isDirectRoom,
+        peerSocialOnline,
+        roomTypeNorm,
+        onlineCount,
+      }),
+    [isDirectRoom, peerSocialOnline, roomTypeNorm, onlineCount]
+  );
 
   const directPeerUserId = useMemo(() => {
     if (!room || String(room?.type || room?.Type || '').toLowerCase() !== 'private') return null;
@@ -1115,34 +1132,6 @@ export default function ChatRoomPage() {
   }
 
   useEffect(() => {
-    if (!setRoomSummary || !room) return undefined;
-    const letter =
-      isDirectRoom && peerUser
-        ? (
-          peerUser.displayName ||
-          peerUser.DisplayName ||
-          peerUser.username ||
-          peerUser.Username ||
-          '?'
-        ).slice(0, 1)
-        : (room?.name || room?.Name || '?').toString().slice(0, 1);
-    setRoomSummary({
-      title: roomTitle,
-      subtitle: isDirectRoom
-        ? peerSocialOnline === true
-          ? 'Đang hoạt động • Tin nhắn riêng'
-          : peerSocialOnline === false
-            ? 'Offline • Tin nhắn riêng'
-            : 'Tin nhắn riêng'
-        : roomTypeNorm === 'group'
-          ? 'Nhóm chat'
-          : roomTypeNorm || 'Phòng chat',
-      letter,
-    });
-    return () => setRoomSummary(null);
-  }, [room, roomTitle, isDirectRoom, peerUser, peerSocialOnline, roomTypeNorm, setRoomSummary]);
-
-  useEffect(() => {
     if (!setDirectRoomPresence) return undefined;
     if (directPeerUserId == null) {
       setDirectRoomPresence(null);
@@ -1160,151 +1149,51 @@ export default function ChatRoomPage() {
     bumpFriendsRevision();
   }, [presenceOnlineSig, bumpFriendsRevision]);
 
-  async function handleLeaveRoom() {
-    if (!roomId || needsJoin) return;
-    const msg = isDirectRoom
-      ? 'Rời cuộc trò chuyện? Bạn có thể mở lại sau.'
-      : roomTypeNorm === 'group'
-        ? 'Rời nhóm này?'
-        : 'Rời phòng này? Bạn có thể tham gia lại nếu phòng mở.';
-    if (!window.confirm(msg)) return;
-    setError('');
-    try {
-      await chatService.leaveRoom(roomId);
-      bumpInboxRevision?.();
-      notifyChatInboxRevised();
-      navigate(ROUTES.CHAT);
-    } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Không rời được phòng.');
-    }
-  }
-
-  async function handleDeleteGroupRoom() {
-    if (!roomId || needsJoin || roomTypeNorm !== 'group') return;
-    if (!window.confirm('Xóa nhóm cho mọi người? Hành động không hoàn tác.')) return;
-    setError('');
-    try {
-      await chatService.deleteRoom(roomId);
-      bumpInboxRevision?.();
-      notifyChatInboxRevised();
-      navigate(ROUTES.CHAT);
-    } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Không xóa được nhóm.');
-    }
-  }
-
   const pinnedPreview = messages.find((m) => m.isPinned);
 
   return (
     <YumeChatLayout selectedRoomId={roomId}>
-      {loading ? (
+      {loading && !room ? (
         <div className="moji-chat__room moji-chat__room--loading">
           <div className="moji-chat__empty" role="status" aria-live="polite">
             <div className="moji-chat__empty-icon" aria-hidden>
               <span className="moji-chat__empty-bubble">•••</span>
             </div>
-            <h2 className="moji-chat__empty-title">Chào mừng đến YumeGo-ji!</h2>
-            <p className="moji-chat__empty-desc">Chọn một cuộc hội thoại để bắt đầu chat!</p>
             <p className="moji-chat__empty-loading-hint">Đang mở cuộc trò chuyện…</p>
           </div>
         </div>
       ) : (
-        <div className="flex-1 flex flex-col bg-slate-50 dark:bg-slate-950 overflow-hidden h-full relative">
-          <header className="shrink-0 h-[68px] flex items-center px-4 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 z-10 justify-between">
-            <div className="flex items-center gap-3 min-w-0 flex-1">
-              <div className="flex items-center gap-3 min-w-0">
-                {isDirectRoom && peerUser && (
-                  <div className="relative shrink-0" aria-hidden>
-                    <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-lg">
-                      {(peerUser.displayName || peerUser.DisplayName || peerUser.username || peerUser.Username || '?')
-                        .slice(0, 1)
-                        .toUpperCase()}
-                    </div>
-                    {peerSocialOnline === true ? (
-                      <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white dark:border-slate-900 rounded-full" title="Đang hoạt động" />
-                    ) : null}
+        <div key={String(roomId ?? 'none')} className="flex-1 flex flex-col bg-slate-50 dark:bg-slate-950 overflow-hidden h-full relative">
+          <header className="chat-room-header shrink-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 z-10">
+            <div className="chat-room-header__inner">
+              {isDirectRoom && peerUser && (
+                <div className="relative shrink-0" aria-hidden>
+                  <div className="chat-room-header__avatar chat-room-header__avatar--direct">
+                    {(peerUser.displayName || peerUser.DisplayName || peerUser.username || peerUser.Username || '?')
+                      .slice(0, 1)
+                      .toUpperCase()}
                   </div>
-                )}
-                {!isDirectRoom && (
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-rose-600 text-white flex items-center justify-center font-bold text-ld shrink-0 shadow-sm" aria-hidden>
-                    {(room?.name || room?.Name || '?').toString().slice(0, 1).toUpperCase()}
-                  </div>
-                )}
-                <div className="flex flex-col min-w-0 flex-1">
-                  <div className="font-bold text-slate-800 dark:text-slate-200 text-sm truncate m-0 leading-tight">{roomTitle}</div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5 flex items-center gap-1 m-0">
-                    {isDirectRoom
-                      ? peerSocialOnline === true
-                        ? 'Đang hoạt động • Tin nhắn riêng'
-                        : peerSocialOnline === false
-                          ? 'Offline • Tin nhắn riêng'
-                          : 'Tin nhắn riêng'
-                      : roomTypeNorm
-                        ? `${roomTypeNorm === 'group' ? 'Nhóm chat' : roomTypeNorm} • Đang tham gia${onlineCount != null && memberCount != null
-                          ? ` • ${onlineCount}/${memberCount} online`
-                          : ''
-                        }`
-                        : `Phòng chat${onlineCount != null && memberCount != null ? ` • ${onlineCount}/${memberCount} online` : ''
-                        }`}
-                    {hasMore ? <span className="opacity-70 ml-1">· Cuộn lên xem tin cũ</span> : null}
-                  </p>
-                </div>
-              </div>
-              {setRightPanelOpen && (
-                <div className="flex items-center gap-1.5 ml-auto pl-4 shrink-0">
-                  {!needsJoin && room ? (
-                    <div className="relative" ref={roomMenuRef}>
-                      <button
-                        type="button"
-                        className={`w-9 h-9 flex items-center justify-center rounded-full transition-colors ${roomMenuOpen ? 'bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 dark:text-slate-400'}`}
-                        title="Tùy chọn phòng"
-                        aria-expanded={roomMenuOpen}
-                        aria-haspopup="menu"
-                        onClick={() => setRoomMenuOpen((o) => !o)}
-                      >
-                        ⋮
-                      </button>
-                      {roomMenuOpen ? (
-                        <div className="absolute top-full right-0 mt-1 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 py-1.5 z-50 animate-in fade-in zoom-in-95 duration-100 origin-top-right" role="menu">
-                          <button type="button" role="menuitem" className="w-full text-left px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors" onClick={() => { setRoomMenuOpen(false); void handleLeaveRoom(); }}>
-                            {isDirectRoom ? 'Rời cuộc trò chuyện' : roomTypeNorm === 'group' ? 'Rời nhóm' : 'Rời phòng'}
-                          </button>
-                          {roomTypeNorm === 'group' ? (
-                            <button
-                              type="button"
-                              role="menuitem"
-                              className="w-full text-left px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors mt-1"
-                              onClick={() => { setRoomMenuOpen(false); void handleDeleteGroupRoom(); }}
-                            >
-                              Xóa nhóm
-                            </button>
-                          ) : null}
-                        </div>
-                      ) : null}
-                    </div>
+                  {peerSocialOnline === true ? (
+                    <span className="chat-room-header__online-dot" title="Đang hoạt động" />
                   ) : null}
-                  <button type="button" className="w-9 h-9 flex items-center justify-center rounded-full text-slate-400 opacity-50 cursor-not-allowed" title="Gọi điện (sắp có)" disabled>
-                    📞
-                  </button>
-                  <button type="button" className="w-9 h-9 flex items-center justify-center rounded-full text-slate-400 opacity-50 cursor-not-allowed" title="Gọi video (sắp có)" disabled>
-                    📹
-                  </button>
-                  {!isDirectRoom && (
-                    <button type="button" className="w-9 h-9 flex items-center justify-center rounded-full text-slate-400 opacity-50 cursor-not-allowed" title="Thêm thành viên (sắp có)" disabled>
-                      👥
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    className={`w-9 h-9 flex items-center justify-center rounded-full transition-colors ${rightPanelOpen ? 'bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 dark:text-slate-400'}`}
-                    title="Thông tin hội thoại"
-                    aria-pressed={!!rightPanelOpen}
-                    onClick={() => setRightPanelOpen((v) => !v)}
-                  >
-                    ℹ️
-                  </button>
                 </div>
               )}
+              {!isDirectRoom && (
+                <div className="chat-room-header__avatar" aria-hidden>
+                  {roomTitleDisplay.slice(0, 1).toUpperCase()}
+                </div>
+              )}
+              <div className="chat-room-header__meta">
+                <h1 className="chat-room-header__title">{roomTitleDisplay}</h1>
+                <div className="chat-room-header__subtitle">
+                  {headerSubtitleParts.map((part, i) => (
+                    <Fragment key={part}>
+                      {i > 0 ? <span className="chat-room-header__sep" aria-hidden>·</span> : null}
+                      <span>{part}</span>
+                    </Fragment>
+                  ))}
+                </div>
+              </div>
             </div>
           </header>
 
@@ -1635,16 +1524,17 @@ export default function ChatRoomPage() {
             {showJumpLatest ? (
               <button
                 type="button"
-                className="absolute bottom-6 right-6 z-20 px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white text-sm font-bold rounded-full shadow-lg transition-transform hover:scale-105 active:scale-95 flex items-center gap-2 animate-in slide-in-from-bottom-5"
+                className="chat-jump-latest"
                 onClick={handleJumpToLatest}
                 title="Cuộn xuống tin mới nhất"
               >
-                Tin mới nhất <span aria-hidden>↓</span>
+                Tin mới nhất
+                <ChevronDown size={15} strokeWidth={2.25} aria-hidden />
               </button>
             ) : null}
           </div>
 
-          <div className="shrink-0 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 p-3 z-10 relative shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.05)]">
+          <div className="chat-composer-wrap shrink-0 z-10 relative">
             <input
               ref={imageInputRef}
               type="file"
@@ -1662,7 +1552,7 @@ export default function ChatRoomPage() {
               tabIndex={-1}
               onChange={onPickAttachFile}
             />
-            <form className="flex flex-col gap-2 relative max-w-4xl mx-auto" onSubmit={sendMessage}>
+            <form className="chat-composer-form relative max-w-4xl mx-auto" onSubmit={sendMessage}>
               {replyingTo ? (
                 <div className="flex items-center justify-between gap-3 px-4 py-2 bg-slate-50 dark:bg-slate-800/50 border-l-4 border-indigo-500 rounded-r-xl" role="status">
                   <div className="flex flex-col min-w-0">
@@ -1700,177 +1590,179 @@ export default function ChatRoomPage() {
                   </button>
                 </div>
               ) : null}
-              <div className="flex items-center gap-1.5 px-1 py-1" aria-label="Công cụ soạn tin">
-                <button
-                  type="button"
-                  className="w-9 h-9 flex items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 dark:text-slate-400 transition-colors disabled:opacity-50 text-xl"
-                  title="Chèn emoji"
-                  disabled={needsJoin}
-                  onClick={() => {
-                    setStickerPopoverOpen(false);
-                    setSharePopoverOpen(false);
-                    setEmojiPopoverOpen((v) => !v);
-                  }}
-                >
-                  😊
-                </button>
-                <button type="button" className="w-9 h-9 flex items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors disabled:opacity-50 text-xs font-bold" title="GIF (sắp có)" disabled>
-                  GIF
-                </button>
-                <button
-                  type="button"
-                  className="w-9 h-9 flex items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 dark:text-slate-400 transition-colors disabled:opacity-50 text-xl"
-                  title="Gửi ảnh"
-                  disabled={needsJoin}
-                  onClick={() => {
-                    setEmojiPopoverOpen(false);
-                    setStickerPopoverOpen(false);
-                    setSharePopoverOpen(false);
-                    imageInputRef.current?.click();
-                  }}
-                >
-                  🖼
-                </button>
-                <button
-                  type="button"
-                  className="w-9 h-9 flex items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 dark:text-slate-400 transition-colors disabled:opacity-50 text-xl"
-                  title="Đính kèm file"
-                  disabled={needsJoin}
-                  onClick={() => {
-                    setEmojiPopoverOpen(false);
-                    setStickerPopoverOpen(false);
-                    setSharePopoverOpen(false);
-                    fileInputRef.current?.click();
-                  }}
-                >
-                  📎
-                </button>
-                <button
-                  type="button"
-                  className="w-9 h-9 flex items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 dark:text-slate-400 transition-colors disabled:opacity-50 text-xl font-bold"
-                  title="Gắn @username"
-                  disabled={needsJoin}
-                  onClick={() => {
-                    setEmojiPopoverOpen(false);
-                    setStickerPopoverOpen(false);
-                    setSharePopoverOpen(false);
-                    openMentionPicker();
-                  }}
-                >
-                  @
-                </button>
-                <button
-                  type="button"
-                  className="w-9 h-9 flex items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 dark:text-slate-400 transition-colors disabled:opacity-50 text-xl"
-                  title="Sticker thành tích"
-                  disabled={needsJoin}
-                  onClick={() => {
-                    setEmojiPopoverOpen(false);
-                    setSharePopoverOpen(false);
-                    setStickerPopoverOpen((v) => !v);
-                  }}
-                >
-                  ⭐
-                </button>
-                <button
-                  type="button"
-                  className="w-9 h-9 flex items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 dark:text-slate-400 transition-colors disabled:opacity-50 text-xl"
-                  title="Chia sẻ bài học / thành tích"
-                  disabled={needsJoin}
-                  onClick={() => {
-                    setEmojiPopoverOpen(false);
-                    setStickerPopoverOpen(false);
-                    setSharePopoverOpen((v) => !v);
-                  }}
-                >
-                  📤
-                </button>
-              </div>
-              {emojiPopoverOpen ? (
-                <div className="absolute bottom-full left-0 mb-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl rounded-2xl p-2 grid grid-cols-5 gap-1 z-50 animate-in slide-in-from-bottom-2" role="group" aria-label="Emoji nhanh">
-                  {COMPOSER_QUICK_EMOJI.map((emo) => (
+              <div className="chat-composer-bar">
+                <div className="chat-composer-tools-anchor">
+                  <div className="chat-composer-tools" aria-label="Công cụ soạn tin">
                     <button
-                      key={emo}
                       type="button"
-                      className="w-10 h-10 flex items-center justify-center text-2xl hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-transform hover:scale-110 active:scale-95"
+                      className={`chat-composer-btn${emojiPopoverOpen ? ' chat-composer-btn--active' : ''}`}
+                      title="Chèn emoji"
+                      disabled={needsJoin}
                       onClick={() => {
-                        setDraft((d) => `${d}${emo}`);
-                        setEmojiPopoverOpen(false);
+                        setStickerPopoverOpen(false);
+                        setSharePopoverOpen(false);
+                        setEmojiPopoverOpen((v) => !v);
                       }}
                     >
-                      {emo}
+                      <Smile size={19} strokeWidth={1.75} aria-hidden />
                     </button>
-                  ))}
-                </div>
-              ) : null}
-              {stickerPopoverOpen ? (
-                <div className="absolute bottom-full left-0 w-[300px] mb-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl rounded-2xl p-2 flex flex-col gap-1 max-h-[300px] overflow-y-auto custom-scrollbar z-50 animate-in slide-in-from-bottom-2" role="list" aria-label="Sticker thành tích">
-                  {ACHIEVEMENT_STICKERS.map((s) => (
                     <button
-                      key={s.key}
                       type="button"
-                      className="flex items-center gap-3 p-2 text-left hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-xl transition-colors"
-                      onClick={() =>
-                        sendStickerPayload(
-                          { key: s.key, emoji: s.emoji, title: s.title, subtitle: s.subtitle },
-                          'sticker'
-                        )
-                      }
+                      className="chat-composer-btn"
+                      title="Gửi ảnh"
+                      disabled={needsJoin}
+                      onClick={() => {
+                        setEmojiPopoverOpen(false);
+                        setStickerPopoverOpen(false);
+                        setSharePopoverOpen(false);
+                        imageInputRef.current?.click();
+                      }}
                     >
-                      <span className="flex items-center justify-center w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-900 text-xl" aria-hidden>
-                        {s.emoji}
-                      </span>
-                      <span className="flex flex-col min-w-0">
-                        <strong className="text-sm font-bold text-slate-800 dark:text-slate-200 truncate">{s.title}</strong>
-                        <small className="text-xs text-slate-500 dark:text-slate-400 truncate">{s.subtitle}</small>
-                      </span>
+                      <ImagePlus size={19} strokeWidth={1.75} aria-hidden />
                     </button>
-                  ))}
+                    <button
+                      type="button"
+                      className="chat-composer-btn"
+                      title="Đính kèm file"
+                      disabled={needsJoin}
+                      onClick={() => {
+                        setEmojiPopoverOpen(false);
+                        setStickerPopoverOpen(false);
+                        setSharePopoverOpen(false);
+                        fileInputRef.current?.click();
+                      }}
+                    >
+                      <Paperclip size={19} strokeWidth={1.75} aria-hidden />
+                    </button>
+                    <button
+                      type="button"
+                      className="chat-composer-btn"
+                      title="Gắn @username"
+                      disabled={needsJoin}
+                      onClick={() => {
+                        setEmojiPopoverOpen(false);
+                        setStickerPopoverOpen(false);
+                        setSharePopoverOpen(false);
+                        openMentionPicker();
+                      }}
+                    >
+                      <AtSign size={18} strokeWidth={1.75} aria-hidden />
+                    </button>
+                    <button
+                      type="button"
+                      className={`chat-composer-btn${stickerPopoverOpen ? ' chat-composer-btn--active' : ''}`}
+                      title="Sticker thành tích"
+                      disabled={needsJoin}
+                      onClick={() => {
+                        setEmojiPopoverOpen(false);
+                        setSharePopoverOpen(false);
+                        setStickerPopoverOpen((v) => !v);
+                      }}
+                    >
+                      <Sparkles size={18} strokeWidth={1.75} aria-hidden />
+                    </button>
+                    <button
+                      type="button"
+                      className={`chat-composer-btn${sharePopoverOpen ? ' chat-composer-btn--active' : ''}`}
+                      title="Chia sẻ bài học / thành tích"
+                      disabled={needsJoin}
+                      onClick={() => {
+                        setEmojiPopoverOpen(false);
+                        setStickerPopoverOpen(false);
+                        setSharePopoverOpen((v) => !v);
+                      }}
+                    >
+                      <Share2 size={18} strokeWidth={1.75} aria-hidden />
+                    </button>
+                  </div>
+                  {emojiPopoverOpen ? (
+                    <div className="chat-composer-popover chat-composer-popover--emoji" role="group" aria-label="Emoji nhanh">
+                      {COMPOSER_QUICK_EMOJI.map((emo) => (
+                        <button
+                          key={emo}
+                          type="button"
+                          className="chat-composer-emoji-btn"
+                          onClick={() => {
+                            setDraft((d) => `${d}${emo}`);
+                            setEmojiPopoverOpen(false);
+                          }}
+                        >
+                          {emo}
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+                  {stickerPopoverOpen ? (
+                    <div className="chat-composer-popover chat-composer-popover--stickers" role="list" aria-label="Sticker thành tích">
+                      {ACHIEVEMENT_STICKERS.map((s) => (
+                        <button
+                          key={s.key}
+                          type="button"
+                          className="flex items-center gap-3 p-2 text-left hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-xl transition-colors w-full"
+                          onClick={() =>
+                            sendStickerPayload(
+                              { key: s.key, emoji: s.emoji, title: s.title, subtitle: s.subtitle },
+                              'sticker'
+                            )
+                          }
+                        >
+                          <span className="flex items-center justify-center w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-900 text-xl shrink-0" aria-hidden>
+                            {s.emoji}
+                          </span>
+                          <span className="flex flex-col min-w-0">
+                            <strong className="text-sm font-bold text-slate-800 dark:text-slate-200 truncate">{s.title}</strong>
+                            <small className="text-xs text-slate-500 dark:text-slate-400 truncate">{s.subtitle}</small>
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+                  {sharePopoverOpen ? (
+                    <div className="chat-composer-popover chat-composer-popover--share" role="group" aria-label="Chia sẻ nhanh">
+                      <button
+                        type="button"
+                        className="flex items-center gap-3 w-full text-left p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+                        onClick={() =>
+                          sendStickerPayload(
+                            {
+                              emoji: '📚',
+                              title: 'Bài học: Hiragana cơ bản',
+                              courseName: 'JLPT N5 — Bài 1',
+                              lessonUrl: `${window.location.origin}/learn`,
+                            },
+                            'lesson_share'
+                          )
+                        }
+                      >
+                        <span className="text-xl" aria-hidden>📚</span>
+                        <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Chia sẻ bài học (mẫu)</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="flex items-center gap-3 w-full text-left p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+                        onClick={() =>
+                          sendStickerPayload(
+                            {
+                              emoji: '🏅',
+                              title: 'Thành tích mới',
+                              subtitle: 'Hoàn thành bài kiểm tra tuần',
+                              points: 120,
+                            },
+                            'achievement_share'
+                          )
+                        }
+                      >
+                        <span className="text-xl" aria-hidden>🏅</span>
+                        <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Chia sẻ thành tích (mẫu)</span>
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
-              ) : null}
-              {sharePopoverOpen ? (
-                <div className="absolute bottom-full left-0 mb-2 w-[280px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl rounded-2xl p-2 flex flex-col gap-1 z-50 animate-in slide-in-from-bottom-2" role="group" aria-label="Chia sẻ nhanh">
-                  <button
-                    type="button"
-                    className="flex items-center gap-3 w-full text-left p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
-                    onClick={() =>
-                      sendStickerPayload(
-                        {
-                          emoji: '📚',
-                          title: 'Bài học: Hiragana cơ bản',
-                          courseName: 'JLPT N5 — Bài 1',
-                          lessonUrl: `${window.location.origin}/learn`,
-                        },
-                        'lesson_share'
-                      )
-                    }
-                  >
-                    <span className="text-xl" aria-hidden>📚</span> <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Chia sẻ bài học (mẫu)</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="flex items-center gap-3 w-full text-left p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
-                    onClick={() =>
-                      sendStickerPayload(
-                        {
-                          emoji: '🏅',
-                          title: 'Thành tích mới',
-                          subtitle: 'Hoàn thành bài kiểm tra tuần',
-                          points: 120,
-                        },
-                        'achievement_share'
-                      )
-                    }
-                  >
-                    <span className="text-xl" aria-hidden>🏅</span> <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Chia sẻ thành tích (mẫu)</span>
-                  </button>
-                </div>
-              ) : null}
-              <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800/80 rounded-[24px] pl-4 pr-1 py-1 border border-transparent focus-within:border-indigo-500 dark:focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-500/20 transition-all relative">
-                <div className="flex-1 relative min-w-0">
+                <div className="chat-composer-divider" aria-hidden />
+                <div className="chat-composer-input-wrap">
                   <input
                     type="text"
-                    className="w-full bg-transparent border-none outline-none text-[0.95rem] text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 py-2.5"
+                    className="chat-composer-input"
                     placeholder={needsJoin ? 'Tham gia phòng để nhắn tin…' : 'Nhập tin nhắn… (@để gắn thẻ)'}
                     value={draft}
                     onChange={onDraftChange}
@@ -1879,7 +1771,7 @@ export default function ChatRoomPage() {
                     autoComplete="off"
                   />
                   {mentionOpen && !needsJoin && mentionCandidates.length > 0 ? (
-                    <ul className="absolute bottom-full left-0 mb-3 w-[260px] max-h-[220px] overflow-y-auto custom-scrollbar bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl rounded-xl py-1 z-50 animate-in slide-in-from-bottom-2" role="listbox" aria-label="Gợi ý thành viên">
+                    <ul className="chat-composer-mention-list" role="listbox" aria-label="Gợi ý thành viên">
                       {mentionCandidates.map((mem) => {
                         const un = mem.username ?? mem.Username ?? '';
                         const dn = mem.displayName ?? mem.DisplayName ?? '';
@@ -1887,12 +1779,12 @@ export default function ChatRoomPage() {
                           <li key={String(mem.userId ?? mem.UserId ?? un)}>
                             <button
                               type="button"
-                              className="w-full flex items-center justify-between px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 text-left transition-colors"
+                              className="chat-composer-mention-item"
                               role="option"
                               onClick={() => pickMention(un)}
                             >
-                              <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400">@{un}</span>
-                              {dn ? <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 ml-2 truncate">{dn}</span> : null}
+                              <span className="chat-composer-mention-user">@{un}</span>
+                              {dn ? <span className="chat-composer-mention-name">{dn}</span> : null}
                             </button>
                           </li>
                         );
@@ -1900,11 +1792,13 @@ export default function ChatRoomPage() {
                     </ul>
                   ) : null}
                 </div>
-                <button type="submit" className="shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-colors disabled:opacity-50 disabled:bg-slate-300 dark:disabled:bg-slate-700" aria-label="Gửi" disabled={needsJoin || (!draft.trim() && !pendingMedia)}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-0.5">
-                    <path d="M22 2L11 13" />
-                    <path d="M22 2l-7 20-4-9-9-4 20-7z" />
-                  </svg>
+                <button
+                  type="submit"
+                  className="chat-composer-send"
+                  aria-label="Gửi"
+                  disabled={needsJoin || (!draft.trim() && !pendingMedia)}
+                >
+                  <Send size={17} strokeWidth={2.25} aria-hidden />
                 </button>
               </div>
             </form>
