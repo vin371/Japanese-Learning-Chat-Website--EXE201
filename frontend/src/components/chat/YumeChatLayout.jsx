@@ -28,6 +28,14 @@ import { ChatShellProvider } from '../../context/ChatShellProvider';
 import { useChatShell } from '../../hooks/useChatShell';
 import { MessageSquare, Search } from 'lucide-react';
 import yumeLogo from '../../assets/yume-logo.png';
+import { ENV } from '../../api/client';
+
+function buildImageUrl(path) {
+  if (!path) return '';
+  if (/^https?:\/\//i.test(path)) return path;
+  const origin = ENV.API_URL || '';
+  return `${origin}${path}`;
+}
 
 
 /** Alias để ESLint nhận diện biến dùng qua JSX (giống SakuraRainLayer). */
@@ -482,6 +490,7 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
         createdBy: r.createdBy ?? r.CreatedBy,
         unreadCount,
         lastAtMs,
+        avatarUrl: peer?.avatarUrl ?? peer?.AvatarUrl,
       };
     });
     return fromApi.sort((a, b) => b.lastAtMs - a.lastAtMs);
@@ -533,6 +542,7 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
           online,
           timeLabel: online ? 'online' : formatRelativeShort(lastSeen),
           snippet: online ? 'Đang hoạt động' : 'Offline',
+          avatarUrl: f?.avatarUrl ?? f?.AvatarUrl,
         };
       })
       .filter(Boolean);
@@ -603,7 +613,7 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
     cacheShortcutRoomId(kind, roomId);
     if (kind === 'general') cacheGeneralRoomId(roomId);
     void prefetchChatRoom(roomId);
-    void chatService.joinRoom(roomId).catch(() => {});
+    void chatService.joinRoom(roomId).catch(() => { });
     void loadRooms({ silent: true });
   }
 
@@ -959,7 +969,15 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
           <div className="relative flex shrink-0" aria-hidden>
             {g.isDirect ? (
               <>
-                <span className="flex items-center justify-center w-[44px] h-[44px] rounded-full bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-100 font-bold">{g.initials[0]}</span>
+                {g.avatarUrl ? (
+                  <img
+                    src={buildImageUrl(g.avatarUrl)}
+                    alt=""
+                    className="w-[44px] h-[44px] rounded-full object-cover"
+                  />
+                ) : (
+                  <span className="flex items-center justify-center w-[44px] h-[44px] rounded-full bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-100 font-bold">{g.initials[0]}</span>
+                )}
                 {g.isOnline ? <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-green-500 border-[2.5px] border-white dark:border-slate-900 z-10" title="Đang hoạt động" /> : null}
               </>
             ) : (
@@ -1089,11 +1107,10 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
                           const row = shortcutRooms[kind];
                           const roomId = resolveShortcutRoomId(kind, row);
                           const active = primaryItemActive(row ?? (roomId ? { id: roomId } : null));
-                          const itemClass = `w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors font-semibold text-sm no-underline ${
-                            active
+                          const itemClass = `w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors font-semibold text-sm no-underline ${active
                               ? 'bg-gradient-to-r from-[#c41e4a] to-[#7f1430] text-white shadow-md shadow-rose-900/20'
                               : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/50'
-                          }`;
+                            }`;
                           const inner = (
                             <>
                               {ui.badge ? (
@@ -1260,9 +1277,17 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
                                     >
                                       {isDirectActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r bg-[#dc143c] dark:bg-[#ff4d6d]" aria-hidden="true" />}
                                       <div className="relative flex shrink-0" aria-hidden>
-                                        <span className="flex items-center justify-center w-[44px] h-[44px] rounded-full bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-100 font-bold">
-                                          {(f.name || f.username || 'B')[0].toUpperCase()}
-                                        </span>
+                                        {f.avatarUrl ? (
+                                          <img
+                                            src={buildImageUrl(f.avatarUrl)}
+                                            alt=""
+                                            className="w-[44px] h-[44px] rounded-full object-cover"
+                                          />
+                                        ) : (
+                                          <span className="flex items-center justify-center w-[44px] h-[44px] rounded-full bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-100 font-bold">
+                                            {(f.name || f.username || 'B')[0].toUpperCase()}
+                                          </span>
+                                        )}
                                         {f.online && <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-green-500 border-[2.5px] border-white dark:border-slate-900 z-10" title="Đang hoạt động" />}
                                       </div>
                                       <div className="flex-1 flex flex-col min-w-0 gap-1">
