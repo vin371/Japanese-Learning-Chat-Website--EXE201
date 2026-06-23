@@ -112,6 +112,7 @@ function normalizeMessageShape(m) {
     isPinned: Boolean(m.isPinned ?? m.IsPinned),
     senderDisplayName: m.senderDisplayName ?? m.SenderDisplayName,
     senderUsername: m.senderUsername ?? m.SenderUsername,
+    senderAvatarUrl: m.senderAvatarUrl ?? m.SenderAvatarUrl,
     reactions: Array.isArray(rx) ? rx : [],
   };
 }
@@ -703,53 +704,58 @@ export default function ChatRoomPage() {
     if (!roomId || needsJoin || loading) return undefined;
 
     let cancelled = false;
-    let disconnect = () => Promise.resolve();
+    let stopFn = null;
     const deferId = window.setTimeout(() => {
       void (async () => {
         try {
           const stop = await startChatRoomConnection(roomId, {
             onReceiveMessage: (msg) => {
-            if (cancelled || !msg) return;
-            const normalized = normalizeMessageShape(msg);
-            const newId = normalized.id ?? normalized.Id;
-            setMessages((prev) => {
-              if (newId == null) return prev;
-              if (prev.some((m) => String(m.id ?? m.Id) === String(newId))) return prev;
-              const next = dedupeMessagesById([...prev, normalized]);
-              if (stickToBottomRef.current) {
-                requestAnimationFrame(() => scrollFeedToEnd(feedRef.current, { smooth: true }));
+              if (cancelled || !msg) return;
+              const normalized = normalizeMessageShape(msg);
+              const newId = normalized.id ?? normalized.Id;
+              setMessages((prev) => {
+                if (newId == null) return prev;
+                if (prev.some((m) => String(m.id ?? m.Id) === String(newId))) return prev;
+                const next = dedupeMessagesById([...prev, normalized]);
+                if (stickToBottomRef.current) {
+                  requestAnimationFrame(() => scrollFeedToEnd(feedRef.current, { smooth: true }));
+                }
+                return next;
+              });
+              if (newId != null) {
+                void chatService
+                  .markRoomRead(roomId, newId)
+                  .then(() => {
+                    bumpInboxRevision?.();
+                    notifyChatInboxRevised();
+                  })
+                  .catch(() => { });
               }
-              return next;
-            });
-            if (newId != null) {
-              void chatService
-                .markRoomRead(roomId, newId)
-                .then(() => {
-                  bumpInboxRevision?.();
-                  notifyChatInboxRevised();
-                })
-                .catch(() => { });
-            }
-          },
-          onMessageUpdated: (msg) => {
-            if (cancelled || !msg) return;
-            const normalized = normalizeMessageShape(msg);
-            const id = normalized.id ?? normalized.Id;
-            if (id == null) return;
-            setMessages((prev) =>
-              dedupeMessagesById(
-                prev.map((m) => (String(m.id ?? m.Id) === String(id) ? normalizeMessageShape({ ...m, ...normalized }) : m))
-              )
-            );
-          },
-          onMessageDeleted: (payload) => {
-            if (cancelled) return;
-            const mid = payload?.messageId ?? payload?.MessageId;
-            if (mid == null) return;
-            setMessages((prev) => prev.filter((m) => String(m.id ?? m.Id) !== String(mid)));
-          },
-        });
-        disconnect = stop;
+            },
+            onMessageUpdated: (msg) => {
+              if (cancelled || !msg) return;
+              const normalized = normalizeMessageShape(msg);
+              const id = normalized.id ?? normalized.Id;
+              if (id == null) return;
+              setMessages((prev) =>
+                dedupeMessagesById(
+                  prev.map((m) => (String(m.id ?? m.Id) === String(id) ? normalizeMessageShape({ ...m, ...normalized }) : m))
+                )
+              );
+            },
+            onMessageDeleted: (payload) => {
+              if (cancelled) return;
+              const mid = payload?.messageId ?? payload?.MessageId;
+              if (mid == null) return;
+              setMessages((prev) => prev.filter((m) => String(m.id ?? m.Id) !== String(mid)));
+            },
+          });
+
+          if (cancelled) {
+            void stop();
+          } else {
+            stopFn = stop;
+          }
         } catch {
           /* SignalR tùy chọn — gửi/nhận qua REST vẫn hoạt động */
         }
@@ -759,7 +765,9 @@ export default function ChatRoomPage() {
     return () => {
       cancelled = true;
       window.clearTimeout(deferId);
-      void disconnect();
+      if (stopFn) {
+        void stopFn();
+      }
     };
   }, [roomId, needsJoin, loading, bumpInboxRevision]);
 

@@ -57,7 +57,22 @@ export function AuthProvider({ children }) {
 
   const login = useCallback(async (credentials) => {
     const data = await authService.login(credentials);
-    const raw = data.user || authService.getStoredUser();
+    let raw = data.user || authService.getStoredUser();
+    try {
+      const profile = await authService.getMyProfile();
+      if (profile) {
+        raw = {
+          ...raw,
+          avatarUrl: profile.avatarUrl || raw.avatarUrl,
+          displayName: profile.displayName || raw.displayName,
+          coverUrl: profile.coverUrl || raw.coverUrl,
+          theme: profile.theme || raw.theme,
+        };
+        authService.setStoredUser(raw);
+      }
+    } catch (err) {
+      console.error('Không lấy được thông tin profile khi login:', err);
+    }
     setUser(raw ? authService.mergeUserWithRoleFromToken(raw) : null);
     if (typeof data?.needsPlacementTest === 'boolean') {
       setNeedsPlacementTest(!!data.needsPlacementTest);
@@ -67,7 +82,22 @@ export function AuthProvider({ children }) {
 
   const loginWithGoogle = useCallback(async (payload) => {
     const data = await authService.loginWithGoogle(payload);
-    const raw = data.user || authService.getStoredUser();
+    let raw = data.user || authService.getStoredUser();
+    try {
+      const profile = await authService.getMyProfile();
+      if (profile) {
+        raw = {
+          ...raw,
+          avatarUrl: profile.avatarUrl || raw.avatarUrl,
+          displayName: profile.displayName || raw.displayName,
+          coverUrl: profile.coverUrl || raw.coverUrl,
+          theme: profile.theme || raw.theme,
+        };
+        authService.setStoredUser(raw);
+      }
+    } catch (err) {
+      console.error('Không lấy được thông tin profile khi login với Google:', err);
+    }
     setUser(raw ? authService.mergeUserWithRoleFromToken(raw) : null);
     if (typeof data?.needsPlacementTest === 'boolean') {
       setNeedsPlacementTest(!!data.needsPlacementTest);

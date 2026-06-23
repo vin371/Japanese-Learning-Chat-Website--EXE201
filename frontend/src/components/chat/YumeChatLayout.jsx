@@ -259,15 +259,16 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
 
   const myId = useCurrentUserId(user);
 
-  const loadRooms = useCallback(async () => {
-    setRoomsLoading(true);
+  const loadRooms = useCallback(async (opts = {}) => {
+    const silent = opts.silent === true;
+    if (!silent) setRoomsLoading(true);
     try {
       const my = await fetchMyRoomsCached(chatService, { limit: 25 });
       setRooms(safeArray(my));
     } catch {
-      setRooms([]);
+      if (!silent) setRooms([]);
     } finally {
-      setRoomsLoading(false);
+      if (!silent) setRoomsLoading(false);
     }
   }, []);
 
@@ -333,8 +334,10 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
 
   useEffect(() => {
     void loadJoinablePublicRooms();
+    void loadFriends({ silent: true });
     const run = () => {
-      void loadRooms();
+      const hasCache = getCachedMyRoomsSnapshot().length > 0;
+      void loadRooms({ silent: hasCache });
     };
     if (typeof requestIdleCallback !== 'undefined') {
       const id = requestIdleCallback(run, { timeout: 1500 });
@@ -342,7 +345,7 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
     }
     const t = window.setTimeout(run, 300);
     return () => window.clearTimeout(t);
-  }, [loadRooms, loadJoinablePublicRooms]);
+  }, [loadRooms, loadJoinablePublicRooms, loadFriends]);
 
   useEffect(() => {
     if (!inboxRevision) return;
@@ -404,7 +407,7 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
       .then(() => {
         bumpInboxRevision?.();
         notifyChatInboxRevised();
-        return loadRooms();
+        return loadRooms({ silent: true });
       })
       .catch(() => { });
 
@@ -601,7 +604,7 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
     if (kind === 'general') cacheGeneralRoomId(roomId);
     void prefetchChatRoom(roomId);
     void chatService.joinRoom(roomId).catch(() => {});
-    void loadRooms();
+    void loadRooms({ silent: true });
   }
 
   const goShortcutKind = useCallback(
