@@ -6,6 +6,7 @@ import { OnboardingLayout, OnboardingProgressBar } from './components/Onboarding
 import { SurveyQuestionCard } from './components/SurveyQuestionCard';
 import { SURVEY_QUESTIONS, saveSurveyAnswers } from '../../utils/onboardingFlow';
 import yumeLogo from '../../assets/yume-logo.png';
+import { Vi } from '../../components/ui/Vi';
 
 export default function OnboardingSurveyPage() {
   const navigate = useNavigate();
@@ -41,7 +42,7 @@ export default function OnboardingSurveyPage() {
       <div className="onboarding-card">
         {step === 0 ? (
           <>
-            <h1 className="onboarding-title">Chào mừng bạn đến với YumeGo-ji</h1>
+            <h1 className="onboarding-title"><Vi>Chào mừng bạn đến với YumeGo-ji</Vi></h1>
             <p className="onboarding-lead">
               YumeGo-ji là hệ thống học tiếng Nhật dành cho người học JLPT N5–N3. Bạn sẽ học qua Từ vựng, Ngữ pháp,
               Kanji và các bài luyện tập ngắn mỗi ngày.
@@ -64,12 +65,12 @@ export default function OnboardingSurveyPage() {
 
         <div className="onboarding-actions">
           <button type="button" className="onboarding-btn onboarding-btn--primary" disabled={!currentValue} onClick={handleNext}>
-            {step < totalSteps - 1 ? 'Tiếp tục' : 'Hoàn thành khảo sát'}
+            {step < totalSteps - 1 ? <Vi>Tiếp tục</Vi> : <Vi>Hoàn thành khảo sát</Vi>}
             <ChevronRight size={18} />
           </button>
           {step > 0 ? (
             <button type="button" className="onboarding-btn onboarding-btn--ghost" onClick={handleBack}>
-              Quay lại
+              <Vi>Quay lại</Vi>
             </button>
           ) : null}
         </div>

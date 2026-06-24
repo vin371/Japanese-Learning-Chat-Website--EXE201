@@ -7,6 +7,7 @@ import { AnimatedThemeToggler } from '../ui/animated-theme-toggler';
 import UserProfileDropdown from '../ui/user-profile-dropdown';
 import { userIsPremium } from '../utils/userPremium';
 import { ENV } from '../api/client';
+import { Vi } from '../components/ui/Vi';
 
 const MARKETING_PATHS = [ROUTES.HOME, ROUTES.LOGIN, ROUTES.REGISTER];
 
@@ -50,18 +51,18 @@ export function Header() {
         </Link>
 
         <nav className="layout-header__nav-center" aria-label="Điều hướng chính">
-          <Link to={ROUTES.HOME}>Trang chủ</Link>
+          <Link to={ROUTES.HOME}><Vi>Trang chủ</Vi></Link>
           {isAuthenticated ? (
-            <Link to={ROUTES.LEARN}>Khóa học</Link>
+            <Link to={ROUTES.LEARN}><Vi>Khóa học</Vi></Link>
           ) : (
-            <Link to={`${ROUTES.HOME}#method`}>Khóa học</Link>
+            <Link to={`${ROUTES.HOME}#method`}><Vi>Khóa học</Vi></Link>
           )}
           {isAuthenticated ? (
-            <Link to={ROUTES.CHAT}>Trò chuyện</Link>
+            <Link to={ROUTES.CHAT}><Vi>Trò chuyện</Vi></Link>
           ) : (
             <>
-              <Link to={`${ROUTES.HOME}#why`}>Giới thiệu</Link>
-              <Link to={`${ROUTES.HOME}#lien-he`}>Liên hệ</Link>
+              <Link to={`${ROUTES.HOME}#why`}><Vi>Giới thiệu</Vi></Link>
+              <Link to={`${ROUTES.HOME}#lien-he`}><Vi>Liên hệ</Vi></Link>
             </>
           )}
         </nav>
@@ -90,10 +91,10 @@ export function Header() {
           ) : (
             <>
               <Link to={ROUTES.LOGIN} className="layout-header__link-muted">
-                Đăng nhập
+                <Vi>Đăng nhập</Vi>
               </Link>
               <Link to={ROUTES.REGISTER} className="btn btn--primary btn--sm layout-header__cta-register">
-                Đăng ký
+                <Vi>Đăng ký</Vi>
               </Link>
             </>
           )}
@@ -110,10 +111,10 @@ export function Header() {
       </Link>
       <nav className="layout-header__nav">
 
-        <Link to={ROUTES.HOME}>Trang chủ</Link>
+        <Link to={ROUTES.HOME}><Vi>Trang chủ</Vi></Link>
         {isAuthenticated ? (
           <>
-            <Link to={ROUTES.CHAT}>Trò chuyện</Link>
+            <Link to={ROUTES.CHAT}><Vi>Trò chuyện</Vi></Link>
             <AnimatedThemeToggler
               className="layout-header__theme"
               iconClassName="layout-header__theme-icon"
@@ -134,9 +135,9 @@ export function Header() {
           </>
         ) : (
           <>
-            <Link to={ROUTES.LOGIN}>Đăng nhập</Link>
+            <Link to={ROUTES.LOGIN}><Vi>Đăng nhập</Vi></Link>
             <Link to={ROUTES.REGISTER} className="btn btn--inverted btn--sm">
-              Đăng ký
+              <Vi>Đăng ký</Vi>
             </Link>
           </>
         )}

@@ -12,7 +12,8 @@ import { MessageCircleMore, ShoppingCart, BookOpenText, Gamepad2 } from 'lucide-
 import yumeLogo from '../assets/yume-logo.png';
 import { AnimatedThemeToggler } from '../ui/animated-theme-toggler';
 import UserProfileDropdown from '../ui/user-profile-dropdown';
-import { Tooltip } from '../components/system/Tooltip';
+import { ViJaHoverText } from '../components/learn/ViJaHoverText';
+import { Vi } from '../components/ui/Vi';
 
 function initialsFromUser(user, displayName) {
   const n = String(displayName || '').trim();
@@ -115,10 +116,10 @@ export function LearnerTopNav() {
                     className={({ isActive }) => `inline-flex items-center gap-1.5 px-2.5 md:px-4 py-2 rounded-xl no-underline font-semibold text-[0.92rem] border transition-all whitespace-nowrap ${isActive
                       ? 'bg-rose-500/15 text-red-900 border-rose-500/30 dark:bg-purple-500/20 dark:text-yellow-100 dark:border-purple-400/40'
                       : 'text-slate-700 dark:text-slate-200 border-transparent hover:bg-rose-500/10 hover:text-red-700 dark:hover:text-amber-100 dark:hover:bg-orange-500/20'
-                      }`}
-                  >
-                    {isAdminUser ? 'Bảng điều khiển' : 'Điều hành'}
-                  </NavLink>
+                  }`}
+                >
+                  {isAdminUser ? <Vi>Bảng điều khiển</Vi> : <Vi>Điều hành</Vi>}
+                </NavLink>
                 ) : null}
                 <NavLink
                   to={chatNavPath}
@@ -139,7 +140,7 @@ export function LearnerTopNav() {
                       </span>
                     ) : null}
                   </span>
-                  Trò chuyện
+                  <ViJaHoverText ja="チャット">Trò chuyện</ViJaHoverText>
                 </NavLink>
               </>
             ) : (
@@ -149,14 +150,14 @@ export function LearnerTopNav() {
                   : 'text-slate-700 dark:text-slate-200 border-transparent hover:bg-rose-500/10 hover:text-red-700 dark:hover:text-amber-100 dark:hover:bg-orange-500/20'
                   }`}>
                   <BookOpenText size={20} />
-                  Học tập
+                  <ViJaHoverText ja="学習">Học tập</ViJaHoverText>
                 </NavLink>
                 <NavLink to={ROUTES.PLAY} className={({ isActive }) => `inline-flex items-center gap-1.5 px-2.5 md:px-4 py-2 rounded-xl no-underline font-semibold text-[0.92rem] border transition-all whitespace-nowrap ${isActive
                   ? 'bg-rose-500/15 text-red-900 border-rose-500/30 dark:bg-purple-500/20 dark:text-yellow-100 dark:border-purple-400/40'
                   : 'text-slate-700 dark:text-slate-200 border-transparent hover:bg-rose-500/10 hover:text-red-700 dark:hover:text-amber-100 dark:hover:bg-orange-500/20'
                   }`}>
                   <Gamepad2 size={20} />
-                  Trò chơi
+                  <ViJaHoverText ja="ゲーム">Trò chơi</ViJaHoverText>
                 </NavLink>
                 <NavLink
                   to={chatNavPath}
@@ -177,7 +178,7 @@ export function LearnerTopNav() {
                       </span>
                     ) : null}
                   </span>
-                  Trò chuyện
+                  <ViJaHoverText ja="チャット">Trò chuyện</ViJaHoverText>
                 </NavLink>
                 <NavLink
                   to={ROUTES.UPGRADE}
@@ -187,7 +188,7 @@ export function LearnerTopNav() {
                     }`}
                 >
                   <ShoppingCart size={20} />
-                  Nâng cấp
+                  <ViJaHoverText ja="アップグレード">Nâng cấp</ViJaHoverText>
                 </NavLink>
               </>
             )}

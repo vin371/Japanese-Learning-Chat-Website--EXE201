@@ -1,0 +1,80 @@
+/* Hover VI→JP: chồng 2 lớp chữ, không đổi kích thước → không lag/flicker */
+.vi-ja-hover {
+  display: inline-grid;
+  vertical-align: baseline;
+  align-items: center;
+  justify-items: start;
+  max-width: 100%;
+  cursor: help;
+  line-height: inherit;
+  font: inherit;
+  text-decoration: inherit;
+  border-bottom: 1px dashed color-mix(in srgb, #b72025 35%, transparent);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.vi-ja-hover__vi,
+.vi-ja-hover__jp {
+  grid-area: 1 / 1;
+  align-self: center;
+  justify-self: start;
+  white-space: inherit;
+  pointer-events: none;
+  transition: none;
+}
+
+.vi-ja-hover__jp {
+  opacity: 0;
+  visibility: hidden;
+  font-weight: inherit;
+  letter-spacing: 0.02em;
+  color: #b72025;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .vi-ja-hover:hover .vi-ja-hover__vi,
+  .vi-ja-hover:focus-visible .vi-ja-hover__vi {
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  .vi-ja-hover:hover .vi-ja-hover__jp,
+  .vi-ja-hover:focus-visible .vi-ja-hover__jp {
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
+.dark .vi-ja-hover__jp,
+[data-theme='dark'] .vi-ja-hover__jp {
+  color: #f4a5a8;
+}
+
+.learn-shell-cats__btn .vi-ja-hover,
+.learn-nav__tab .vi-ja-hover,
+.learn-visual-chip.vi-ja-hover,
+.learner-top-nav .vi-ja-hover,
+.layout-header .vi-ja-hover,
+.layout-footer .vi-ja-hover,
+.btn .vi-ja-hover {
+  border-bottom: none;
+}
+
+.learn-visual-chip.vi-ja-hover:hover,
+.learn-visual-chip.vi-ja-hover:focus-visible {
+  color: #fff;
+  background: #b72025;
+  border-color: #b72025;
+}
+
+.learn-visual-chip.vi-ja-hover:hover .vi-ja-hover__jp,
+.learn-visual-chip.vi-ja-hover:focus-visible .vi-ja-hover__jp {
+  color: #fff;
+}
+
+/* Tránh xung đột hover với card motion — giữ vùng hit ổn định */
+.yume-hub-shortcut .vi-ja-hover,
+.learn-track-card .vi-ja-hover,
+.learn-shell-cats__btn .vi-ja-hover {
+  contain: layout style;
+}

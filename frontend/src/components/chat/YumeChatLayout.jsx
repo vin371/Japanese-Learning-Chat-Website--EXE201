@@ -10,6 +10,7 @@ import { socialService } from '../../services/socialService';
 import { fetchMyRoomsCached, getCachedMyRoomsSnapshot, invalidateMyRoomsCache, upsertRoomInInboxCache } from '../../utils/chatInboxCache';
 import { resolveDirectRoom, getCachedDirectRoomId } from '../../utils/directRoomCache';
 import { prefetchChatRoom } from '../../utils/chatRoomPrefetch';
+import { Vi } from '../ui/Vi';
 import {
   allowedShortcutKinds,
   cacheGeneralRoomId,
@@ -1157,7 +1158,7 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
                     </div>
                   </div>
 
-                  <h2 className="font-sans font-bold text-[1.25rem] tracking-[0.05em] uppercase mt-2 mb-4 text-slate-800 dark:text-slate-200">Tin nhắn</h2>
+                  <h2 className="font-sans font-bold text-[1.25rem] tracking-[0.05em] uppercase mt-2 mb-4 text-slate-800 dark:text-slate-200"><Vi>Tin nhắn</Vi></h2>
                   {sidebarNotice ? (
                     <div className="p-3 mb-4 text-sm font-semibold text-rose-800 bg-rose-50 rounded-xl dark:bg-rose-900/20 dark:text-rose-200" role="status">
                       {sidebarNotice}
@@ -1186,7 +1187,7 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
                       className={`px-4 py-1.5 rounded-full text-[0.8rem] font-bold tracking-wide transition-colors border ${inboxTab === 'all' ? 'bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-900 border-transparent' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
                       onClick={() => setInboxTab('all')}
                     >
-                      Tất cả
+                      <Vi>Tất cả</Vi>
                     </button>
                     <button
                       type="button"
@@ -1195,7 +1196,7 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
                       className={`px-4 py-1.5 rounded-full text-[0.8rem] font-bold tracking-wide transition-colors border ${inboxTab === 'unread' ? 'bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-900 border-transparent' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
                       onClick={() => setInboxTab('unread')}
                     >
-                      Chưa đọc
+                      <Vi>Chưa đọc</Vi>
                     </button>
                   </div>
                   <div ref={sidebarListRef} className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar">
@@ -1417,7 +1418,7 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
                 disabled={groupSaving}
               >
                 <IconUserPlus className="moji-chat__inline-ico" />
-                {groupSaving ? 'Đang tạo…' : 'Tạo nhóm'}
+                {groupSaving ? <Vi ja="作成中…">Đang tạo…</Vi> : <Vi>Tạo nhóm</Vi>}
               </button>
             </form>
           </div>
@@ -1501,7 +1502,7 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
                             disabled={busy}
                             onClick={() => acceptRequest(rid, req)}
                           >
-                            {busy ? '…' : 'Chấp nhận'}
+                            {busy ? '…' : <Vi>Chấp nhận</Vi>}
                           </button>
                           <button
                             type="button"
@@ -1509,7 +1510,7 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
                             disabled={busy}
                             onClick={() => rejectRequest(rid)}
                           >
-                            Từ chối
+                            <Vi>Từ chối</Vi>
                           </button>
                         </div>
                       </li>
@@ -1580,7 +1581,7 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
           >
             <div className="moji-chat__modal-head">
               <h2 id="moji-friend-title" className="moji-chat__modal-title">
-                Kết Bạn
+                <Vi>Kết Bạn</Vi>
               </h2>
               <button type="button" className="moji-chat__modal-x" aria-label="Đóng" onClick={closeFriendModal}>
                 ×
@@ -1674,7 +1675,7 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
                     onClick={() => void sendRequestToUser(friendPick.id)}
                   >
                     <IconUserPlus className="moji-chat__inline-ico" />
-                    {friendBusyId === friendPick.id ? '…' : 'Kết Bạn'}
+                    {friendBusyId === friendPick.id ? '…' : <Vi>Kết Bạn</Vi>}
                   </button>
                 </div>
               </>

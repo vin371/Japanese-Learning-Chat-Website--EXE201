@@ -3,6 +3,7 @@ import { ClipboardList, Clock, Sparkles, Target } from 'lucide-react';
 import { ROUTES } from '../../data/routes';
 import { OnboardingLayout } from './components/OnboardingLayout';
 import yumeLogo from '../../assets/yume-logo.png';
+import { Vi } from '../../components/ui/Vi';
 
 const FACTS = [
   { icon: ClipboardList, value: '20', label: 'câu hỏi' },
@@ -22,7 +23,7 @@ export default function TestIntroPage() {
       </div>
 
       <div className="onboarding-card onboarding-card--wide">
-        <h1 className="onboarding-title">Kiểm tra trình độ của bạn</h1>
+        <h1 className="onboarding-title"><Vi>Kiểm tra trình độ của bạn</Vi></h1>
         <p className="onboarding-lead">
           YumeGo-ji sẽ dùng bài test 20 câu để xác định trình độ phù hợp của bạn: N5, N4 hoặc N3.
         </p>
@@ -43,7 +44,7 @@ export default function TestIntroPage() {
             className="onboarding-btn onboarding-btn--primary"
             onClick={() => navigate(ROUTES.PLACEMENT_TEST, { replace: true })}
           >
-            Bắt đầu kiểm tra
+            <Vi>Bắt đầu kiểm tra</Vi>
           </button>
         </div>
       </div>

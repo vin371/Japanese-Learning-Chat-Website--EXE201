@@ -8,6 +8,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { fetchMyProgressSummary } from '../../services/learningProgressService';
 import { getPostLoginRoute } from '../../utils/postLoginRoute';
 import { isStaffUser } from '../../utils/roles';
+import { Vi } from '../../components/ui/Vi';
 
 function pick(obj, ...keys) {
   for (const k of keys) {
@@ -202,34 +203,34 @@ export default function Homepage() {
       <section className="sn-hero sn-reveal is-visible">
         <div className="sn-container sn-hero__grid">
           <div className="sn-hero__content sn-reveal is-visible">
-            <span className="sn-hero__badge">{hero.badge}</span>
+            <span className="sn-hero__badge"><Vi ja="今日から日本語をマスター">{hero.badge}</Vi></span>
             <h1 className="sn-hero__title" lang="vi">
-              {hero.title} <span className="sn-hero__accent">{hero.highlight}</span>
+              <Vi>{hero.title}</Vi> <span className="sn-hero__accent">{hero.highlight}</span>
             </h1>
             <p className="sn-hero__desc">{hero.description}</p>
             <div className="sn-hero__cta">
               {isAuthenticated ? (
                 isStaffUser(user) ? (
                   <Link to={getPostLoginRoute(user, ROUTES.HOME)} className="btn btn--primary btn--lg sn-btn--gradient">
-                    {hero.primaryCta}
+                    <Vi>{hero.primaryCta}</Vi>
                   </Link>
                 ) : (
                   <Link to={ROUTES.LEARN} className="btn btn--primary btn--lg sn-btn--gradient">
-                    {hero.primaryCta}
+                    <Vi>{hero.primaryCta}</Vi>
                   </Link>
                 )
               ) : (
                 <Link to={ROUTES.REGISTER} className="btn btn--primary btn--lg sn-btn--gradient">
-                  {hero.primaryCta}
+                  <Vi>{hero.primaryCta}</Vi>
                 </Link>
               )}
               {isAuthenticated ? (
                 <Link to={isStaffUser(user) ? ROUTES.CHAT : ROUTES.DASHBOARD} className="btn btn--outline btn--lg sn-btn--soft">
-                  {hero.secondaryCta}
+                  <Vi>{hero.secondaryCta}</Vi>
                 </Link>
               ) : (
                 <a href="#method" className="btn btn--outline btn--lg sn-btn--soft">
-                  {hero.secondaryCta}
+                  <Vi>{hero.secondaryCta}</Vi>
                 </a>
               )}
             </div>
@@ -323,15 +324,15 @@ export default function Homepage() {
 
       <section id="method" className="sn-section sn-section--method sn-reveal">
         <div className="sn-container">
-          <h2 className="sn-title">{HOMEPAGE_METHOD.title}</h2>
-          <p className="sn-subtitle">{HOMEPAGE_METHOD.subtitle}</p>
+          <h2 className="sn-title"><Vi>{HOMEPAGE_METHOD.title}</Vi></h2>
+          <p className="sn-subtitle"><Vi ja="インタラクティブとエンタメの融合で言語学習を再定義します。">{HOMEPAGE_METHOD.subtitle}</Vi></p>
           <div className="sn-grid-3">
             {HOMEPAGE_METHOD.features.map((f) => (
               <article key={f.title} className="sn-feature sn-feature--elevated sn-feature--icon-only sn-reveal">
                 <div className="sn-feature__icon" aria-hidden="true">
                   {f.icon}
                 </div>
-                <h3 className="sn-feature__title">{f.title}</h3>
+                <h3 className="sn-feature__title"><Vi>{f.title}</Vi></h3>
                 <p className="sn-feature__text">{f.description}</p>
                 <a className="sn-feature__link" href="#method">
                   {f.linkLabel} <span aria-hidden="true">→</span>

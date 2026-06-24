@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { LogOut, Star, User } from "lucide-react";
+import { Vi } from "../components/ui/Vi";
 
 interface UserProfileDropdownProps {
     displayName: string;
@@ -98,7 +99,7 @@ export default function UserProfileDropdown({
                         }}
                     >
                         <LogOut className="w-4 h-4 shrink-0" aria-hidden />
-                        Đăng xuất
+                        <Vi>Đăng xuất</Vi>
                     </button>
                 </div>
             ) : null}

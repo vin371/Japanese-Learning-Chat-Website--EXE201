@@ -28,6 +28,7 @@ import './styles/pages/onboarding.css';
 import './styles/pages/level-up-test.css';
 import './styles/pages/upgrade.css';
 import './styles/pages/learn-course.css';
+import './styles/vi-ja-hover.css';
 import './styles/pages/admin-dashboard.css';
 import './styles/pages/moderator-dashboard.css';
 

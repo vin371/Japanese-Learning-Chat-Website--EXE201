@@ -14,6 +14,7 @@ import ShimmerSkeleton from '../../components/motion/ShimmerSkeleton';
 import { learnCardHover } from '../../utils/learnMotion';
 import { getRecommendedLevel } from '../../utils/onboardingFlow';
 import { DASH_ACTION_IMAGES, LEARN_VISUAL } from '../../data/learnVisualAssets';
+import { Vi } from '../../components/ui/Vi';
 
 const Motion = motion;
 
@@ -83,8 +84,8 @@ function ShortcutCard({ to, image, title, subtitle, icon }) {
     <Link to={to} className="yume-hub-shortcut">
       <span className="yume-hub-shortcut__icon">{icon}</span>
       <span className="yume-hub-shortcut__text">
-        <strong>{title}</strong>
-        <small>{subtitle}</small>
+        <strong><Vi ja={title.startsWith('Học') ? `学習 ${title.replace('Học ', '')}` : undefined}>{title}</Vi></strong>
+        <small><Vi>{subtitle}</Vi></small>
       </span>
       <span className="yume-hub-shortcut__thumb">
         <img src={image} alt="" loading="lazy" />
@@ -281,10 +282,10 @@ export default function Dashboard() {
             <div className="yume-hub-hero__cta">
               <Link to={learnHome} className="yume-hub-btn yume-hub-btn--primary">
                 <Sparkles size={17} />
-                Học tiếp
+                <Vi>Học tiếp</Vi>
               </Link>
               <Link to={ROUTES.PLAY} className="yume-hub-btn yume-hub-btn--ghost">
-                Chơi ôn
+                <Vi>Chơi ôn</Vi>
               </Link>
             </div>
           </div>
@@ -293,11 +294,11 @@ export default function Dashboard() {
           </div>
           <dl className="yume-hub-kpis">
             <div>
-              <dt>Cấp</dt>
+              <dt><Vi>Cấp</Vi></dt>
               <dd>{levelNumber}</dd>
             </div>
             <div>
-              <dt>Chuỗi</dt>
+              <dt><Vi>Chuỗi</Vi></dt>
               <dd>{summaryLoading ? '…' : `${formatIntVi(streakDays)} ngày`}</dd>
             </div>
             <div>
@@ -305,7 +306,7 @@ export default function Dashboard() {
               <dd>{summaryLoading ? '…' : formatIntVi(exp)}</dd>
             </div>
             <div>
-              <dt>Bài xong</dt>
+              <dt><Vi>Bài xong</Vi></dt>
               <dd>{summaryLoading ? '…' : formatIntVi(completedLessons)}</dd>
             </div>
           </dl>
@@ -333,8 +334,8 @@ export default function Dashboard() {
           animate="show"
         >
           <header className="yume-hub-card__head">
-            <h2>Lộ trình JLPT</h2>
-            <Link to={learnHome}>Xem tất cả →</Link>
+            <h2><Vi>Lộ trình JLPT</Vi></h2>
+            <Link to={learnHome}><Vi ja="すべて見る →">Xem tất cả →</Vi></Link>
           </header>
             {summaryLoading ? (
               <ShimmerSkeleton lines={2} className="yume-shimmer--jlpt" />
@@ -365,12 +366,12 @@ export default function Dashboard() {
             )}
             {levelCode === 'N5' ? (
               <Link to="/level-up-test/N4" className="yume-hub-link-more">
-                Thi lên N4 →
+                <Vi ja="N4昇格試験 →">Thi lên N4 →</Vi>
               </Link>
             ) : null}
             {levelCode === 'N4' ? (
               <Link to="/level-up-test/N3" className="yume-hub-link-more">
-                Thi lên N3 →
+                <Vi ja="N3昇格試験 →">Thi lên N3 →</Vi>
               </Link>
             ) : null}
           </Motion.section>
@@ -386,20 +387,20 @@ export default function Dashboard() {
                 <img src={LEARN_VISUAL.heroAlt} alt="" loading="lazy" />
                 <div className="yume-hub-goal__overlay">
                   <span className="yume-hub-goal__badge">{dailyGoalPct}%</span>
-                  <p>Mục tiêu hôm nay</p>
+                  <p><Vi>Mục tiêu hôm nay</Vi></p>
                 </div>
               </div>
               <div className="yume-hub-goal__body">
                 <p>Còn khoảng {formatIntVi(xpToNext)} XP đến mốc hạng tiếp theo.</p>
                 <Link to={learnHome} className="yume-hub-btn yume-hub-btn--primary yume-hub-btn--block">
-                  Học ngay
+                  <Vi>Học ngay</Vi>
                 </Link>
               </div>
             </section>
 
             {!isPremium ? (
               <Link className="yume-hub-upgrade" to={ROUTES.UPGRADE}>
-                Nâng cấp Premium →
+                <Vi>Nâng cấp Premium</Vi> →
               </Link>
             ) : null}
           </Motion.aside>

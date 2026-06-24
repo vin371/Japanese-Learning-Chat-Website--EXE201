@@ -20,7 +20,8 @@ import LearnAlphabet from './components/LearnAlphabet';
 import { resolveLearnLessonThumb, resolveLearnLevelHero } from '../../utils/learnLessonThumb';
 import { hasCompletedPlacementResult } from '../../utils/onboardingFlow';
 import { LearnTrackThumb } from './components/LearnTrackThumb';
-import { Tooltip } from '../../components/system/Tooltip';
+import { ViJaHoverText } from '../../components/learn/ViJaHoverText';
+import { SECTION_JA, sectionJaLabelFor } from '../../data/learnUiJapanese';
 
 /** Ảnh minh họa banner «Kiểm tra trình độ» — luân phiên (crossfade) */
 const LEARN_PROMO_ART_CAROUSEL_URLS = [
@@ -169,6 +170,7 @@ function TrackCard({ lesson, state, to, progressPercent, levelCode }) {
         ? 'learn-track-card__btn learn-track-card__btn--locked'
         : 'learn-track-card__btn learn-track-card__btn--primary';
   const label = state === 'completed' ? 'Ôn tập' : 'Học ngay';
+  const labelJa = state === 'completed' ? '復習' : '今すぐ学ぶ';
 
   return (
     <Motion.div
@@ -184,13 +186,21 @@ function TrackCard({ lesson, state, to, progressPercent, levelCode }) {
       </div>
       <div className="learn-track-card__accent-bar" aria-hidden />
       <div className="learn-track-card__head">
-        <span className={`learn-track-card__badge ${badge.cls}`}>{badge.text}</span>
+        <span className={`learn-track-card__badge ${badge.cls}`}>
+          <ViJaHoverText ja={badge.text === 'Xong' ? '完了' : badge.text === 'Khóa' ? 'ロック' : badge.text === 'Mở' ? '開く' : '学習中'}>
+            {badge.text}
+          </ViJaHoverText>
+        </span>
         {lesson.sortOrder ? (
-          <span className="learn-track-card__lesson-no">Bài {lesson.sortOrder}</span>
+          <span className="learn-track-card__lesson-no">
+            <ViJaHoverText ja="第">Bài</ViJaHoverText> {lesson.sortOrder}
+          </span>
         ) : null}
       </div>
       <div className="learn-track-card__middle">
-        <p className="learn-track-card__cat">{sectionLabelFor(lesson.section)}</p>
+        <p className="learn-track-card__cat">
+          <ViJaHoverText ja={SECTION_JA[lesson.section]}>{sectionLabelFor(lesson.section)}</ViJaHoverText>
+        </p>
         <h4 className="learn-track-card__title">{lesson.title}</h4>
         {state === 'active' && progressPercent != null ? (
           <div className="learn-track-card__mini-prog" aria-hidden>
@@ -204,11 +214,11 @@ function TrackCard({ lesson, state, to, progressPercent, levelCode }) {
       <div className="learn-track-card__foot">
         {isLocked ? (
           <span className={btnClass} role="button" aria-disabled="true">
-            {label}
+            <ViJaHoverText ja={labelJa}>{label}</ViJaHoverText>
           </span>
         ) : (
           <Link className={btnClass} to={to}>
-            {label}
+            <ViJaHoverText ja={labelJa}>{label}</ViJaHoverText>
           </Link>
         )}
       </div>
@@ -378,7 +388,9 @@ export default function LearnIndex() {
       <Motion.header className="learn-visual-hero" variants={learnItem}>
         {accessMode === 'review' ? (
           <div className="learn-level-review-banner" role="status">
-            <span className="learn-level-review-banner__tag">Ôn tập</span>
+            <span className="learn-level-review-banner__tag">
+              <ViJaHoverText ja="復習">Ôn tập</ViJaHoverText>
+            </span>
             <p className="learn-level-review-banner__text">
               Bạn đang xem lại nội dung <strong>JLPT {activeLevelCode}</strong>. Tiến độ chỉ cập nhật khi học ở cấp{' '}
               <strong>{userLevelCode}</strong>.
@@ -386,9 +398,12 @@ export default function LearnIndex() {
           </div>
         ) : null}
         <div className="learn-visual-hero__copy">
-          <span className="learn-dashboard__tag">Lộ trình YumeGo-ji</span>
+          <span className="learn-dashboard__tag">
+            <ViJaHoverText ja="YumeGo-ji コース">Lộ trình YumeGo-ji</ViJaHoverText>
+          </span>
           <h1 className="learn-dashboard__title">
-            <Tooltip content={`日本語学習 JLPT ${activeLevelCode}`}>Học tiếng Nhật <span className="learn-dashboard__title-accent">JLPT {activeLevelCode}</span></Tooltip>
+            <ViJaHoverText ja="日本語を学ぶ">Học tiếng Nhật</ViJaHoverText>{' '}
+            <span className="learn-dashboard__title-accent">JLPT {activeLevelCode}</span>
           </h1>
           <p className="learn-dashboard__lead">
             {isAuthenticated
@@ -396,16 +411,18 @@ export default function LearnIndex() {
               : `Đăng nhập để lưu tiến độ. Mọi bài ${activeLevelCode} đều mở để học thử.`}
           </p>
           <div className="learn-visual-hero__chips">
-            <span className="learn-visual-chip">Từ vựng</span>
-            <span className="learn-visual-chip">Ngữ pháp</span>
-            <span className="learn-visual-chip">Kanji</span>
+            <ViJaHoverText className="learn-visual-chip" ja="語彙">Từ vựng</ViJaHoverText>
+            <ViJaHoverText className="learn-visual-chip" ja="文法">Ngữ pháp</ViJaHoverText>
+            <ViJaHoverText className="learn-visual-chip" ja="漢字">Kanji</ViJaHoverText>
           </div>
         </div>
         <div className="learn-visual-hero__media">
           <img src={resolveLearnLevelHero(activeLevelCode)} alt="" className="learn-visual-hero__photo" loading="lazy" decoding="async" />
           <div className="learn-visual-hero__ring">
             <LearnProgressRing size={100} percent={totalTrack ? progressPct : null} />
-            <p className="learn-hero-ring__kicker">Tiến độ tổng</p>
+            <p className="learn-hero-ring__kicker">
+              <ViJaHoverText ja="総合進捗">Tiến độ tổng</ViJaHoverText>
+            </p>
             <p className="learn-dashboard__stat-meta learn-dashboard__stat-meta--under-ring">
               {totalTrack > 0
                 ? remainder > 0
@@ -430,11 +447,13 @@ export default function LearnIndex() {
           <Motion.div className="learn-section-head learn-section-head--m2" variants={learnItem}>
             <div>
               <h2 id="learn-track-api-title" className="learn-section-head__title learn-section-head__title--system">
-                <Tooltip content={`${activeLevelCode} コース`}>Khóa học {activeLevelCode}</Tooltip>
+                <ViJaHoverText ja={`コース ${activeLevelCode}`}>Khóa học {activeLevelCode}</ViJaHoverText>
               </h2>
               <p className="learn-section-head__sub">{sectionHeadline}</p>
               {isAuthenticated && apiCompleted > 0 ? (
-                <p className="learn-section-head__ready-line">Sẵn sàng để ôn tập</p>
+                <p className="learn-section-head__ready-line">
+                  <ViJaHoverText ja="復習の準備完了">Sẵn sàng để ôn tập</ViJaHoverText>
+                </p>
               ) : null}
             </div>
             <div className="learn-view-toggle" role="group" aria-label="Kiểu xem">
@@ -444,7 +463,7 @@ export default function LearnIndex() {
                 onClick={() => setViewMode('grid')}
                 aria-pressed={viewMode === 'grid'}
               >
-                Lưới
+                <ViJaHoverText ja="グリッド">Lưới</ViJaHoverText>
               </button>
               <button
                 type="button"
@@ -452,7 +471,7 @@ export default function LearnIndex() {
                 onClick={() => setViewMode('list')}
                 aria-pressed={viewMode === 'list'}
               >
-                Danh sách
+                <ViJaHoverText ja="リスト">Danh sách</ViJaHoverText>
               </button>
             </div>
           </Motion.div>
@@ -463,7 +482,9 @@ export default function LearnIndex() {
               if (!groupRows.length) return null;
               return (
                 <div key={group.key} className="learn-track-group">
-                  <h3 className="learn-track-group__title">{group.label}</h3>
+                  <h3 className="learn-track-group__title">
+                    <ViJaHoverText ja={sectionJaLabelFor(group.key, activeLevelCode)}>{group.label}</ViJaHoverText>
+                  </h3>
                   <LessonGrid rows={groupRows} viewMode={viewMode} lessonProgressPercent={lessonProgressPercent} activeLevelCode={activeLevelCode} />
                 </div>
               );

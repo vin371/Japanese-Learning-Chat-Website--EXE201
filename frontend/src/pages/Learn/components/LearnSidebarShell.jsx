@@ -7,7 +7,8 @@ import {
   learnRouteWithJlpt,
 } from '../../../utils/learnLevelAccess';
 import { BookUp, SpellCheck, Languages, MessageSquareText, Layers, BookA } from 'lucide-react';
-import { Tooltip } from '../../../components/system/Tooltip';
+import { ViJaHoverText } from '../../../components/learn/ViJaHoverText';
+import { sectionJaLabelFor } from '../../../data/learnUiJapanese';
 
 function IconRoadmap({ className }) {
   return (
@@ -102,7 +103,9 @@ const JLPT_LEVELS = LEARN_JLPT_LEVELS;
 function LessonListSection({ sectionFilter, goFilter, lessonGroups, visibleGroups, visibleDbLessons, activeLevelCode }) {
   return (
     <ShellCard variant="lessons">
-      <div className="learn-nav__group-label learn-sidebar__list-label">Danh sách bài</div>
+      <div className="learn-nav__group-label learn-sidebar__list-label">
+        <ViJaHoverText ja="レッスン一覧">Danh sách bài</ViJaHoverText>
+      </div>
       <div className="learn-nav__tabs learn-nav__tabs--shell" role="tablist" aria-label="Lọc theo nhóm">
         <button
           type="button"
@@ -111,7 +114,7 @@ function LessonListSection({ sectionFilter, goFilter, lessonGroups, visibleGroup
           className={`learn-nav__tab${sectionFilter === 'all' ? ' learn-nav__tab--active' : ''}`}
           onClick={() => goFilter('all')}
         >
-          Tất cả
+          <ViJaHoverText ja="すべて">Tất cả</ViJaHoverText>
         </button>
         {lessonGroups.map((g) => (
           <button
@@ -122,14 +125,20 @@ function LessonListSection({ sectionFilter, goFilter, lessonGroups, visibleGroup
             className={`learn-nav__tab${sectionFilter === g.section ? ' learn-nav__tab--active' : ''}`}
             onClick={() => goFilter(g.section)}
           >
-            {g.label}
+            <ViJaHoverText ja={sectionJaLabelFor(g.section, activeLevelCode)}>{g.label}</ViJaHoverText>
           </button>
         ))}
       </div>
       <div className="learn-sidebar__scroll">
         {visibleGroups.map((group) => (
           <Fragment key={group.section}>
-            {sectionFilter === 'all' ? <div className="learn-nav__section-label">{group.label}</div> : null}
+            {sectionFilter === 'all' ? (
+              <div className="learn-nav__section-label">
+                <ViJaHoverText ja={sectionJaLabelFor(group.section, activeLevelCode)}>
+                  {group.label}
+                </ViJaHoverText>
+              </div>
+            ) : null}
             <ul className="learn-nav__list learn-nav__list--section">
               {group.items.map((lesson) => (
                 <li key={lesson.slug}>
@@ -147,7 +156,9 @@ function LessonListSection({ sectionFilter, goFilter, lessonGroups, visibleGroup
         ))}
         {visibleDbLessons.length > 0 ? (
           <>
-            <div className="learn-nav__section-label learn-nav__section-label--db">Bài từ hệ thống</div>
+            <div className="learn-nav__section-label learn-nav__section-label--db">
+              <ViJaHoverText ja="システムのレッスン">Bài từ hệ thống</ViJaHoverText>
+            </div>
             <ul className="learn-nav__list learn-nav__list--section">
               {visibleDbLessons.map((row) => {
                 const slug = row.slug ?? row.Slug;
@@ -205,12 +216,12 @@ export function LearnSidebarShell({
       <div className="learn-shell-stack">
         <ShellCard variant="user">
           <Link className="learn-sidebar__back" to={ROUTES.DASHBOARD}>
-            ← Về bảng điều khiển
+            ← <ViJaHoverText ja="ダッシュボードへ">Về bảng điều khiển</ViJaHoverText>
           </Link>
           <div className="learn-shell-user">
             <div className="learn-shell-user__name">{displayName}</div>
             <div className="learn-shell-user__line">
-              Học viên — <strong>JLPT {userLevelCode}</strong>
+              <ViJaHoverText ja="学習者">Học viên</ViJaHoverText> — <strong>JLPT {userLevelCode}</strong>
               {isAuthenticated && sidebarTotal > 0 ? (
                 <>
                   {' '}
@@ -273,11 +284,13 @@ export function LearnSidebarShell({
         </ShellCard>
 
         <ShellCard variant="filters">
-          <div className="learn-shell-cats-label">Phân loại học tập</div>
+          <div className="learn-shell-cats-label">
+            <ViJaHoverText ja="学習カテゴリ">Phân loại học tập</ViJaHoverText>
+          </div>
           <nav className="learn-shell-cats" aria-label="Lọc theo dạng bài">
             <button type="button" className={`learn-shell-cats__btn${sectionFilter === 'alphabet' ? ' learn-shell-cats__btn--active' : ''}`} onClick={() => goFilter('alphabet')}>
               <BookA size={20} />
-              <Tooltip content='アルファベット'>Bảng chữ cái</Tooltip>
+              <ViJaHoverText ja="文字表">Bảng chữ cái</ViJaHoverText>
             </button>
             <button
               type="button"
@@ -285,7 +298,7 @@ export function LearnSidebarShell({
               onClick={() => goFilter('vocab')}
             >
               <BookUp size={20} />
-              <Tooltip content='語彙'>Từ vựng</Tooltip>
+              <ViJaHoverText ja="語彙">Từ vựng</ViJaHoverText>
             </button>
             <button
               type="button"
@@ -293,7 +306,7 @@ export function LearnSidebarShell({
               onClick={() => goFilter('grammar')}
             >
               <SpellCheck size={20} />
-              <Tooltip content='文法'>Ngữ pháp</Tooltip>
+              <ViJaHoverText ja="文法">Ngữ pháp</ViJaHoverText>
             </button>
             <button
               type="button"
@@ -301,7 +314,7 @@ export function LearnSidebarShell({
               onClick={() => goFilter('kanji')}
             >
               <Languages size={20} />
-              <Tooltip content='漢字'>Kanji</Tooltip>
+              <ViJaHoverText ja="漢字">Kanji</ViJaHoverText>
             </button>
             <button
               type="button"
@@ -309,7 +322,7 @@ export function LearnSidebarShell({
               onClick={() => goFilter('dialogue')}
             >
               <MessageSquareText size={20} />
-              <Tooltip content='会話'>Hội thoại</Tooltip>
+              <ViJaHoverText ja="会話">Hội thoại</ViJaHoverText>
             </button>
           </nav>
           <NavLink
@@ -318,7 +331,7 @@ export function LearnSidebarShell({
             className={({ isActive }) => `learn-shell-roadmap${isActive ? ' learn-shell-roadmap--active' : ''}`}
           >
             <Layers size={20} />
-            <Tooltip content='ロードマップ'>Lộ trình tổng quan</Tooltip>
+            <ViJaHoverText ja="学習ロードマップ">Lộ trình tổng quan</ViJaHoverText>
           </NavLink>
         </ShellCard>
 
@@ -333,9 +346,15 @@ export function LearnSidebarShell({
 
         <ShellCard variant="weekly">
           <Link className="learn-shell-weekly" to={`${ROUTES.PLAY}/daily`}>
-            <span className="learn-shell-weekly__kicker">Thử thách hàng tuần</span>
-            <span className="learn-shell-weekly__title">Ôn nhanh · nhận XP</span>
-            <span className="learn-shell-weekly__go">Vào thử thách →</span>
+            <span className="learn-shell-weekly__kicker">
+              <ViJaHoverText ja="週間チャレンジ">Thử thách hàng tuần</ViJaHoverText>
+            </span>
+            <span className="learn-shell-weekly__title">
+              <ViJaHoverText ja="クイック復習・XP獲得">Ôn nhanh · nhận XP</ViJaHoverText>
+            </span>
+            <span className="learn-shell-weekly__go">
+              <ViJaHoverText ja="チャレンジへ">Vào thử thách</ViJaHoverText> →
+            </span>
           </Link>
         </ShellCard>
       </div>

@@ -14,6 +14,7 @@ import { BACKEND_MISSING_HINT, isBackendConfigured } from '../../utils/apiConfig
 import { loginStaggerParent, loginStaggerItem } from '../Login/loginMotion';
 import { User, Mail, LockKeyhole, Eye, EyeOff } from 'lucide-react';
 import yumeLogo from '../../assets/yume-logo.png';
+import { Vi } from '../../components/ui/Vi';
 
 const Motion = FM.motion;
 
@@ -144,7 +145,7 @@ export default function Register() {
         </Motion.div>
 
         <Motion.h1 className="auth-title" variants={loginStaggerItem}>
-          Tạo tài khoản
+          <Vi>Tạo tài khoản</Vi>
         </Motion.h1>
         <Motion.p className="auth-subtitle" variants={loginStaggerItem}>
           Tham gia cộng đồng YumeGo-ji ngay hôm nay.
@@ -176,7 +177,7 @@ export default function Register() {
           <Motion.div variants={loginStaggerParent} initial="hidden" animate="visible">
             <Motion.div className="auth-field" variants={loginStaggerItem}>
               <label htmlFor="register-fullName" className="auth-field__label">
-                Họ và tên
+                <Vi>Họ và tên</Vi>
               </label>
               <div className="auth-field__control">
                 <span className="auth-field__icon">
@@ -274,14 +275,14 @@ export default function Register() {
 
             <Motion.div variants={loginStaggerItem}>
               <button type="submit" className="auth-btn" disabled={loading}>
-                {loading ? 'Đang xử lý...' : 'Đăng ký'}
+                {loading ? <Vi ja="処理中...">Đang xử lý...</Vi> : <Vi>Đăng ký</Vi>}
               </button>
             </Motion.div>
           </Motion.div>
         </form>
 
         <Motion.p className="auth-switch" variants={loginStaggerItem}>
-          Đã có tài khoản? <Link to={ROUTES.LOGIN}>Đăng nhập</Link>
+          Đã có tài khoản? <Link to={ROUTES.LOGIN}><Vi>Đăng nhập</Vi></Link>
         </Motion.p>
       </Motion.div>
     </AuthPageLayout>

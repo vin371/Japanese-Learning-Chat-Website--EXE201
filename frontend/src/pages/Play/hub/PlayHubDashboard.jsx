@@ -15,6 +15,7 @@ import {
   skillTypeLabel,
 } from './playHubCore';
 import { ArrowRight, ChartColumn, Gem, Gamepad, Gamepad2, ShoppingBag, Trophy, Package, PackageOpen, X, Check, Flame, Zap } from "lucide-react";
+import { Vi } from '../../../components/ui/Vi';
 /** Alias để ESLint (không có react/jsx-uses-vars) nhận diện biến được dùng qua JSX. */
 const Motion = motion;
 
@@ -207,11 +208,9 @@ export function PlayHubDashboard({
                 Hôm nay bạn đã sẵn sàng chinh phục tiếng Nhật chưa? Chọn một game bên dưới để bắt đầu!
               </p>
               <div className="flex flex-wrap gap-2 mt-4">
-                <Tooltip content="素早くプレイする">
-                  <Link className="inline-flex items-center gap-2 px-4 py-2 rounded-xl font-bold transition-all text-sm bg-rose-100 text-rose-700 hover:bg-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:hover:bg-rose-900/50" to={`${ROUTES.PLAY}/hiragana-match`}>
-                    <Gamepad2 /> Chơi nhanh
-                  </Link>
-                </Tooltip>
+                <Link className="inline-flex items-center gap-2 px-4 py-2 rounded-xl font-bold transition-all text-sm bg-rose-100 text-rose-700 hover:bg-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:hover:bg-rose-900/50" to={`${ROUTES.PLAY}/hiragana-match`}>
+                  <Gamepad2 /> <Vi>Chơi nhanh</Vi>
+                </Link>
               </div>
             </div>
             <div className="flex flex-wrap gap-2 items-stretch" aria-label="Chỉ số nhanh">
@@ -257,7 +256,7 @@ export function PlayHubDashboard({
             <Motion.section className="mb-5" variants={vBlock}>
               <div className="flex items-center justify-between gap-3 mb-3">
                 <h2 className="m-0 text-[1.12rem] font-extrabold inline-flex items-center gap-1.5 text-slate-900 dark:text-slate-100">
-                  <span aria-hidden><Gamepad /></span><Tooltip content="ゲーム">Trò chơi</Tooltip>
+                  <span aria-hidden><Gamepad /></span> <Vi>Trò chơi</Vi>
                 </h2>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                   <span className="text-[0.78rem] font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">{ordered.length} trò chơi</span>
@@ -347,7 +346,7 @@ export function PlayHubDashboard({
                   <span aria-hidden><PackageOpen /></span><Tooltip content="アイテム">Vật phẩm (Power-ups)</Tooltip>
                 </h2>
                 <Link className="text-[0.82rem] font-bold text-rose-700 whitespace-nowrap hover:underline flex items-center gap-1" to={`${ROUTES.PLAY}/shop`}>
-                  <Tooltip content="コインショップ">Cửa hàng xu</Tooltip> <ArrowRight size={10} />
+                  <Vi ja="コインショップ">Cửa hàng xu</Vi> <ArrowRight size={10} />
                 </Link>
               </div>
               <p className="m-0 mb-3 text-[0.78rem] text-slate-600 dark:text-slate-300">

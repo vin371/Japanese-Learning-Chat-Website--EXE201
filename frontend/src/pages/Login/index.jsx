@@ -14,6 +14,7 @@ import { GoogleAuthPill } from '../../components/auth/GoogleAuthPill';
 import { loginStaggerParent, loginStaggerItem } from './loginMotion';
 import { Mail, LockKeyhole, Eye, EyeOff } from 'lucide-react';
 import yumeLogo from '../../assets/yume-logo.png';
+import { Vi } from '../../components/ui/Vi';
 
 const Motion = FM.motion;
 
@@ -106,7 +107,7 @@ export default function Login() {
         </Motion.div>
 
         <Motion.h1 className="auth-title" variants={loginStaggerItem}>
-          Chào mừng trở lại
+          <Vi>Chào mừng trở lại</Vi>
         </Motion.h1>
         <Motion.p className="auth-subtitle" variants={loginStaggerItem}>
           Nhập email và mật khẩu để đăng nhập.
@@ -150,10 +151,10 @@ export default function Login() {
             <Motion.div className="auth-field" variants={loginStaggerItem}>
               <div className="auth-field__head">
                 <label htmlFor="login-password" className="auth-field__label">
-                  Mật khẩu
+                  <Vi>Mật khẩu</Vi>
                 </label>
                 <Link className="auth-link-inline" to={ROUTES.RESET_PASSWORD}>
-                  Quên mật khẩu?
+                  <Vi>Quên mật khẩu?</Vi>
                 </Link>
               </div>
               <div className="auth-field__control">
@@ -187,14 +188,14 @@ export default function Login() {
 
             <Motion.div variants={loginStaggerItem}>
               <button type="submit" className="auth-btn" disabled={loading}>
-                {loading ? 'Đang xử lý...' : 'Đăng nhập'}
+                {loading ? <Vi ja="処理中...">Đang xử lý...</Vi> : <Vi>Đăng nhập</Vi>}
               </button>
             </Motion.div>
           </Motion.div>
         </form>
 
         <Motion.div className="auth-divider" variants={loginStaggerItem}>
-          Đăng nhập với
+          <Vi>Đăng nhập với</Vi>
         </Motion.div>
 
         <div className="flex justify-center w-full mb-4">
@@ -207,7 +208,7 @@ export default function Login() {
         </div>
 
         <Motion.p className="auth-switch" variants={loginStaggerItem}>
-          Chưa có tài khoản? <Link to={ROUTES.REGISTER}>Đăng ký</Link>
+          Chưa có tài khoản? <Link to={ROUTES.REGISTER}><Vi>Đăng ký</Vi></Link>
         </Motion.p>
       </Motion.div>
     </AuthPageLayout>
