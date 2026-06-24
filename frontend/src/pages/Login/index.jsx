@@ -5,8 +5,7 @@ import * as FM from 'framer-motion';
 import { useAuth } from '../../hooks/useAuth';
 import { authService } from '../../services/authService';
 import { ROUTES } from '../../data/routes';
-import { getPostLoginRoute } from '../../utils/postLoginRoute';
-import { isStaffUser } from '../../utils/roles';
+import { getPostAuthRoute } from '../../utils/onboardingFlow';
 import { isRequired, isEmail } from '../../utils/validators';
 import { getErrorMessageForUser } from '../../utils/apiErrorMessage';
 import { BACKEND_MISSING_HINT, isBackendConfigured } from '../../utils/apiConfig';
@@ -42,11 +41,7 @@ export default function Login() {
   const routeAfterAuth = useCallback(
     (data) => {
       const u = authService.mergeUserWithRoleFromToken(data?.user ?? authService.getStoredUser());
-      if (data?.needsPlacementTest && !isStaffUser(u)) {
-        navigate(ROUTES.PLACEMENT_TEST, { replace: true });
-      } else {
-        navigate(getPostLoginRoute(u, from), { replace: true });
-      }
+      navigate(getPostAuthRoute(data, u, from), { replace: true });
     },
     [navigate, from],
   );

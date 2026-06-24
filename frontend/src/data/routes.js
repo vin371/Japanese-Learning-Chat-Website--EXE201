@@ -8,7 +8,11 @@ export const ROUTES = {
   FORGOT_PASSWORD: '/forgot-password',
   RESET_PASSWORD: '/reset-password',
   DASHBOARD: '/dashboard',
+  ONBOARDING_SURVEY: '/onboarding-survey',
+  TEST_INTRO: '/test-intro',
   PLACEMENT_TEST: '/placement-test',
+  PLACEMENT_PROCESSING: '/placement-processing',
+  PLACEMENT_RESULT: '/placement-result',
   LEVEL_UP_TEST: '/level-up-test/:toLevel',
   ADMIN: '/admin',
   MODERATOR: '/moderator',
@@ -34,6 +38,17 @@ export function isAuthRoute(pathname) {
   );
 }
 
+/** Onboarding full-screen — ẩn header/footer site. */
+export function isOnboardingFlowRoute(pathname) {
+  return (
+    pathname === ROUTES.ONBOARDING_SURVEY ||
+    pathname === ROUTES.TEST_INTRO ||
+    pathname === ROUTES.PLACEMENT_TEST ||
+    pathname === ROUTES.PLACEMENT_PROCESSING ||
+    pathname === ROUTES.PLACEMENT_RESULT
+  );
+}
+
 export const ROUTE_NAMES = {
   [ROUTES.HOME]: 'Trang chủ',
   [ROUTES.LOGIN]: 'Đăng nhập',
@@ -41,7 +56,11 @@ export const ROUTE_NAMES = {
   [ROUTES.FORGOT_PASSWORD]: 'Quên mật khẩu',
   [ROUTES.RESET_PASSWORD]: 'Đặt lại mật khẩu',
   [ROUTES.DASHBOARD]: 'Bảng điều khiển',
+  [ROUTES.ONBOARDING_SURVEY]: 'Khảo sát',
+  [ROUTES.TEST_INTRO]: 'Giới thiệu bài test',
   [ROUTES.PLACEMENT_TEST]: 'Bài test đầu vào',
+  [ROUTES.PLACEMENT_PROCESSING]: 'Đang xếp cấp độ',
+  [ROUTES.PLACEMENT_RESULT]: 'Kết quả xếp trình',
   [ROUTES.LEVEL_UP_TEST]: 'Thi nâng level',
   [ROUTES.ADMIN]: 'Quản trị',
   [ROUTES.MODERATOR]: 'Điều hành',

@@ -10,6 +10,9 @@ const Login = lazy(() => import('../pages/Login'));
 const Register = lazy(() => import('../pages/Register'));
 const ResetPassword = lazy(() => import('../pages/ResetPassword'));
 const Dashboard = lazy(() => import('../pages/Dashboard'));
+const OnboardingSurveyPage = lazy(() => import('../pages/Onboarding/OnboardingSurveyPage'));
+const TestIntroPage = lazy(() => import('../pages/Onboarding/TestIntroPage'));
+const PlacementResultPage = lazy(() => import('../pages/Onboarding/PlacementResultPage'));
 const PlacementTest = lazy(() => import('../pages/PlacementTest'));
 const LevelUpTest = lazy(() => import('../pages/LevelUpTest'));
 const AdminDashboard = lazy(() => import('../pages/AdminDashboard'));
@@ -47,6 +50,30 @@ function AppRoutes() {
           element={
             <PrivateRoute>
               <Dashboard />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path={ROUTES.ONBOARDING_SURVEY}
+          element={
+            <PrivateRoute>
+              <OnboardingSurveyPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path={ROUTES.TEST_INTRO}
+          element={
+            <PrivateRoute>
+              <TestIntroPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path={ROUTES.PLACEMENT_RESULT}
+          element={
+            <PrivateRoute>
+              <PlacementResultPage />
             </PrivateRoute>
           }
         />

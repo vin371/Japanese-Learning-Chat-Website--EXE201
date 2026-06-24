@@ -12,6 +12,7 @@ import { Play, Gamepad2, ChartColumn, Trophy, Sparkles } from 'lucide-react';
 import AnimatedProgressBar from '../../components/motion/AnimatedProgressBar';
 import ShimmerSkeleton from '../../components/motion/ShimmerSkeleton';
 import { learnCardHover } from '../../utils/learnMotion';
+import { getRecommendedLevel } from '../../utils/onboardingFlow';
 import { DASH_ACTION_IMAGES, LEARN_VISUAL } from '../../data/learnVisualAssets';
 
 const Motion = motion;
@@ -191,7 +192,7 @@ export default function Dashboard() {
 
   const isPremium = useMemo(() => userIsPremium(user), [user]);
 
-  let levelCode = user?.levelCode || user?.level || null;
+  let levelCode = getRecommendedLevel() || user?.levelCode || user?.level || null;
   const rawLevelId = user?.levelId ?? user?.LevelId ?? null;
   if (!levelCode && rawLevelId != null) {
     const idNum = Number(rawLevelId);
@@ -325,16 +326,16 @@ export default function Dashboard() {
         </Motion.nav>
 
         <div className="yume-hub-body">
-          <Motion.section
-            className="yume-hub-card yume-hub-card--path"
-            variants={dashItem}
-            initial={reduceMotion ? false : 'hidden'}
-            animate="show"
-          >
-            <header className="yume-hub-card__head">
-              <h2>Lộ trình JLPT</h2>
-              <Link to={learnHome}>Xem tất cả →</Link>
-            </header>
+        <Motion.section
+          className="yume-hub-card yume-hub-card--path"
+          variants={dashItem}
+          initial={reduceMotion ? false : 'hidden'}
+          animate="show"
+        >
+          <header className="yume-hub-card__head">
+            <h2>Lộ trình JLPT</h2>
+            <Link to={learnHome}>Xem tất cả →</Link>
+          </header>
             {summaryLoading ? (
               <ShimmerSkeleton lines={2} className="yume-shimmer--jlpt" />
             ) : topRows.length === 0 ? (

@@ -18,6 +18,7 @@ import { LearnProgressRing } from './components/LearnProgressRing';
 import { LearnImageCarousel } from './components/LearnImageCarousel';
 import LearnAlphabet from './components/LearnAlphabet';
 import { resolveLearnLessonThumb, resolveLearnLevelHero } from '../../utils/learnLessonThumb';
+import { hasCompletedPlacementResult } from '../../utils/onboardingFlow';
 import { LearnTrackThumb } from './components/LearnTrackThumb';
 
 /** Ảnh minh họa banner «Kiểm tra trình độ» — luân phiên (crossfade) */
@@ -251,6 +252,7 @@ export default function LearnIndex() {
   const displayGroups = useMemo(() => displayGroupsFor(activeLevelCode), [activeLevelCode]);
   const sectionHeadlines = useMemo(() => sectionHeadVi(activeLevelCode), [activeLevelCode]);
   const staffNoLearnerTests = isStaffUser(user);
+  const showPlacementPromo = !staffNoLearnerTests && !hasCompletedPlacementResult();
   const [apiLessons, setApiLessons] = useState([]);
   const [progressItems, setProgressItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -494,7 +496,7 @@ export default function LearnIndex() {
         <div className="learn-ai-promo__art" aria-hidden />
       </Motion.section>
 
-      {!staffNoLearnerTests ? (
+      {showPlacementPromo ? (
         <Motion.section className="learn-promo-banner" aria-labelledby="learn-promo-title" variants={learnItem}>
           <div className="learn-promo-banner__text">
             <h2 id="learn-promo-title" className="learn-promo-banner__title">

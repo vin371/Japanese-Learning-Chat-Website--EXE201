@@ -91,7 +91,7 @@ export function LearnerTopNav() {
       <div className={`w-full max-w-full flex items-center gap-3 px-3 sm:px-6 py-2.5 box-border flex-wrap md:flex-nowrap ${onStaffWorkspace ? 'justify-end' : 'justify-between md:justify-start'}`}>
         {!onStaffWorkspace ? (
         <Link
-          to={staffNav ? staffHomePath : ROUTES.DASHBOARD}
+          to={staffNav ? staffHomePath : ROUTES.LEARN}
           className="flex items-center gap-2 no-underline text-inherit shrink-0 min-w-0"
           aria-label="YumeGo-ji"
         >

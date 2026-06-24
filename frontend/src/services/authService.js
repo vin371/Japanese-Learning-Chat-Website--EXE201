@@ -4,6 +4,7 @@
 /* eslint-env browser */
 import { authApi } from '../api/authApi';
 import { storage } from '../utils/storage';
+import { clearOnboardingStorage } from '../utils/onboardingFlow';
 import { isStaffUser } from '../utils/roles';
 
 const TOKEN_KEY = 'token';
@@ -164,6 +165,7 @@ export const authService = {
     storage.remove(TOKEN_KEY);
     storage.remove(USER_KEY);
     storage.remove(NEEDS_PLACEMENT_KEY);
+    clearOnboardingStorage();
   },
 
   getStoredToken() {

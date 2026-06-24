@@ -1,10 +1,12 @@
+import { getRecommendedLevel } from './onboardingFlow';
+
 /**
  * Mã JLPT hiện tại từ user (đồng bộ logic với Dashboard).
  * @param {object|null|undefined} user
  * @returns {'N5'|'N4'|'N3'|'N2'|'N1'}
  */
 export function getJlptLevelCodeFromUser(user) {
-  let levelCode = user?.levelCode || user?.level || null;
+  let levelCode = getRecommendedLevel() || user?.levelCode || user?.level || null;
   const rawLevelId = user?.levelId ?? user?.LevelId ?? null;
   if (!levelCode && rawLevelId != null) {
     levelCode = levelIdToJlptCode(rawLevelId);

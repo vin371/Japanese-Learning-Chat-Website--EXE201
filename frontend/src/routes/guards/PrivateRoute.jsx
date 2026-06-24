@@ -1,10 +1,10 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { ROUTES } from '../../data/routes';
-import { isStaffUser } from '../../utils/roles';
+import { getOnboardingEnforcement } from '../../utils/onboardingFlow';
 
 /**
- * Bảo vệ route: chỉ cho vào khi đã đăng nhập, không thì redirect về /login
+ * Bảo vệ route: đăng nhập + onboarding bắt buộc (survey → test intro → placement test).
  */
 export function PrivateRoute({ children }) {
   const { isAuthenticated, loading, needsPlacementTest, user } = useAuth();
@@ -18,10 +18,9 @@ export function PrivateRoute({ children }) {
     return <Navigate to={ROUTES.LOGIN} state={{ from: location }} replace />;
   }
 
-  const isOnPlacement = location.pathname === ROUTES.PLACEMENT_TEST;
-  const staffSkipsPlacement = isStaffUser(user);
-  if (isAuthenticated && needsPlacementTest && !staffSkipsPlacement && !isOnPlacement) {
-    return <Navigate to={ROUTES.PLACEMENT_TEST} replace />;
+  const redirect = getOnboardingEnforcement(location.pathname, { needsPlacementTest, user });
+  if (redirect && redirect !== location.pathname) {
+    return <Navigate to={redirect} replace />;
   }
 
   return children;

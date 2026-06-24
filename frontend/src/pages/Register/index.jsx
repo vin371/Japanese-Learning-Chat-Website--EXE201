@@ -5,8 +5,7 @@ import * as FM from 'framer-motion';
 import { useAuth } from '../../hooks/useAuth';
 import { authService } from '../../services/authService';
 import { ROUTES } from '../../data/routes';
-import { getPostLoginRoute } from '../../utils/postLoginRoute';
-import { isStaffUser } from '../../utils/roles';
+import { getPostAuthRoute } from '../../utils/onboardingFlow';
 import { GoogleAuthPill } from '../../components/auth/GoogleAuthPill';
 import { AuthPageLayout } from '../../components/auth/AuthPageLayout';
 import { isRequired, isEmail, minLength } from '../../utils/validators';
@@ -26,17 +25,13 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { isAuthenticated, loginWithGoogle, needsPlacementTest, user } = useAuth();
+  const { isAuthenticated, login, loginWithGoogle, needsPlacementTest, user } = useAuth();
   const navigate = useNavigate();
 
   const routeAfterAuth = useCallback(
     (data) => {
       const u = authService.mergeUserWithRoleFromToken(data?.user ?? authService.getStoredUser());
-      if (data?.needsPlacementTest && !isStaffUser(u)) {
-        navigate(ROUTES.PLACEMENT_TEST, { replace: true });
-      } else {
-        navigate(getPostLoginRoute(u, ROUTES.DASHBOARD), { replace: true });
-      }
+      navigate(getPostAuthRoute(data, u, ROUTES.DASHBOARD), { replace: true });
     },
     [navigate],
   );
@@ -85,11 +80,7 @@ export default function Register() {
   useEffect(() => {
     if (!isAuthenticated) return;
     const u = authService.mergeUserWithRoleFromToken(user);
-    if (needsPlacementTest && !isStaffUser(u)) {
-      navigate(ROUTES.PLACEMENT_TEST, { replace: true });
-      return;
-    }
-    navigate(getPostLoginRoute(u, ROUTES.DASHBOARD), { replace: true });
+    navigate(getPostAuthRoute({ needsPlacementTest }, u, ROUTES.DASHBOARD), { replace: true });
   }, [isAuthenticated, needsPlacementTest, user, navigate]);
 
   if (isAuthenticated) {
@@ -135,7 +126,8 @@ export default function Register() {
         password,
       });
       setError('');
-      navigate(ROUTES.LOGIN, { replace: true, state: { message: 'Đăng ký thành công. Vui lòng đăng nhập.' } });
+      const data = await login({ email, password });
+      routeAfterAuth(data);
     } catch (err) {
       setError(getErrorMessageForUser(err, 'Đăng ký thất bại.'));
     } finally {

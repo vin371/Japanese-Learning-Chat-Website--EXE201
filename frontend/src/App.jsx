@@ -9,7 +9,7 @@ import { AppRoutes } from './routes';
 import { Header } from './layout/Header';
 import { LearnerTopNav } from './layout/LearnerTopNav';
 import { Footer } from './layout/Footer';
-import { ROUTES, isAuthRoute } from './data/routes';
+import { ROUTES, isAuthRoute, isOnboardingFlowRoute } from './data/routes';
 import { SystemAnnouncementBanner } from './components/system/SystemAnnouncementBanner';
 import { ApiOfflineBanner } from './components/system/ApiOfflineBanner';
 import { ErrorBoundary } from './components/system/ErrorBoundary';
@@ -24,6 +24,7 @@ import './styles/pages/chat.css';
 import './styles/pages/chat-room-ui.css';
 import './styles/pages/dashboard.css';
 import './styles/pages/yume-dashboard.css';
+import './styles/pages/onboarding.css';
 import './styles/pages/level-up-test.css';
 import './styles/pages/upgrade.css';
 import './styles/pages/learn-course.css';
@@ -43,7 +44,10 @@ function learnerSectionKey(pathname) {
   if (pathname.startsWith(ROUTES.ADMIN)) return 'admin';
   if (pathname.startsWith(ROUTES.MODERATOR)) return 'moderator';
   if (pathname.startsWith('/level-up-test')) return 'level-up';
+  if (pathname.startsWith(ROUTES.PLACEMENT_RESULT)) return 'placement-result';
   if (pathname.startsWith(ROUTES.PLACEMENT_TEST)) return 'placement';
+  if (pathname.startsWith(ROUTES.TEST_INTRO)) return 'test-intro';
+  if (pathname.startsWith(ROUTES.ONBOARDING_SURVEY)) return 'onboarding-survey';
   if (pathname.startsWith(ROUTES.ACCOUNT)) return 'account';
   return pathname;
 }
@@ -55,8 +59,10 @@ function AppShell() {
   usePresenceHeartbeat();
   const chatFull = location.pathname.startsWith('/chat');
   const authPage = isAuthRoute(location.pathname);
+  const onboardingPage = isOnboardingFlowRoute(location.pathname);
   const learnerShell =
     isAuthenticated &&
+    !onboardingPage &&
     (location.pathname === ROUTES.DASHBOARD ||
       location.pathname.startsWith(ROUTES.ADMIN) ||
       location.pathname.startsWith(ROUTES.MODERATOR) ||
@@ -65,19 +71,18 @@ function AppShell() {
       location.pathname.startsWith(ROUTES.ACCOUNT) ||
       location.pathname.startsWith(ROUTES.UPGRADE) ||
       location.pathname.startsWith('/level-up-test') ||
-      location.pathname.startsWith(ROUTES.PLACEMENT_TEST) ||
       chatFull);
 
   return (
     <div
-      className={`app ${chatFull ? 'app--chat-full' : ''} ${authPage ? 'app--auth' : ''} ${learnerShell ? 'app--learner' : ''}`}
+      className={`app ${chatFull ? 'app--chat-full' : ''} ${authPage || onboardingPage ? 'app--auth' : ''} ${learnerShell ? 'app--learner' : ''}`}
     >
-      {!authPage && (learnerShell ? <LearnerTopNav /> : <Header />)}
+      {!authPage && !onboardingPage && (learnerShell ? <LearnerTopNav /> : <Header />)}
       <main
-        className={`app-main ${chatFull ? 'app-main--chat' : ''} ${authPage ? 'app-main--auth' : ''} ${learnerShell ? 'app-main--learner' : ''}`}
+        className={`app-main ${chatFull ? 'app-main--chat' : ''} ${authPage || onboardingPage ? 'app-main--auth' : ''} ${learnerShell ? 'app-main--learner' : ''}`}
       >
-        {!authPage && <ApiOfflineBanner />}
-        {!authPage && <SystemAnnouncementBanner />}
+        {!authPage && !onboardingPage && <ApiOfflineBanner />}
+        {!authPage && !onboardingPage && <SystemAnnouncementBanner />}
         <ErrorBoundary>
           {learnerShell ? (
           <AnimatePresence mode="wait" initial={false}>
@@ -104,7 +109,7 @@ function AppShell() {
           )}
         </ErrorBoundary>
       </main>
-      {!authPage && !learnerShell && <Footer />}
+      {!authPage && !onboardingPage && !learnerShell && <Footer />}
     </div>
   );
 }
