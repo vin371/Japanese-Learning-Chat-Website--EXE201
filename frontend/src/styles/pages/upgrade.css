@@ -1,6 +1,7 @@
 /* Trang Upgrade — layout kiểu so sánh gói (sakura / vàng Premium), tương thích dark theme */
 
 @keyframes upgrade-premium-glow-pulse {
+
   0%,
   100% {
     box-shadow:
@@ -8,6 +9,7 @@
       0 12px 32px rgba(0, 0, 0, 0.22),
       0 0 24px rgba(197, 160, 89, 0.08);
   }
+
   50% {
     box-shadow:
       0 0 0 1px rgba(197, 160, 89, 0.4),
@@ -115,9 +117,12 @@
 }
 
 .upgrade-page__title {
+  font-family: 'Hirosaki', sans-serif;
+  font-weight: normal;
+  letter-spacing: 0.05em;
   margin: 0;
-  font-size: clamp(1.45rem, 2.5vw, 1.85rem);
-  font-weight: 800;
+  font-size: clamp(1.85rem, 3vw, 2.5rem);
+  /* Tăng nhẹ kích thước do font hiển thị nhỏ hơn */
   color: var(--text-h, #f8fafc);
 }
 
@@ -231,9 +236,9 @@
 }
 
 .upgrade-card__name {
+  letter-spacing: 0.08em;
   margin: 0 0 0.35rem;
-  font-size: 1.35rem;
-  font-weight: 800;
+  font-size: 1.8rem;
 }
 
 .upgrade-card__name--gold {

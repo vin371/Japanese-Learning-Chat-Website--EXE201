@@ -8,6 +8,7 @@ import { PremiumBadge } from '../components/profile/PremiumBadge';
 import { userIsPremium } from '../utils/userPremium';
 import { fetchMyProgressSummary } from '../services/learningProgressService';
 import { socialService } from '../services/socialService';
+import { Tooltip } from '../components/system/Tooltip';
 
 function pick(obj, ...keys) {
   for (const k of keys) {
@@ -359,7 +360,7 @@ export default function AccountPage() {
               >
                 <div className="absolute inset-2 bg-white dark:bg-slate-900 rounded-full flex flex-col items-center justify-center shadow-inner">
                   <span className="text-2xl font-black text-rose-700 dark:text-rose-400 leading-none">{progressLoading ? '…' : `${levelCompletionPct}%`}</span>
-                  <span className="text-[0.62rem] font-bold text-slate-500 uppercase tracking-widest mt-1 text-center leading-tight">Lộ trình<br/>{levelCode}</span>
+                  <span className="text-[0.62rem] font-bold text-slate-500 uppercase tracking-widest mt-1 text-center leading-tight">Lộ trình<br />{levelCode}</span>
                 </div>
               </div>
               <p className="text-center text-[0.88rem] text-slate-600 dark:text-slate-300 leading-relaxed max-w-[200px] m-0">
@@ -436,7 +437,7 @@ export default function AccountPage() {
                     )}
                   </div>
                   <label htmlFor="avatar-file" className="absolute bottom-1 right-1 sm:bottom-2 sm:right-2 w-9 h-9 bg-white dark:bg-slate-700 rounded-full flex items-center justify-center shadow-lg border border-slate-200 dark:border-slate-600 cursor-pointer hover:scale-105 transition-transform" title="Đổi ảnh đại diện">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-slate-600 dark:text-slate-300"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-slate-600 dark:text-slate-300"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" /></svg>
                   </label>
                   <input
                     id="avatar-file"
@@ -468,7 +469,7 @@ export default function AccountPage() {
                   className={`relative px-2 sm:px-4 py-3 text-sm font-bold transition-colors outline-none focus-visible:ring-2 focus-visible:ring-rose-500 rounded-t-lg ${profileTab === 'info' ? 'text-rose-700 dark:text-rose-400' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}
                   onClick={() => setProfileTab('info')}
                 >
-                  Thông tin tài khoản
+                  <Tooltip content="アカウント情報">Thông tin tài khoản</Tooltip>
                   {profileTab === 'info' && <motionFr.div layoutId="profileTabIndicator" className="absolute bottom-0 left-0 right-0 h-1 bg-rose-600 dark:bg-rose-500 rounded-t-md" />}
                 </button>
                 <button
@@ -478,7 +479,7 @@ export default function AccountPage() {
                   className={`relative px-2 sm:px-4 py-3 text-sm font-bold transition-colors outline-none focus-visible:ring-2 focus-visible:ring-rose-500 rounded-t-lg ${profileTab === 'settings' ? 'text-rose-700 dark:text-rose-400' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}
                   onClick={() => setProfileTab('settings')}
                 >
-                  Cài đặt
+                  <Tooltip content="設定">Cài đặt</Tooltip>
                   {profileTab === 'settings' && <motionFr.div layoutId="profileTabIndicator" className="absolute bottom-0 left-0 right-0 h-1 bg-rose-600 dark:bg-rose-500 rounded-t-md" />}
                 </button>
               </nav>
@@ -499,7 +500,7 @@ export default function AccountPage() {
                           <path d="M8 20h8v2H8v-2Z" fill="currentColor" />
                         </svg>
                       </div>
-                      <div className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Cấp độ</div>
+                      <div className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1"><Tooltip content='レベル'>Cấp độ</Tooltip></div>
                       <div className="text-2xl font-black text-slate-900 dark:text-slate-100 mb-3">{levelCode}</div>
                       <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden mb-2" role="progressbar" aria-valuenow={levelCompletionPct} aria-valuemin={0} aria-valuemax={100}>
                         <div className="h-full bg-amber-500" style={{ width: `${levelCompletionPct}%` }} />
@@ -521,7 +522,7 @@ export default function AccountPage() {
                           <path d="M20 20v-1a3 3 0 0 0-2.1-2.87" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
                         </svg>
                       </div>
-                      <div className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Bạn bè</div>
+                      <div className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1"><Tooltip content='友達'>Bạn bè</Tooltip></div>
                       <div className="text-2xl font-black text-slate-900 dark:text-slate-100 mb-2">{friendsCount === null ? '…' : friendsCount}</div>
                       <div className="mt-auto text-xs text-slate-500 font-medium">Danh sách kết bạn</div>
                     </Motion.article>
@@ -539,7 +540,7 @@ export default function AccountPage() {
                             onClick={() => setIsEditingProfile(true)}
                             className="px-4 py-1.5 rounded-lg text-sm font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 dark:text-rose-400 dark:bg-rose-900/30 dark:hover:bg-rose-900/50 transition-colors"
                           >
-                            Sửa
+                            <Tooltip content='編集'>Sửa</Tooltip>
                           </button>
                         )}
                       </div>
@@ -566,67 +567,67 @@ export default function AccountPage() {
                           </div>
                         </dl>
                       ) : (
-                      <form onSubmit={handleProfileSave} className="flex flex-col gap-5">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                        <form onSubmit={handleProfileSave} className="flex flex-col gap-5">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            <div className="flex flex-col gap-1.5">
+                              <label htmlFor="displayName" className="text-sm font-bold text-slate-700 dark:text-slate-300">Tên hiển thị</label>
+                              <input
+                                id="displayName"
+                                type="text"
+                                className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-xl px-4 py-2.5 text-[0.95rem] text-slate-800 dark:text-slate-100 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-rose-500/50 focus:border-rose-500 transition-all"
+                                placeholder="Nhập tên hiển thị…"
+                                value={profileForm.displayName}
+                                onChange={(e) => setProfileForm(f => ({ ...f, displayName: e.target.value }))}
+                              />
+                            </div>
+                            <div className="flex flex-col gap-1.5">
+                              <label htmlFor="dateOfBirth" className="text-sm font-bold text-slate-700 dark:text-slate-300">Ngày sinh</label>
+                              <input
+                                id="dateOfBirth"
+                                type="date"
+                                className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-xl px-4 py-2.5 text-[0.95rem] text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-rose-500/50 focus:border-rose-500 transition-all"
+                                value={profileForm.dateOfBirth}
+                                onChange={(e) => setProfileForm(f => ({ ...f, dateOfBirth: e.target.value }))}
+                              />
+                            </div>
+                          </div>
+
                           <div className="flex flex-col gap-1.5">
-                            <label htmlFor="displayName" className="text-sm font-bold text-slate-700 dark:text-slate-300">Tên hiển thị</label>
-                            <input
-                              id="displayName"
-                              type="text"
-                              className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-xl px-4 py-2.5 text-[0.95rem] text-slate-800 dark:text-slate-100 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-rose-500/50 focus:border-rose-500 transition-all"
-                              placeholder="Nhập tên hiển thị…"
-                              value={profileForm.displayName}
-                              onChange={(e) => setProfileForm(f => ({ ...f, displayName: e.target.value }))}
+                            <label htmlFor="bio" className="text-sm font-bold text-slate-700 dark:text-slate-300">Giới thiệu bản thân (Bio)</label>
+                            <textarea
+                              id="bio"
+                              className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-xl px-4 py-2.5 text-[0.95rem] text-slate-800 dark:text-slate-100 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-rose-500/50 focus:border-rose-500 transition-all resize-y"
+                              rows={3}
+                              placeholder="Vài dòng về bản thân…"
+                              value={profileForm.bio}
+                              onChange={(e) => setProfileForm(f => ({ ...f, bio: e.target.value }))}
                             />
                           </div>
-                          <div className="flex flex-col gap-1.5">
-                            <label htmlFor="dateOfBirth" className="text-sm font-bold text-slate-700 dark:text-slate-300">Ngày sinh</label>
-                            <input
-                              id="dateOfBirth"
-                              type="date"
-                              className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-xl px-4 py-2.5 text-[0.95rem] text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-rose-500/50 focus:border-rose-500 transition-all"
-                              value={profileForm.dateOfBirth}
-                              onChange={(e) => setProfileForm(f => ({ ...f, dateOfBirth: e.target.value }))}
-                            />
-                          </div>
-                        </div>
-                        
-                        <div className="flex flex-col gap-1.5">
-                          <label htmlFor="bio" className="text-sm font-bold text-slate-700 dark:text-slate-300">Giới thiệu bản thân (Bio)</label>
-                          <textarea
-                            id="bio"
-                            className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-xl px-4 py-2.5 text-[0.95rem] text-slate-800 dark:text-slate-100 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-rose-500/50 focus:border-rose-500 transition-all resize-y"
-                            rows={3}
-                            placeholder="Vài dòng về bản thân…"
-                            value={profileForm.bio}
-                            onChange={(e) => setProfileForm(f => ({ ...f, bio: e.target.value }))}
-                          />
-                        </div>
 
-                        {profileSaveError && (
-                          <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 text-sm font-medium">
-                            {profileSaveError}
-                          </div>
-                        )}
+                          {profileSaveError && (
+                            <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 text-sm font-medium">
+                              {profileSaveError}
+                            </div>
+                          )}
 
-                        <div className="flex justify-end gap-3 pt-2">
-                          <button
-                            type="button"
-                            onClick={() => setIsEditingProfile(false)}
-                            disabled={profileSaving}
-                            className="px-6 py-2.5 rounded-xl font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 dark:text-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 transition-all"
-                          >
-                            Hủy
-                          </button>
-                          <button
-                            type="submit"
-                            disabled={profileSaving}
-                            className={`px-6 py-2.5 rounded-xl font-bold text-white transition-all ${profileSaving ? 'bg-slate-400 cursor-not-allowed' : 'bg-rose-600 hover:bg-rose-700 shadow-md hover:shadow-lg hover:-translate-y-0.5'}`}
-                          >
-                            {profileSaving ? 'Đang lưu…' : 'Lưu thay đổi'}
-                          </button>
-                        </div>
-                      </form>
+                          <div className="flex justify-end gap-3 pt-2">
+                            <button
+                              type="button"
+                              onClick={() => setIsEditingProfile(false)}
+                              disabled={profileSaving}
+                              className="px-6 py-2.5 rounded-xl font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 dark:text-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 transition-all"
+                            >
+                              Hủy
+                            </button>
+                            <button
+                              type="submit"
+                              disabled={profileSaving}
+                              className={`px-6 py-2.5 rounded-xl font-bold text-white transition-all ${profileSaving ? 'bg-slate-400 cursor-not-allowed' : 'bg-rose-600 hover:bg-rose-700 shadow-md hover:shadow-lg hover:-translate-y-0.5'}`}
+                            >
+                              {profileSaving ? 'Đang lưu…' : 'Lưu thay đổi'}
+                            </button>
+                          </div>
+                        </form>
                       )}
                     </div>
 
