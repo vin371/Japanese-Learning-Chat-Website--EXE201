@@ -20,6 +20,7 @@ import LearnAlphabet from './components/LearnAlphabet';
 import { resolveLearnLessonThumb, resolveLearnLevelHero } from '../../utils/learnLessonThumb';
 import { hasCompletedPlacementResult } from '../../utils/onboardingFlow';
 import { LearnTrackThumb } from './components/LearnTrackThumb';
+import { Tooltip } from '../../components/system/Tooltip';
 
 /** Ảnh minh họa banner «Kiểm tra trình độ» — luân phiên (crossfade) */
 const LEARN_PROMO_ART_CAROUSEL_URLS = [
@@ -387,7 +388,7 @@ export default function LearnIndex() {
         <div className="learn-visual-hero__copy">
           <span className="learn-dashboard__tag">Lộ trình YumeGo-ji</span>
           <h1 className="learn-dashboard__title">
-            Học tiếng Nhật <span className="learn-dashboard__title-accent">JLPT {activeLevelCode}</span>
+            <Tooltip content={`日本語学習 JLPT ${activeLevelCode}`}>Học tiếng Nhật <span className="learn-dashboard__title-accent">JLPT {activeLevelCode}</span></Tooltip>
           </h1>
           <p className="learn-dashboard__lead">
             {isAuthenticated
@@ -429,7 +430,7 @@ export default function LearnIndex() {
           <Motion.div className="learn-section-head learn-section-head--m2" variants={learnItem}>
             <div>
               <h2 id="learn-track-api-title" className="learn-section-head__title learn-section-head__title--system">
-                Khóa học {activeLevelCode}
+                <Tooltip content={`${activeLevelCode} コース`}>Khóa học {activeLevelCode}</Tooltip>
               </h2>
               <p className="learn-section-head__sub">{sectionHeadline}</p>
               {isAuthenticated && apiCompleted > 0 ? (

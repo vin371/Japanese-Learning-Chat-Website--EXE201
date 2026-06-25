@@ -7,6 +7,7 @@ import {
   learnRouteWithJlpt,
 } from '../../../utils/learnLevelAccess';
 import { BookUp, SpellCheck, Languages, MessageSquareText, Layers, BookA } from 'lucide-react';
+import { Tooltip } from '../../../components/system/Tooltip';
 
 function IconRoadmap({ className }) {
   return (
@@ -276,7 +277,7 @@ export function LearnSidebarShell({
           <nav className="learn-shell-cats" aria-label="Lọc theo dạng bài">
             <button type="button" className={`learn-shell-cats__btn${sectionFilter === 'alphabet' ? ' learn-shell-cats__btn--active' : ''}`} onClick={() => goFilter('alphabet')}>
               <BookA size={20} />
-              Bảng chữ cái
+              <Tooltip content='アルファベット'>Bảng chữ cái</Tooltip>
             </button>
             <button
               type="button"
@@ -284,7 +285,7 @@ export function LearnSidebarShell({
               onClick={() => goFilter('vocab')}
             >
               <BookUp size={20} />
-              Từ vựng
+              <Tooltip content='語彙'>Từ vựng</Tooltip>
             </button>
             <button
               type="button"
@@ -292,7 +293,7 @@ export function LearnSidebarShell({
               onClick={() => goFilter('grammar')}
             >
               <SpellCheck size={20} />
-              Ngữ pháp
+              <Tooltip content='文法'>Ngữ pháp</Tooltip>
             </button>
             <button
               type="button"
@@ -300,7 +301,7 @@ export function LearnSidebarShell({
               onClick={() => goFilter('kanji')}
             >
               <Languages size={20} />
-              Kanji
+              <Tooltip content='漢字'>Kanji</Tooltip>
             </button>
             <button
               type="button"
@@ -308,7 +309,7 @@ export function LearnSidebarShell({
               onClick={() => goFilter('dialogue')}
             >
               <MessageSquareText size={20} />
-              Hội thoại
+              <Tooltip content='会話'>Hội thoại</Tooltip>
             </button>
           </nav>
           <NavLink
@@ -317,7 +318,7 @@ export function LearnSidebarShell({
             className={({ isActive }) => `learn-shell-roadmap${isActive ? ' learn-shell-roadmap--active' : ''}`}
           >
             <Layers size={20} />
-            Lộ trình tổng quan
+            <Tooltip content='ロードマップ'>Lộ trình tổng quan</Tooltip>
           </NavLink>
         </ShellCard>
 

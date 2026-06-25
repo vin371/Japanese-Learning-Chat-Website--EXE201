@@ -253,6 +253,38 @@ html[data-theme='dark'] .sys-announce__close:hover {
   mix-blend-mode: normal;
 }
 
+@font-face {
+  font-family: 'KashimaBrush';
+  src: url('/assets/fonts/SVN-Kashima Brush.otf') format('opentype');
+  /* Hoặc format('opentype') nếu là file .otf */
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+  /* Giúp tối ưu tốc độ tải trang */
+}
+
+@font-face {
+  font-family: 'Hirosaki';
+  src: url('/assets/fonts/1FTV-Hirosaki.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'HanZi';
+  src: url('/assets/fonts/TP-Han-Zi.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@theme {
+  --font-kashima: 'KashimaBrush', sans-serif;
+  --font-hirosaki: 'Hirosaki', sans-serif;
+  --font-hanzi: 'HanZi', sans-serif;
+}
+
 /* Scoped to AnimatedThemeToggler — the toggler sets the data-attribute and the variable only during a theme toggle. */
 html[data-magicui-theme-vt="active"]::view-transition-group(root) {
   animation-duration: var(--magicui-theme-toggle-vt-duration);

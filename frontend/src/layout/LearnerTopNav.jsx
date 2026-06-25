@@ -12,6 +12,7 @@ import { MessageCircleMore, ShoppingCart, BookOpenText, Gamepad2 } from 'lucide-
 import yumeLogo from '../assets/yume-logo.png';
 import { AnimatedThemeToggler } from '../ui/animated-theme-toggler';
 import UserProfileDropdown from '../ui/user-profile-dropdown';
+import { Tooltip } from '../components/system/Tooltip';
 
 function initialsFromUser(user, displayName) {
   const n = String(displayName || '').trim();
@@ -90,14 +91,14 @@ export function LearnerTopNav() {
     <header className={`sticky top-0 z-50 w-full bg-white/95 dark:bg-slate-900/95 border-b border-slate-200 dark:border-slate-800 shadow-sm backdrop-blur-md${onStaffWorkspace ? ' learner-top-nav--staff-desk' : ''}`}>
       <div className={`w-full max-w-full flex items-center gap-3 px-3 sm:px-6 py-2.5 box-border flex-wrap md:flex-nowrap ${onStaffWorkspace ? 'justify-end' : 'justify-between md:justify-start'}`}>
         {!onStaffWorkspace ? (
-        <Link
-          to={staffNav ? staffHomePath : ROUTES.LEARN}
-          className="flex items-center gap-2 no-underline text-inherit shrink-0 min-w-0"
-          aria-label="YumeGo-ji"
-        >
-          <img src={yumeLogo} alt="" className="h-10 w-auto block rounded-full bg-white border border-slate-100" />
-          <span className="font-extrabold text-[1.05rem] tracking-tight text-[#b72025] dark:text-purple-200 hidden min-[520px]:block">YumeGo-ji</span>
-        </Link>
+          <Link
+            to={staffNav ? staffHomePath : ROUTES.LEARN}
+            className="flex items-center gap-2 no-underline text-inherit shrink-0 min-w-0"
+            aria-label="YumeGo-ji"
+          >
+            <img src={yumeLogo} alt="" className="h-10 w-auto block rounded-full bg-white border border-slate-100" />
+            <span className="font-extrabold text-[1.05rem] tracking-tight text-[#b72025] dark:text-purple-200 hidden min-[520px]:block">YumeGo-ji</span>
+          </Link>
         ) : null}
 
         <div className="flex items-center gap-1.5 ml-auto flex-auto min-w-0 max-w-full justify-end max-md:order-3 max-md:w-full max-md:flex-none max-md:ml-0 max-md:flex-wrap max-md:gap-1.5 max-md:gap-y-2">
@@ -108,28 +109,26 @@ export function LearnerTopNav() {
             {staffNav ? (
               <>
                 {!onStaffWorkspace ? (
-                <NavLink
-                  to={staffHomePath}
-                  end
-                  className={({ isActive }) => `inline-flex items-center gap-1.5 px-2.5 md:px-4 py-2 rounded-xl no-underline font-semibold text-[0.92rem] border transition-all whitespace-nowrap ${
-                    isActive 
-                      ? 'bg-rose-500/15 text-red-900 border-rose-500/30 dark:bg-purple-500/20 dark:text-yellow-100 dark:border-purple-400/40' 
+                  <NavLink
+                    to={staffHomePath}
+                    end
+                    className={({ isActive }) => `inline-flex items-center gap-1.5 px-2.5 md:px-4 py-2 rounded-xl no-underline font-semibold text-[0.92rem] border transition-all whitespace-nowrap ${isActive
+                      ? 'bg-rose-500/15 text-red-900 border-rose-500/30 dark:bg-purple-500/20 dark:text-yellow-100 dark:border-purple-400/40'
                       : 'text-slate-700 dark:text-slate-200 border-transparent hover:bg-rose-500/10 hover:text-red-700 dark:hover:text-amber-100 dark:hover:bg-orange-500/20'
-                  }`}
-                >
-                  {isAdminUser ? 'Bảng điều khiển' : 'Điều hành'}
-                </NavLink>
+                      }`}
+                  >
+                    {isAdminUser ? 'Bảng điều khiển' : 'Điều hành'}
+                  </NavLink>
                 ) : null}
                 <NavLink
                   to={chatNavPath}
                   isActive={(_, loc) => loc.pathname.startsWith('/chat')}
                   onMouseEnter={onChatLinkWarm}
                   onFocus={onChatLinkWarm}
-                  className={({ isActive }) => `inline-flex items-center gap-1.5 px-2.5 md:px-4 py-2 rounded-xl no-underline font-semibold text-[0.92rem] border transition-all whitespace-nowrap ${
-                    isActive 
-                      ? 'bg-rose-500/15 text-red-900 border-rose-500/30 dark:bg-purple-500/20 dark:text-yellow-100 dark:border-purple-400/40' 
-                      : 'text-slate-700 dark:text-slate-200 border-transparent hover:bg-rose-500/10 hover:text-red-700 dark:hover:text-amber-100 dark:hover:bg-orange-500/20'
-                  }`}
+                  className={({ isActive }) => `inline-flex items-center gap-1.5 px-2.5 md:px-4 py-2 rounded-xl no-underline font-semibold text-[0.92rem] border transition-all whitespace-nowrap ${isActive
+                    ? 'bg-rose-500/15 text-red-900 border-rose-500/30 dark:bg-purple-500/20 dark:text-yellow-100 dark:border-purple-400/40'
+                    : 'text-slate-700 dark:text-slate-200 border-transparent hover:bg-rose-500/10 hover:text-red-700 dark:hover:text-amber-100 dark:hover:bg-orange-500/20'
+                    }`}
                   aria-label={navChatUnread > 0 ? `Trò chuyện, ${navChatUnread} tin chưa đọc` : undefined}
                 >
                   <span className="relative inline-flex items-center justify-center shrink-0">
@@ -145,19 +144,17 @@ export function LearnerTopNav() {
               </>
             ) : (
               <>
-                <NavLink to={ROUTES.LEARN} className={({ isActive }) => `inline-flex items-center gap-1.5 px-2.5 md:px-4 py-2 rounded-xl no-underline font-semibold text-[0.92rem] border transition-all whitespace-nowrap ${
-                  isActive 
-                    ? 'bg-rose-500/15 text-red-900 border-rose-500/30 dark:bg-purple-500/20 dark:text-yellow-100 dark:border-purple-400/40' 
-                    : 'text-slate-700 dark:text-slate-200 border-transparent hover:bg-rose-500/10 hover:text-red-700 dark:hover:text-amber-100 dark:hover:bg-orange-500/20'
-                }`}>
+                <NavLink to={ROUTES.LEARN} className={({ isActive }) => `inline-flex items-center gap-1.5 px-2.5 md:px-4 py-2 rounded-xl no-underline font-semibold text-[0.92rem] border transition-all whitespace-nowrap ${isActive
+                  ? 'bg-rose-500/15 text-red-900 border-rose-500/30 dark:bg-purple-500/20 dark:text-yellow-100 dark:border-purple-400/40'
+                  : 'text-slate-700 dark:text-slate-200 border-transparent hover:bg-rose-500/10 hover:text-red-700 dark:hover:text-amber-100 dark:hover:bg-orange-500/20'
+                  }`}>
                   <BookOpenText size={20} />
                   Học tập
                 </NavLink>
-                <NavLink to={ROUTES.PLAY} className={({ isActive }) => `inline-flex items-center gap-1.5 px-2.5 md:px-4 py-2 rounded-xl no-underline font-semibold text-[0.92rem] border transition-all whitespace-nowrap ${
-                  isActive 
-                    ? 'bg-rose-500/15 text-red-900 border-rose-500/30 dark:bg-purple-500/20 dark:text-yellow-100 dark:border-purple-400/40' 
-                    : 'text-slate-700 dark:text-slate-200 border-transparent hover:bg-rose-500/10 hover:text-red-700 dark:hover:text-amber-100 dark:hover:bg-orange-500/20'
-                }`}>
+                <NavLink to={ROUTES.PLAY} className={({ isActive }) => `inline-flex items-center gap-1.5 px-2.5 md:px-4 py-2 rounded-xl no-underline font-semibold text-[0.92rem] border transition-all whitespace-nowrap ${isActive
+                  ? 'bg-rose-500/15 text-red-900 border-rose-500/30 dark:bg-purple-500/20 dark:text-yellow-100 dark:border-purple-400/40'
+                  : 'text-slate-700 dark:text-slate-200 border-transparent hover:bg-rose-500/10 hover:text-red-700 dark:hover:text-amber-100 dark:hover:bg-orange-500/20'
+                  }`}>
                   <Gamepad2 size={20} />
                   Trò chơi
                 </NavLink>
@@ -166,11 +163,10 @@ export function LearnerTopNav() {
                   isActive={(_, loc) => loc.pathname.startsWith('/chat')}
                   onMouseEnter={onChatLinkWarm}
                   onFocus={onChatLinkWarm}
-                  className={({ isActive }) => `inline-flex items-center gap-1.5 px-2.5 md:px-4 py-2 rounded-xl no-underline font-semibold text-[0.92rem] border transition-all whitespace-nowrap ${
-                    isActive 
-                      ? 'bg-rose-500/15 text-red-900 border-rose-500/30 dark:bg-purple-500/20 dark:text-yellow-100 dark:border-purple-400/40' 
-                      : 'text-slate-700 dark:text-slate-200 border-transparent hover:bg-rose-500/10 hover:text-red-700 dark:hover:text-amber-100 dark:hover:bg-orange-500/20'
-                  }`}
+                  className={({ isActive }) => `inline-flex items-center gap-1.5 px-2.5 md:px-4 py-2 rounded-xl no-underline font-semibold text-[0.92rem] border transition-all whitespace-nowrap ${isActive
+                    ? 'bg-rose-500/15 text-red-900 border-rose-500/30 dark:bg-purple-500/20 dark:text-yellow-100 dark:border-purple-400/40'
+                    : 'text-slate-700 dark:text-slate-200 border-transparent hover:bg-rose-500/10 hover:text-red-700 dark:hover:text-amber-100 dark:hover:bg-orange-500/20'
+                    }`}
                   aria-label={navChatUnread > 0 ? `Trò chuyện, ${navChatUnread} tin chưa đọc` : undefined}
                 >
                   <span className="relative inline-flex items-center justify-center shrink-0">
@@ -185,11 +181,10 @@ export function LearnerTopNav() {
                 </NavLink>
                 <NavLink
                   to={ROUTES.UPGRADE}
-                  className={({ isActive }) => `inline-flex items-center gap-1.5 px-2.5 md:px-4 py-2 rounded-xl no-underline font-semibold text-[0.92rem] border transition-all whitespace-nowrap ${
-                    isActive 
-                      ? 'bg-rose-500/15 text-red-900 border-rose-500/30 dark:bg-purple-500/20 dark:text-yellow-100 dark:border-purple-400/40' 
-                      : 'text-slate-700 dark:text-slate-200 border-transparent hover:bg-rose-500/10 hover:text-red-700 dark:hover:text-amber-100 dark:hover:bg-orange-500/20'
-                  }`}
+                  className={({ isActive }) => `inline-flex items-center gap-1.5 px-2.5 md:px-4 py-2 rounded-xl no-underline font-semibold text-[0.92rem] border transition-all whitespace-nowrap ${isActive
+                    ? 'bg-rose-500/15 text-red-900 border-rose-500/30 dark:bg-purple-500/20 dark:text-yellow-100 dark:border-purple-400/40'
+                    : 'text-slate-700 dark:text-slate-200 border-transparent hover:bg-rose-500/10 hover:text-red-700 dark:hover:text-amber-100 dark:hover:bg-orange-500/20'
+                    }`}
                 >
                   <ShoppingCart size={20} />
                   Nâng cấp

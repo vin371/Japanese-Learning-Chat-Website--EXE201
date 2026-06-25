@@ -7,6 +7,7 @@ import { paymentService } from '../../services/paymentService';
 import { SakuraRainLayer } from '../../components/effects/SakuraRainLayer';
 import { getErrorMessageForUser } from '../../utils/apiErrorMessage';
 import { Check } from 'lucide-react';
+import { Tooltip } from '../../components/system/Tooltip';
 
 /** Alias để ESLint nhận diện biến dùng qua JSX. */
 const Motion = motion;
@@ -183,13 +184,13 @@ export default function UpgradePage() {
           variants={reduceMotion ? undefined : planCard}
         >
           <div className="upgrade-card__ribbon">Free</div>
-          <h2 className="upgrade-card__name">Miễn phí</h2>
+          <Tooltip content="フリー"><h2 className="upgrade-card__name">Miễn phí</h2></Tooltip>
           <p className="upgrade-card__price">
             0 VND
           </p>
           <Motion.div className="upgrade-card__btn-touch" whileHover={btnHoverLift} whileTap={btnTap}>
             <button type="button" className="upgrade-card__btn" disabled>
-              {!isPremium ? 'Gói hiện tại' : 'Không phải gói này'}
+              <Tooltip content={!isPremium ? '現在のプラン' : 'このプランではない'}>{!isPremium ? 'Gói hiện tại' : 'Không phải gói này'}</Tooltip>
             </button>
           </Motion.div>
           <ul className="upgrade-card__features">
@@ -236,7 +237,7 @@ export default function UpgradePage() {
           </div>
           <div className="upgrade-card__badge">Ưu đãi nhất</div>
           <div className="upgrade-card__ribbon upgrade-card__ribbon--gold">Premium</div>
-          <h2 className="upgrade-card__name upgrade-card__name--gold">Cao cấp</h2>
+          <Tooltip content="プレミアム"><h2 className="upgrade-card__name upgrade-card__name--gold">Cao cấp</h2></Tooltip>
           <p className="upgrade-card__price upgrade-card__price--gold">
             {fmtVnd(premiumPrice)} VND
             <span className="upgrade-card__price-sub"> / {durationDays} ngày</span>
@@ -249,7 +250,7 @@ export default function UpgradePage() {
               onClick={onCreateIntent}
               disabled={!canBuy || creating}
             >
-              {isPremium ? 'Gói hiện tại' : creating ? 'Đang tạo mã…' : 'Nâng cấp lên Premium'}
+              <Tooltip content={!isPremium ? '現在のプラン' : 'プレミアムにアップグレード'}>{isPremium ? 'Gói hiện tại' : creating ? 'Đang tạo mã…' : 'Nâng cấp lên Premium'}</Tooltip>
             </button>
           </Motion.div>
           <ul className="upgrade-card__features upgrade-card__features--gold">
