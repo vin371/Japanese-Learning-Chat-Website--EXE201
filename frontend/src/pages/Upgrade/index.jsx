@@ -6,7 +6,6 @@ import { useAuth } from '../../hooks/useAuth';
 import { paymentService } from '../../services/paymentService';
 import { SakuraRainLayer } from '../../components/effects/SakuraRainLayer';
 import { getErrorMessageForUser } from '../../utils/apiErrorMessage';
-import { Check } from 'lucide-react';
 import { Vi } from '../../components/ui/Vi';
 
 /** Alias để ESLint nhận diện biến dùng qua JSX. */
@@ -45,27 +44,24 @@ function fmtVnd(n) {
   return new Intl.NumberFormat('vi-VN').format(Math.round(x));
 }
 
-/** 7.1 Gói Miễn phí — nội dung theo spec sản phẩm */
+/** Gói Miễn phí — chỉ tính năng học tập */
 const FREE_FEATURES = [
-  'Truy cập bài học cơ bản theo cấp độ',
-  'Chơi game giới hạn số lượt',
-  'Tham gia chat công cộng',
-  'Kết bạn',
-  'Xem bảng xếp hạng',
-  'Quảng cáo hiển thị (nếu có)',
+  { icon: '📖', text: 'Lộ trình JLPT N5: từ vựng, ngữ pháp, kanji' },
+  { icon: '🎯', text: 'Bài test đầu vào & theo dõi tiến độ học' },
+  { icon: '🃏', text: 'Flashcard & bài tập trong phạm vi Free' },
+  { icon: '📝', text: '5 bài đầu mỗi phần ở N5 (từ vựng, ngữ pháp, kanji)' },
+  { icon: '🎮', text: 'Game ôn tập — giới hạn 8 lượt chơi/ngày' },
+  { icon: 'あ', text: 'Bảng chữ Hiragana & Katakana' },
 ];
 
-/** 7.2 Gói Cao cấp (Premium) */
+/** Gói Premium — quyền lợi học tập */
 const PREMIUM_FEATURES = [
-  'Không giới hạn lượt chơi game',
-  'Truy cập tất cả bài học, bao gồm nâng cao',
-  'Không quảng cáo',
-  'Vật phẩm đặc biệt trong game mỗi ngày',
-  'Kết bạn không giới hạn',
-  'Tạo nhóm chat riêng',
-  'Tham gia giải đấu PvP',
-  'Nhận huy hiệu Premium độc quyền',
-  'Ưu tiên hỗ trợ khách hàng',
+  { icon: '🔓', text: 'Mở khóa toàn bộ bài học & nội dung đánh dấu Premium' },
+  { icon: '📚', text: 'Truy cập đầy đủ từ vựng, ngữ pháp & kanji Premium' },
+  { icon: '🃏', text: 'Ôn tập flashcard & quiz sau mỗi bài học' },
+  { icon: '🗺️', text: 'Lộ trình N5 → N3 theo cấp JLPT' },
+  { icon: '✨', text: 'Trải nghiệm học mượt mà, tập trung tuyệt đối' },
+  { icon: '🏅', text: 'Huy hiệu Premium trên hồ sơ học tập' },
 ];
 
 export default function UpgradePage() {
@@ -73,6 +69,7 @@ export default function UpgradePage() {
   const { user } = useAuth();
   const [config, setConfig] = useState(null);
   const [intent, setIntent] = useState(null);
+  const [showPayment, setShowPayment] = useState(false);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [confirming, setConfirming] = useState(false);
@@ -87,13 +84,9 @@ export default function UpgradePage() {
       setLoading(true);
       setErr('');
       try {
-        const [cfg, latest] = await Promise.all([
-          paymentService.getPremiumConfig(),
-          paymentService.getMyLatestPremiumIntent().catch(() => null),
-        ]);
+        const cfg = await paymentService.getPremiumConfig();
         if (!cancelled) {
           setConfig(cfg);
-          setIntent(latest);
         }
       } catch (e) {
         if (!cancelled) setErr(getErrorMessageForUser(e, 'Không tải được dữ liệu nâng cấp.'));
@@ -129,6 +122,7 @@ export default function UpgradePage() {
     try {
       const dto = await paymentService.createPremiumIntent();
       setIntent(dto);
+      setShowPayment(true);
       setMsg('Đã tạo mã QR thanh toán.');
     } catch (e) {
       setErr(getErrorMessageForUser(e, 'Không tạo được mã thanh toán.'));
@@ -160,11 +154,11 @@ export default function UpgradePage() {
       <div className="upgrade-page__decor upgrade-page__decor--br" aria-hidden />
 
       <header className="upgrade-page__hero">
-        <p className="upgrade-page__eyebrow"><Vi>So sánh gói đăng ký</Vi></p>
-        <h1 className="upgrade-page__title"><Vi>Nâng cấp trải nghiệm học & chơi</Vi></h1>
+        <p className="upgrade-page__eyebrow"><Vi>JLPT · Lộ trình học</Vi></p>
+        <h1 className="upgrade-page__title"><Vi>Nâng cấp hành trình học tiếng Nhật</Vi></h1>
         <p className="upgrade-page__lead">
-          Mở khóa phần thưởng và tính năng nâng cao. Phân biệt tài khoản theo cờ{' '}
-          <strong>Premium</strong> trên hệ thống (sau khi admin duyệt thanh toán).
+          Mở khóa toàn bộ bài học, ôn tập không giới hạn và lộ trình N5 → N3 — tập trung hoàn toàn vào
+          việc chinh phục JLPT.
         </p>
       </header>
 
@@ -185,22 +179,23 @@ export default function UpgradePage() {
         >
           <div className="upgrade-card__ribbon">Free</div>
           <h2 className="upgrade-card__name"><Vi>Miễn phí</Vi></h2>
+          <p className="upgrade-card__tagline">Bắt đầu hành trình N5</p>
           <p className="upgrade-card__price">
-            0 VND
+            0<span className="upgrade-card__price-unit"> VND</span>
           </p>
+          <ul className="upgrade-card__features">
+            {FREE_FEATURES.map(({ icon, text }) => (
+              <li key={text}>
+                <span className="upgrade-card__feature-icon" aria-hidden>{icon}</span>
+                <span>{text}</span>
+              </li>
+            ))}
+          </ul>
           <Motion.div className="upgrade-card__btn-touch" whileHover={btnHoverLift} whileTap={btnTap}>
             <button type="button" className="upgrade-card__btn" disabled>
               {!isPremium ? <Vi>Gói hiện tại</Vi> : <Vi ja="このプランではない">Không phải gói này</Vi>}
             </button>
           </Motion.div>
-          <ul className="upgrade-card__features">
-            {FREE_FEATURES.map((t) => (
-              <li key={t}>
-                <Check />
-                <span>{t}</span>
-              </li>
-            ))}
-          </ul>
         </Motion.article>
 
         <Motion.article
@@ -238,11 +233,21 @@ export default function UpgradePage() {
           <div className="upgrade-card__badge"><Vi>Ưu đãi nhất</Vi></div>
           <div className="upgrade-card__ribbon upgrade-card__ribbon--gold">Premium</div>
           <h2 className="upgrade-card__name upgrade-card__name--gold"><Vi>Cao cấp</Vi></h2>
+          <p className="upgrade-card__tagline upgrade-card__tagline--gold">Toàn bộ bài học · Ôn tập không giới hạn</p>
           <p className="upgrade-card__price upgrade-card__price--gold">
-            {fmtVnd(premiumPrice)} VND
+            {fmtVnd(premiumPrice)}
+            <span className="upgrade-card__price-unit"> VND</span>
             <span className="upgrade-card__price-sub"> / {durationDays} ngày</span>
           </p>
-          <p className="upgrade-card__billing-note">Tính phí theo gói đang cấu hình — thanh toán &amp; kích hoạt sau khi admin duyệt.</p>
+          <p className="upgrade-card__billing-note">Thanh toán một lần — kích hoạt sau khi admin duyệt.</p>
+          <ul className="upgrade-card__features upgrade-card__features--gold">
+            {PREMIUM_FEATURES.map(({ icon, text }) => (
+              <li key={text}>
+                <span className="upgrade-card__feature-icon" aria-hidden>{icon}</span>
+                <span>{text}</span>
+              </li>
+            ))}
+          </ul>
           <Motion.div className="upgrade-card__btn-touch" whileHover={btnHoverLift} whileTap={btnTap}>
             <button
               type="button"
@@ -253,18 +258,10 @@ export default function UpgradePage() {
               {isPremium ? <Vi>Gói hiện tại</Vi> : creating ? <Vi ja="コード作成中…">Đang tạo mã…</Vi> : <Vi>Nâng cấp lên Premium</Vi>}
             </button>
           </Motion.div>
-          <ul className="upgrade-card__features upgrade-card__features--gold">
-            {PREMIUM_FEATURES.map((t) => (
-              <li key={t}>
-                <Check />
-                <span>{t}</span>
-              </li>
-            ))}
-          </ul>
         </Motion.article>
       </Motion.section>
 
-      {!isPremium && intent ? (
+      {!isPremium && showPayment && intent ? (
         <section className="upgrade-pay" aria-labelledby="upgrade-pay-title">
           <h3 id="upgrade-pay-title">Thanh toán QR</h3>
           <p className="upgrade-page__muted">{statusText}</p>
@@ -298,8 +295,8 @@ export default function UpgradePage() {
                 {confirming ? 'Đang gửi…' : 'Tôi đã thanh toán'}
               </button>
             </Motion.div>
-            <Link className="upgrade-page__back" to={ROUTES.DASHBOARD}>
-              ← Về bảng điều khiển
+            <Link className="upgrade-page__back" to={ROUTES.LEARN}>
+              ← Về học tập
             </Link>
           </div>
         </section>

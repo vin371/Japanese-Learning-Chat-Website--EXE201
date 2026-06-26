@@ -9,7 +9,6 @@ const Homepage = lazy(() => import('../pages/Homepage'));
 const Login = lazy(() => import('../pages/Login'));
 const Register = lazy(() => import('../pages/Register'));
 const ResetPassword = lazy(() => import('../pages/ResetPassword'));
-const Dashboard = lazy(() => import('../pages/Dashboard'));
 const OnboardingSurveyPage = lazy(() => import('../pages/Onboarding/OnboardingSurveyPage'));
 const TestIntroPage = lazy(() => import('../pages/Onboarding/TestIntroPage'));
 const PlacementResultPage = lazy(() => import('../pages/Onboarding/PlacementResultPage'));
@@ -47,11 +46,7 @@ function AppRoutes() {
         <Route path={ROUTES.RESET_PASSWORD} element={<ResetPassword />} />
         <Route
           path={ROUTES.DASHBOARD}
-          element={
-            <PrivateRoute>
-              <Dashboard />
-            </PrivateRoute>
-          }
+          element={<Navigate to={ROUTES.LEARN} replace />}
         />
         <Route
           path={ROUTES.ONBOARDING_SURVEY}

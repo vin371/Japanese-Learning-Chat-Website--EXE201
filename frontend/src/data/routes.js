@@ -7,6 +7,7 @@ export const ROUTES = {
   REGISTER: '/register',
   FORGOT_PASSWORD: '/forgot-password',
   RESET_PASSWORD: '/reset-password',
+  /** @deprecated Chuyển hướng → /learn */
   DASHBOARD: '/dashboard',
   ONBOARDING_SURVEY: '/onboarding-survey',
   TEST_INTRO: '/test-intro',

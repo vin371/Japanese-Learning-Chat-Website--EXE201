@@ -184,7 +184,7 @@ export function getOnboardingEnforcement(pathname, { needsPlacementTest, user })
 
   if (!inPipeline) {
     if (isOnboardingRoute(pathname) && pathname !== ROUTES.PLACEMENT_RESULT) {
-      return ROUTES.DASHBOARD;
+      return ROUTES.LEARN;
     }
     return null;
   }
@@ -213,7 +213,7 @@ export function getLearnHomeForLevel(levelCode) {
   return `${ROUTES.LEARN}?jlpt=${encodeURIComponent(code)}`;
 }
 
-export function getPostAuthRoute(data, user, fallbackPath = ROUTES.DASHBOARD) {
+export function getPostAuthRoute(data, user, fallbackPath = ROUTES.LEARN) {
   const u = user ?? data?.user;
   if (isStaffUser(u)) {
     return getPostLoginRoute(u, fallbackPath);

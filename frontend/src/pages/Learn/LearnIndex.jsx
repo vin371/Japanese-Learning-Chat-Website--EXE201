@@ -19,6 +19,8 @@ import { LearnImageCarousel } from './components/LearnImageCarousel';
 import LearnAlphabet from './components/LearnAlphabet';
 import { resolveLearnLessonThumb, resolveLearnLevelHero } from '../../utils/learnLessonThumb';
 import { hasCompletedPlacementResult } from '../../utils/onboardingFlow';
+import { lessonRequiresPremiumAccess } from '../../utils/learnFreeTier';
+import { userIsPremium } from '../../utils/userPremium';
 import { LearnTrackThumb } from './components/LearnTrackThumb';
 import { ViJaHoverText } from '../../components/learn/ViJaHoverText';
 import { SECTION_JA, sectionJaLabelFor } from '../../data/learnUiJapanese';
@@ -109,6 +111,13 @@ function categoryAccent(section) {
   return 'default';
 }
 
+const SECTION_CARD_ICON = {
+  vocab: '🌸',
+  grammar: '✏️',
+  kanji: '🈳',
+  default: '📖',
+};
+
 function normalizeLesson(row) {
   const categoryType = row.categoryType ?? row.CategoryType ?? '';
   return {
@@ -120,11 +129,13 @@ function normalizeLesson(row) {
     section: categoryTypeToSection(categoryType),
     sortOrder: row.sortOrder ?? row.SortOrder ?? 0,
     levelId: row.levelId ?? row.LevelId ?? 0,
+    isPremium: !!(row.isPremium ?? row.IsPremium),
   };
 }
 
-/** completed | active | locked | guest-open — mọi bài N5 mở; chỉ đánh dấu đã xong. */
-function rowStatesForAuth(lessons, progressByLessonId) {
+/** completed | active | locked | guest-open */
+function rowStatesForAuth(lessons, progressByLessonId, levelCode, user) {
+  const prem = userIsPremium(user);
   const isDone = (id) => {
     const p = progressByLessonId.get(id);
     if (!p) return false;
@@ -134,13 +145,19 @@ function rowStatesForAuth(lessons, progressByLessonId) {
   };
 
   return lessons.map((lesson) => {
+    if (lessonRequiresPremiumAccess(lesson, levelCode, prem)) {
+      return { lesson, state: 'locked' };
+    }
     if (isDone(lesson.id)) return { lesson, state: 'completed' };
     return { lesson, state: 'guest-open' };
   });
 }
 
-function rowStatesGuest(lessons) {
-  return lessons.map((lesson) => ({ lesson, state: 'guest-open' }));
+function rowStatesGuest(lessons, levelCode) {
+  return lessons.map((lesson) => ({
+    lesson,
+    state: lessonRequiresPremiumAccess(lesson, levelCode, false) ? 'locked' : 'guest-open',
+  }));
 }
 
 /** Thẻ bài học — ảnh minh họa theo title / cấp JLPT */
@@ -159,7 +176,7 @@ function TrackCard({ lesson, state, to, progressPercent, levelCode }) {
     state === 'completed'
       ? { cls: 'learn-track-card__badge--done', text: 'Xong' }
       : state === 'locked'
-        ? { cls: 'learn-track-card__badge--locked', text: 'Khóa' }
+        ? { cls: 'learn-track-card__badge--locked', text: 'Premium' }
         : state === 'guest-open'
           ? { cls: 'learn-track-card__badge--sample', text: 'Mở' }
           : { cls: 'learn-track-card__badge--active', text: 'Đang học' };
@@ -169,8 +186,10 @@ function TrackCard({ lesson, state, to, progressPercent, levelCode }) {
       : state === 'locked'
         ? 'learn-track-card__btn learn-track-card__btn--locked'
         : 'learn-track-card__btn learn-track-card__btn--primary';
-  const label = state === 'completed' ? 'Ôn tập' : 'Học ngay';
-  const labelJa = state === 'completed' ? '復習' : '今すぐ学ぶ';
+  const label = state === 'completed' ? 'Ôn tập' : state === 'locked' ? 'Nâng cấp' : 'Học ngay';
+  const labelJa = state === 'completed' ? '復習' : state === 'locked' ? 'アップグレード' : '今すぐ学ぶ';
+  const lessonNoPadded = lesson.sortOrder ? String(lesson.sortOrder).padStart(2, '0') : '';
+  const sectionIcon = SECTION_CARD_ICON[lesson.section] ?? SECTION_CARD_ICON.default;
 
   return (
     <Motion.div
@@ -185,42 +204,70 @@ function TrackCard({ lesson, state, to, progressPercent, levelCode }) {
         <div className="learn-track-card__thumb-shade" aria-hidden />
       </div>
       <div className="learn-track-card__accent-bar" aria-hidden />
-      <div className="learn-track-card__head">
-        <span className={`learn-track-card__badge ${badge.cls}`}>
-          <ViJaHoverText ja={badge.text === 'Xong' ? '完了' : badge.text === 'Khóa' ? 'ロック' : badge.text === 'Mở' ? '開く' : '学習中'}>
-            {badge.text}
-          </ViJaHoverText>
-        </span>
-        {lesson.sortOrder ? (
-          <span className="learn-track-card__lesson-no">
-            <ViJaHoverText ja="第">Bài</ViJaHoverText> {lesson.sortOrder}
+      <div className="learn-track-card__body">
+        <div className="learn-track-card__head">
+          <span className={`learn-track-card__badge ${badge.cls}`}>
+            <ViJaHoverText ja={badge.text === 'Xong' ? '完了' : badge.text === 'Khóa' ? 'ロック' : badge.text === 'Mở' ? '開く' : '学習中'}>
+              {badge.text}
+            </ViJaHoverText>
           </span>
-        ) : null}
-      </div>
-      <div className="learn-track-card__middle">
-        <p className="learn-track-card__cat">
-          <ViJaHoverText ja={SECTION_JA[lesson.section]}>{sectionLabelFor(lesson.section)}</ViJaHoverText>
-        </p>
-        <h4 className="learn-track-card__title">{lesson.title}</h4>
-        {state === 'active' && progressPercent != null ? (
-          <div className="learn-track-card__mini-prog" aria-hidden>
-            <div
-              className="learn-track-card__mini-prog-fill"
-              style={{ width: `${Math.min(100, progressPercent)}%` }}
-            />
-          </div>
-        ) : null}
-      </div>
-      <div className="learn-track-card__foot">
-        {isLocked ? (
-          <span className={btnClass} role="button" aria-disabled="true">
-            <ViJaHoverText ja={labelJa}>{label}</ViJaHoverText>
-          </span>
-        ) : (
-          <Link className={btnClass} to={to}>
-            <ViJaHoverText ja={labelJa}>{label}</ViJaHoverText>
-          </Link>
-        )}
+          {lessonNoPadded ? (
+            <span className="learn-track-card__lesson-no">
+              <span className="learn-track-card__lesson-no-icon" aria-hidden>
+                📖
+              </span>
+              <span className="learn-track-card__lesson-no-text">
+                <ViJaHoverText ja="第">Bài</ViJaHoverText> {lessonNoPadded}
+              </span>
+            </span>
+          ) : (
+            <span className="learn-track-card__lesson-no learn-track-card__lesson-no--empty" aria-hidden />
+          )}
+        </div>
+        <div className="learn-track-card__middle">
+          <h4 className="learn-track-card__title">{lesson.title}</h4>
+          <p className={`learn-track-card__cat learn-track-card__cat--${accent}`}>
+            <span className="learn-track-card__cat-icon" aria-hidden>
+              {sectionIcon}
+            </span>
+            <span className="learn-track-card__cat-label">
+              <ViJaHoverText ja={SECTION_JA[lesson.section]}>{sectionLabelFor(lesson.section)}</ViJaHoverText>
+            </span>
+          </p>
+          {state === 'active' && progressPercent != null ? (
+            <div className="learn-track-card__mini-prog" aria-hidden>
+              <div
+                className="learn-track-card__mini-prog-fill"
+                style={{ width: `${Math.min(100, progressPercent)}%` }}
+              />
+            </div>
+          ) : null}
+        </div>
+        <div className="learn-track-card__foot">
+          {isLocked ? (
+            <Link className={`${btnClass} learn-track-card__btn--upgrade`} to={ROUTES.UPGRADE}>
+              <span className="learn-track-card__btn-inner">
+                <span className="learn-track-card__btn-label">
+                  <ViJaHoverText ja={labelJa}>{label}</ViJaHoverText>
+                </span>
+                <span className="learn-track-card__btn-arrow" aria-hidden>
+                  →
+                </span>
+              </span>
+            </Link>
+          ) : (
+            <Link className={btnClass} to={to}>
+              <span className="learn-track-card__btn-inner">
+                <span className="learn-track-card__btn-label">
+                  <ViJaHoverText ja={labelJa}>{label}</ViJaHoverText>
+                </span>
+                <span className="learn-track-card__btn-arrow" aria-hidden>
+                  →
+                </span>
+              </span>
+            </Link>
+          )}
+        </div>
       </div>
     </Motion.div>
   );
@@ -327,10 +374,10 @@ export default function LearnIndex() {
   const apiRows = useMemo(() => {
     if (!filteredLessons.length) return [];
     const rows = isAuthenticated
-      ? rowStatesForAuth(filteredLessons, progressByLessonId)
-      : rowStatesGuest(filteredLessons);
+      ? rowStatesForAuth(filteredLessons, progressByLessonId, activeLevelCode, user)
+      : rowStatesGuest(filteredLessons, activeLevelCode);
     return rows;
-  }, [filteredLessons, progressByLessonId, isAuthenticated]);
+  }, [filteredLessons, progressByLessonId, isAuthenticated, activeLevelCode, user]);
 
   const apiCompleted = sortedApi.filter((l) => {
     const p = progressByLessonId.get(l.id);
@@ -407,8 +454,8 @@ export default function LearnIndex() {
           </h1>
           <p className="learn-dashboard__lead">
             {isAuthenticated
-              ? 'Từ vựng, ngữ pháp và kanji — mỗi bài kèm thẻ học và minh họa trực quan.'
-              : `Đăng nhập để lưu tiến độ. Mọi bài ${activeLevelCode} đều mở để học thử.`}
+              ? 'Gói Free: 5 bài đầu mỗi phần ở N5. Nâng cấp Premium để mở khóa toàn bộ lộ trình.'
+              : `Đăng nhập để học thử ${activeLevelCode}. Gói Free được 5 bài đầu mỗi phần ở N5.`}
           </p>
           <div className="learn-visual-hero__chips">
             <ViJaHoverText className="learn-visual-chip" ja="語彙">Từ vựng</ViJaHoverText>

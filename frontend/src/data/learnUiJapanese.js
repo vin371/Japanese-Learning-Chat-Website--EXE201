@@ -99,6 +99,8 @@ export const LEARN_UI_JA = {
 
   // —— Upgrade ——
   'So sánh gói đăng ký': 'プラン比較',
+  'JLPT · Lộ trình học': 'JLPT・学習ルート',
+  'Nâng cấp hành trình học tiếng Nhật': '日本語学習の旅をアップグレード',
   'Nâng cấp trải nghiệm học & chơi': '学習とゲーム体験をアップグレード',
   'Miễn phí': '無料',
   'Cao cấp': 'プレミアム',

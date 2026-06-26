@@ -22,9 +22,8 @@ import './styles/pages/homepage.css';
 import './styles/pages/auth.css';
 import './styles/pages/chat.css';
 import './styles/pages/chat-room-ui.css';
-import './styles/pages/dashboard.css';
-import './styles/pages/yume-dashboard.css';
 import './styles/pages/onboarding.css';
+import './styles/pages/yume-dashboard.css';
 import './styles/pages/level-up-test.css';
 import './styles/pages/upgrade.css';
 import './styles/pages/learn-course.css';
@@ -37,7 +36,6 @@ const Motion = motionFr;
 /** Nhóm route learner để chuyển cảnh (Học tập ↔ Trò chơi ↔ …) không animate từng path con. */
 function learnerSectionKey(pathname) {
   if (!pathname) return '';
-  if (pathname.startsWith(ROUTES.DASHBOARD)) return 'dashboard';
   if (pathname.startsWith(ROUTES.LEARN)) return 'learn';
   if (pathname.startsWith(ROUTES.PLAY)) return 'play';
   if (pathname.startsWith(ROUTES.CHAT)) return 'chat';
@@ -64,8 +62,7 @@ function AppShell() {
   const learnerShell =
     isAuthenticated &&
     !onboardingPage &&
-    (location.pathname === ROUTES.DASHBOARD ||
-      location.pathname.startsWith(ROUTES.ADMIN) ||
+    (location.pathname.startsWith(ROUTES.ADMIN) ||
       location.pathname.startsWith(ROUTES.MODERATOR) ||
       location.pathname.startsWith(ROUTES.LEARN) ||
       location.pathname.startsWith(ROUTES.PLAY) ||

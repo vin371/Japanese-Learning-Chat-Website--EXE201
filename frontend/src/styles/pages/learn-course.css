@@ -256,6 +256,28 @@ html[data-theme='dark'] .app-main--learner:has(.learn-layout--shodo) {
   margin-bottom: 0.25rem;
 }
 
+.learn-nav__link--locked {
+  opacity: 0.72;
+  color: var(--text-muted, #64748b);
+}
+
+.learn-nav__link--locked:hover {
+  background: rgba(251, 191, 36, 0.12);
+}
+
+.learn-nav__lock {
+  flex-shrink: 0;
+  width: 0.9rem;
+  height: 0.9rem;
+  margin-left: auto;
+  margin-top: 0.15rem;
+  opacity: 0.85;
+}
+
+.learn-track-card__btn--upgrade {
+  text-decoration: none;
+}
+
 .learn-nav__link {
   display: flex;
   align-items: flex-start;
@@ -6110,21 +6132,24 @@ html[data-theme='dark'] .learn-layout--crimson-blossom .learn-visual-hero {
 .learn-track-card--visual {
   padding: 0;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Be Vietnam Pro', Inter, system-ui, -apple-system, sans-serif;
   border: 1px solid rgba(192, 38, 38, 0.08);
   box-shadow:
     0 1px 2px rgba(15, 23, 42, 0.04),
     0 8px 24px rgba(192, 38, 38, 0.06);
   transition:
-    box-shadow 0.35s ease,
-    transform 0.35s ease,
-    border-color 0.35s ease;
+    box-shadow 0.3s ease-out,
+    transform 0.3s ease-out,
+    border-color 0.3s ease-out;
 }
 
 .learn-track-card--visual:hover {
-  border-color: rgba(192, 38, 38, 0.18);
+  border-color: rgba(192, 38, 38, 0.2);
   box-shadow:
-    0 4px 8px rgba(15, 23, 42, 0.06),
-    0 16px 40px rgba(192, 38, 38, 0.12);
+    0 8px 16px rgba(15, 23, 42, 0.08),
+    0 20px 48px rgba(192, 38, 38, 0.14);
 }
 
 .learn-track-card--visual .learn-track-card__thumb {
@@ -6173,13 +6198,13 @@ html[data-theme='dark'] .learn-layout--crimson-blossom .learn-visual-hero {
   height: 100%;
   object-fit: cover;
   object-position: center center;
-  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform 0.3s ease-out;
   filter: saturate(1.04) contrast(1.01);
 }
 
 .learn-track-card--visual:hover .learn-track-card__thumb-img,
 .learn-track-card--visual:hover .learn-track-card__thumb img {
-  transform: scale(1.04);
+  transform: scale(1.03);
 }
 
 .learn-track-card__thumb-shade {
@@ -6205,15 +6230,43 @@ html[data-theme='dark'] .learn-track-card--visual .learn-track-card__thumb {
   background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
 }
 
-.learn-track-card--visual .learn-track-card__head,
-.learn-track-card--visual .learn-track-card__middle,
-.learn-track-card--visual .learn-track-card__foot {
-  padding-left: 0.85rem;
-  padding-right: 0.85rem;
+.learn-track-card--visual .learn-track-card__body {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 16px 24px 24px;
+  font-family: inherit;
 }
 
 .learn-track-card--visual .learn-track-card__head {
-  padding-top: 0.55rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-shrink: 0;
+  height: 40px;
+  margin: 0;
+  padding: 0;
+}
+
+.learn-track-card--visual .learn-track-card__middle {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  gap: 0;
+}
+
+.learn-track-card--visual .learn-track-card__foot {
+  flex-shrink: 0;
+  margin-top: auto;
+  padding: 32px 0 0;
+  border-top: none;
+  width: 100%;
 }
 
 .learn-track-card--visual .learn-track-card__accent-bar {
@@ -6228,5 +6281,249 @@ html[data-theme='dark'] .learn-track-card--visual .learn-track-card__thumb {
   .learn-track-card--visual:hover .learn-track-card__thumb-img,
   .learn-track-card--visual:hover .learn-track-card__thumb img {
     transform: none;
+  }
+}
+
+/* ── Lesson card typography (visual grid) — Be Vietnam Pro, 8px rhythm ── */
+.learn-track-card--visual .learn-track-card__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.learn-track-card--visual .learn-track-card__lesson-no {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+  height: 40px;
+  margin: 0;
+  padding: 0;
+  font-family: inherit;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+  color: #64748b;
+}
+
+.learn-track-card--visual .learn-track-card__lesson-no--empty {
+  visibility: hidden;
+  width: 0;
+  overflow: hidden;
+}
+
+.learn-track-card--visual .learn-track-card__lesson-no-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.learn-track-card--visual .learn-track-card__lesson-no-text {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+}
+
+.learn-track-card--visual .learn-track-card__title {
+  margin: 24px 0 18px;
+  padding: 0;
+  font-family: inherit;
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1.18;
+  letter-spacing: -0.5px;
+  color: #1e293b;
+  text-wrap: balance;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+html[data-theme='dark'] .learn-track-card--visual .learn-track-card__title {
+  color: #f1f5f9;
+}
+
+.learn-track-card--visual .learn-track-card__cat {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+  margin: 0;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.learn-track-card--visual .learn-track-card__cat-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.learn-track-card--visual .learn-track-card__cat-label {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+}
+
+.learn-track-card--visual .learn-track-card__cat--vocab {
+  background: #fff1f2;
+  color: #9f1239;
+}
+
+.learn-track-card--visual .learn-track-card__cat--grammar {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.learn-track-card--visual .learn-track-card__cat--kanji {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.learn-track-card--visual .learn-track-card__cat--default {
+  background: #f8fafc;
+  color: #475569;
+}
+
+html[data-theme='dark'] .learn-track-card--visual .learn-track-card__cat--vocab {
+  background: color-mix(in srgb, #fb7185 18%, var(--color-surface-alt));
+  color: #fda4af;
+}
+
+html[data-theme='dark'] .learn-track-card--visual .learn-track-card__cat--grammar {
+  background: color-mix(in srgb, #60a5fa 18%, var(--color-surface-alt));
+  color: #93c5fd;
+}
+
+html[data-theme='dark'] .learn-track-card--visual .learn-track-card__cat--kanji {
+  background: color-mix(in srgb, #fb923c 18%, var(--color-surface-alt));
+  color: #fdba74;
+}
+
+.learn-track-card--visual .learn-track-card__mini-prog {
+  margin-top: 16px;
+  width: 100%;
+}
+
+.learn-track-card--visual .learn-track-card__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  height: 64px;
+  padding: 0 16px;
+  border-radius: 16px;
+  font-family: inherit;
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1;
+  transition:
+    background 0.3s ease-out,
+    box-shadow 0.3s ease-out,
+    color 0.3s ease-out;
+}
+
+.learn-track-card--visual .learn-track-card__btn-inner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  line-height: 1;
+}
+
+.learn-track-card--visual .learn-track-card__btn-label,
+.learn-track-card--visual .learn-track-card__btn-arrow {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+}
+
+.learn-track-card--visual .learn-track-card__btn-arrow {
+  font-size: 20px;
+  transition: transform 0.3s ease-out;
+}
+
+.learn-track-card--visual .learn-track-card__btn--primary {
+  box-shadow: 0 6px 20px rgba(183, 32, 37, 0.28);
+}
+
+.learn-track-card--visual:hover .learn-track-card__btn--primary,
+.learn-track-card--visual .learn-track-card__btn--primary:hover {
+  background: #d9363c;
+  box-shadow: 0 10px 32px rgba(183, 32, 37, 0.42);
+}
+
+.learn-track-card--visual:hover .learn-track-card__btn--primary .learn-track-card__btn-arrow,
+.learn-track-card--visual .learn-track-card__btn--primary:hover .learn-track-card__btn-arrow,
+.learn-track-card--visual .learn-track-card__btn--review:hover .learn-track-card__btn-arrow {
+  transform: translateX(4px);
+}
+
+.learn-track-card--visual .learn-track-card__badge .vi-ja-hover,
+.learn-track-card--visual .learn-track-card__lesson-no-text .vi-ja-hover,
+.learn-track-card--visual .learn-track-card__cat-label .vi-ja-hover,
+.learn-track-card--visual .learn-track-card__btn-label .vi-ja-hover {
+  vertical-align: middle;
+  align-self: center;
+  line-height: 1;
+  border-bottom: none;
+}
+
+.learn-track-card--visual .vi-ja-hover__vi,
+.learn-track-card--visual .vi-ja-hover__jp {
+  line-height: 1;
+}
+
+@media (max-width: 640px) {
+  .learn-track-card--visual .learn-track-card__body {
+    padding: 16px 16px 20px;
+  }
+
+  .learn-track-card--visual .learn-track-card__title {
+    font-size: clamp(24px, 6vw, 32px);
+  }
+
+  .learn-track-card--visual .learn-track-card__lesson-no {
+    font-size: 16px;
+  }
+
+  .learn-track-card--visual .learn-track-card__lesson-no-icon {
+    width: 20px;
+    height: 20px;
+    font-size: 20px;
+  }
+
+  .learn-track-card--visual .learn-track-card__btn {
+    height: 56px;
+    font-size: 18px;
   }
 }

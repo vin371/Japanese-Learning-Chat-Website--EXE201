@@ -32,7 +32,7 @@ export default function Login() {
   const { login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const from = location.state?.from?.pathname || ROUTES.DASHBOARD;
+  const from = location.state?.from?.pathname || ROUTES.LEARN;
   const message = location.state?.message;
 
   useEffect(() => {

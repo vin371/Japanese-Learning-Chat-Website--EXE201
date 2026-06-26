@@ -6,6 +6,8 @@ import {
   getLevelAccessMode,
   learnRouteWithJlpt,
 } from '../../../utils/learnLevelAccess';
+import { lessonRequiresPremiumAccess } from '../../../utils/learnFreeTier';
+import { userIsPremium } from '../../../utils/userPremium';
 import { BookUp, SpellCheck, Languages, MessageSquareText, Layers, BookA } from 'lucide-react';
 import { ViJaHoverText } from '../../../components/learn/ViJaHoverText';
 import { sectionJaLabelFor } from '../../../data/learnUiJapanese';
@@ -100,7 +102,8 @@ function ShellCard({ variant, children }) {
 
 const JLPT_LEVELS = LEARN_JLPT_LEVELS;
 
-function LessonListSection({ sectionFilter, goFilter, lessonGroups, visibleGroups, visibleDbLessons, activeLevelCode }) {
+function LessonListSection({ sectionFilter, goFilter, lessonGroups, visibleGroups, visibleDbLessons, activeLevelCode, user }) {
+  const prem = userIsPremium(user);
   return (
     <ShellCard variant="lessons">
       <div className="learn-nav__group-label learn-sidebar__list-label">
@@ -140,17 +143,33 @@ function LessonListSection({ sectionFilter, goFilter, lessonGroups, visibleGroup
               </div>
             ) : null}
             <ul className="learn-nav__list learn-nav__list--section">
-              {group.items.map((lesson) => (
-                <li key={lesson.slug}>
-                  <NavLink
-                    to={learnRouteWithJlpt(`${ROUTES.LEARN}/${lesson.slug}`, activeLevelCode)}
-                    className={({ isActive }) => `learn-nav__link${isActive ? ' learn-nav__link--active' : ''}`}
-                    end
-                  >
-                    <span className="learn-nav__text">{lesson.navTitle}</span>
-                  </NavLink>
-                </li>
-              ))}
+              {group.items.map((lesson) => {
+                const locked = lessonRequiresPremiumAccess(lesson, activeLevelCode, prem);
+                if (locked) {
+                  return (
+                    <li key={lesson.slug}>
+                      <Link
+                        to={ROUTES.UPGRADE}
+                        className="learn-nav__link learn-nav__link--locked"
+                      >
+                        <span className="learn-nav__text">{lesson.navTitle}</span>
+                        <IconLock className="learn-nav__lock" />
+                      </Link>
+                    </li>
+                  );
+                }
+                return (
+                  <li key={lesson.slug}>
+                    <NavLink
+                      to={learnRouteWithJlpt(`${ROUTES.LEARN}/${lesson.slug}`, activeLevelCode)}
+                      className={({ isActive }) => `learn-nav__link${isActive ? ' learn-nav__link--active' : ''}`}
+                      end
+                    >
+                      <span className="learn-nav__text">{lesson.navTitle}</span>
+                    </NavLink>
+                  </li>
+                );
+              })}
             </ul>
           </Fragment>
         ))}
@@ -215,9 +234,6 @@ export function LearnSidebarShell({
     <aside className="learn-layout__nav learn-sidebar learn-sidebar--shell" aria-label="Điều hướng khóa học">
       <div className="learn-shell-stack">
         <ShellCard variant="user">
-          <Link className="learn-sidebar__back" to={ROUTES.DASHBOARD}>
-            ← <ViJaHoverText ja="ダッシュボードへ">Về bảng điều khiển</ViJaHoverText>
-          </Link>
           <div className="learn-shell-user">
             <div className="learn-shell-user__name">{displayName}</div>
             <div className="learn-shell-user__line">
@@ -342,6 +358,7 @@ export function LearnSidebarShell({
           visibleGroups={visibleGroups}
           visibleDbLessons={visibleDbLessons}
           activeLevelCode={activeLevelCode}
+          user={user}
         />
 
         <ShellCard variant="weekly">

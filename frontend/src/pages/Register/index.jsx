@@ -32,7 +32,7 @@ export default function Register() {
   const routeAfterAuth = useCallback(
     (data) => {
       const u = authService.mergeUserWithRoleFromToken(data?.user ?? authService.getStoredUser());
-      navigate(getPostAuthRoute(data, u, ROUTES.DASHBOARD), { replace: true });
+      navigate(getPostAuthRoute(data, u, ROUTES.LEARN), { replace: true });
     },
     [navigate],
   );
@@ -81,7 +81,7 @@ export default function Register() {
   useEffect(() => {
     if (!isAuthenticated) return;
     const u = authService.mergeUserWithRoleFromToken(user);
-    navigate(getPostAuthRoute({ needsPlacementTest }, u, ROUTES.DASHBOARD), { replace: true });
+    navigate(getPostAuthRoute({ needsPlacementTest }, u, ROUTES.LEARN), { replace: true });
   }, [isAuthenticated, needsPlacementTest, user, navigate]);
 
   if (isAuthenticated) {

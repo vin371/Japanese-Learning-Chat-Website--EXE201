@@ -1,7 +1,7 @@
 import { ROUTES } from '../data/routes';
 import { authService } from '../services/authService';
 
-/** Sau đăng nhập: admin → /admin, moderator → /moderator; còn lại → fallback hoặc dashboard học viên. */
+/** Sau đăng nhập: admin → /admin, moderator → /moderator; còn lại → fallback hoặc trang Học. */
 export function getPostLoginRoute(user, fallbackPath) {
   const merged = authService.mergeUserWithRoleFromToken(user ?? authService.getStoredUser());
   const role = String(
@@ -9,5 +9,5 @@ export function getPostLoginRoute(user, fallbackPath) {
   ).toLowerCase();
   if (role === 'admin') return ROUTES.ADMIN;
   if (role === 'moderator') return ROUTES.MODERATOR;
-  return fallbackPath || ROUTES.DASHBOARD;
+  return fallbackPath || ROUTES.LEARN;
 }

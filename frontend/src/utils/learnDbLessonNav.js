@@ -39,6 +39,7 @@ export function dbLessonToNavItem(row) {
     sectionLabel: sectionLabelFor(section),
     sortOrder: Number(row.sortOrder ?? row.SortOrder ?? 0),
     id: row.id ?? row.Id,
+    isPremium: !!(row.isPremium ?? row.IsPremium),
   };
 }
 

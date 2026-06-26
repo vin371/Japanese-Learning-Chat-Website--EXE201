@@ -5,6 +5,8 @@ import {
   LEARN_THEME_IMAGES,
   LEARN_THUMB_FALLBACK,
 } from '../assets/learnThumbs';
+import { N4_LEVEL_HERO_IMAGE, resolveN4LessonImage } from '../data/n4LessonImages';
+import { N5_LEVEL_HERO_IMAGE, resolveN5LessonImage } from '../data/n5LessonImages';
 
 export { LEARN_LEVEL_HERO, LEARN_SAFE_THUMBS, LEARN_THUMB_FALLBACK };
 
@@ -108,6 +110,12 @@ function pickFromPool(pool, opts) {
  * @param {{ title?: string, slug?: string, section?: string, levelCode?: string, sortOrder?: number, lessonId?: number }} opts
  */
 export function resolveLearnLessonThumb(opts) {
+  const n5Image = resolveN5LessonImage(opts);
+  if (n5Image) return n5Image;
+
+  const n4Image = resolveN4LessonImage(opts);
+  if (n4Image) return n4Image;
+
   const theme = themeFromRules(opts?.slug, opts?.title);
   if (theme && LEARN_THEME_IMAGES[theme]) {
     return LEARN_THEME_IMAGES[theme];
@@ -117,5 +125,7 @@ export function resolveLearnLessonThumb(opts) {
 
 export function resolveLearnLevelHero(levelCode) {
   const code = String(levelCode || 'N5').toUpperCase();
+  if (code === 'N5') return N5_LEVEL_HERO_IMAGE;
+  if (code === 'N4') return N4_LEVEL_HERO_IMAGE;
   return LEARN_LEVEL_HERO[code] || LEARN_THUMB_FALLBACK;
 }

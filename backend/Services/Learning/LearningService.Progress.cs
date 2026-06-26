@@ -20,8 +20,9 @@ public partial class LearningService
             throw new InvalidOperationException("Bài học không tồn tại hoặc chưa xuất bản.");
 
         var cat = await _db.LessonCategories.AsNoTracking().FirstOrDefaultAsync(c => c.Id == lesson.CategoryId);
-        var lessonIsPremium = lesson.IsPremium || (cat?.IsPremium ?? false);
-        if (lessonIsPremium && !await IsUserPremiumAsync(userId))
+        if (FreeTierLessonPolicy.RequiresPremiumAccess(
+                cat?.LevelId ?? 0, lesson.SortOrder, lesson.IsPremium, cat?.IsPremium ?? false,
+                await IsUserPremiumAsync(userId)))
             throw new InvalidOperationException("Nội dung Premium — cần nâng cấp gói.");
 
         var pct = Math.Clamp(request.ProgressPercent, 0, 100);

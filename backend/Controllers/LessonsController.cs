@@ -37,7 +37,8 @@ public class LessonsController : ControllerBase
         if (dto == null) return NotFound();
         var uid = GetUserId();
         if (uid == 0) return Unauthorized();
-        if (dto.Lesson.IsPremium && !await _learning.IsUserPremiumAsync(uid))
+        if (await _learning.LessonRequiresPremiumAccessAsync(
+                dto.Lesson.LevelId, dto.Lesson.SortOrder, dto.Lesson.IsPremium, false, uid))
             return StatusCode(403, new { message = "Nội dung Premium — cần nâng cấp gói.", code = "PREMIUM_REQUIRED" });
         return null;
     }
@@ -51,7 +52,9 @@ public class LessonsController : ControllerBase
         [FromQuery] int pageSize = 20,
         [FromQuery] bool? isPremium = null)
     {
-        return Ok(await _learning.GetLessonsPagedAsync(levelId, categoryId, page, pageSize, isPremium));
+        var result = await _learning.GetLessonsPagedAsync(levelId, categoryId, page, pageSize, isPremium);
+        await _learning.ApplyFreeTierFlagsToLessonListAsync(result.Items, GetOptionalUserId());
+        return Ok(result);
     }
 
     [HttpGet("{id:int}")]
@@ -62,26 +65,28 @@ public class LessonsController : ControllerBase
         if (dto == null) return NotFound();
         var uid = GetUserId();
         if (uid == 0) return Unauthorized();
-        if (dto.Lesson.IsPremium && !await _learning.IsUserPremiumAsync(uid))
+        if (await _learning.LessonRequiresPremiumAccessAsync(
+                dto.Lesson.LevelId, dto.Lesson.SortOrder, dto.Lesson.IsPremium, false, uid))
             return StatusCode(403, new { message = "Nội dung Premium — cần nâng cấp gói.", code = "PREMIUM_REQUIRED" });
         return Ok(dto);
     }
 
-    /// <summary>Bài đã publish. Bài Premium: cần đăng nhập và gói Premium.</summary>
+    /// <summary>Bài đã publish. Vượt giới hạn Free hoặc bài Premium: cần gói Premium.</summary>
     [HttpGet("slug/{slug}")]
     [AllowAnonymous]
     public async Task<IActionResult> GetBySlug(string slug)
     {
         var dto = await _learning.GetLessonDetailBySlugAsync(slug);
         if (dto == null) return NotFound();
-        if (!dto.Lesson.IsPremium) return Ok(dto);
 
         var uid = GetOptionalUserId();
+        if (!await _learning.LessonRequiresPremiumAccessAsync(
+                dto.Lesson.LevelId, dto.Lesson.SortOrder, dto.Lesson.IsPremium, false, uid))
+            return Ok(dto);
+
         if (uid is null)
             return Unauthorized(new { message = "Đăng nhập để xem bài học Premium.", code = "AUTH_REQUIRED" });
-        if (!await _learning.IsUserPremiumAsync(uid.Value))
-            return StatusCode(403, new { message = "Nội dung Premium — cần nâng cấp gói.", code = "PREMIUM_REQUIRED" });
-        return Ok(dto);
+        return StatusCode(403, new { message = "Nội dung Premium — cần nâng cấp gói.", code = "PREMIUM_REQUIRED" });
     }
 
     [HttpGet("{id:int}/vocabulary")]

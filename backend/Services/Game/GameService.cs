@@ -17,7 +17,7 @@ public partial class GameService : IGameService
     private const int StarterPowerUpQuantityPerType = 10;
 
     /// <summary>Gói Miễn phí: tối đa phiên game bắt đầu trong ngày (UTC). Premium không giới hạn.</summary>
-    private const int FreeTierDailyGameSessionLimit = 20;
+    private const int FreeTierDailyGameSessionLimit = 8;
 
     private static readonly HashSet<string> RetiredGameSlugs = new(StringComparer.OrdinalIgnoreCase)
     {

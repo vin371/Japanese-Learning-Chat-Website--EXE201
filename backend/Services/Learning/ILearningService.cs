@@ -9,6 +9,8 @@ public interface ILearningService
     Task<IReadOnlyList<LevelDto>> GetLevelsAsync();
     Task<IReadOnlyList<LessonCategoryDto>> GetLessonCategoriesAsync(int? levelId, string? type);
     Task<PagedResultDto<LessonListItemDto>> GetLessonsPagedAsync(int? levelId, int? categoryId, int page, int pageSize, bool? isPremium);
+    Task ApplyFreeTierFlagsToLessonListAsync(IReadOnlyList<LessonListItemDto> items, int? viewerUserId);
+    Task<bool> LessonRequiresPremiumAccessAsync(int levelId, int sortOrder, bool lessonIsPremium, bool categoryIsPremium, int? viewerUserId);
 
     /// <summary>Tất cả bài học (đã / chưa publish) — màn hình quản trị nội dung.</summary>
     Task<PagedResultDto<StaffLessonListItemDto>> GetStaffLessonsPagedAsync(

@@ -98,6 +98,30 @@ public partial class LearningService
         };
     }
 
+    public async Task ApplyFreeTierFlagsToLessonListAsync(IReadOnlyList<LessonListItemDto> items, int? viewerUserId)
+    {
+        if (items.Count == 0) return;
+        var userIsPremium = viewerUserId > 0 && await IsUserPremiumAsync(viewerUserId.Value);
+        if (userIsPremium) return;
+
+        foreach (var item in items)
+        {
+            item.IsPremium = FreeTierLessonPolicy.RequiresPremiumAccess(
+                item.LevelId,
+                item.SortOrder,
+                item.IsPremium,
+                false,
+                false);
+        }
+    }
+
+    public async Task<bool> LessonRequiresPremiumAccessAsync(int levelId, int sortOrder, bool lessonIsPremium, bool categoryIsPremium, int? viewerUserId)
+    {
+        var userIsPremium = viewerUserId > 0 && await IsUserPremiumAsync(viewerUserId.Value);
+        return FreeTierLessonPolicy.RequiresPremiumAccess(
+            levelId, sortOrder, lessonIsPremium, categoryIsPremium, userIsPremium);
+    }
+
     public async Task<PagedResultDto<StaffLessonListItemDto>> GetStaffLessonsPagedAsync(
         int? levelId,
         int? categoryId,

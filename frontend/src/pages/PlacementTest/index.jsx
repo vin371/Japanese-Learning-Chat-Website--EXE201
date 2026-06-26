@@ -52,7 +52,7 @@ export default function PlacementTest() {
     if (isStaffUser(user)) {
       storage.set('needs_placement_test', false);
       setNeedsPlacementTest?.(false);
-      navigate(ROUTES.DASHBOARD, { replace: true });
+      navigate(ROUTES.LEARN, { replace: true });
     }
   }, [user, navigate, setNeedsPlacementTest]);
 

@@ -96,7 +96,7 @@ export default function LevelUpTest() {
 
   useEffect(() => {
     if (isStaffUser(user)) {
-      navigate(getPostLoginRoute(user, ROUTES.DASHBOARD), { replace: true });
+      navigate(getPostLoginRoute(user, ROUTES.LEARN), { replace: true });
     }
   }, [user, navigate]);
 

@@ -21,11 +21,11 @@ export const learnPageItem = {
 export const learnCardHover = {
   rest: { y: 0, scale: 1 },
   hover: {
-    y: -5,
-    scale: 1.01,
-    transition: { type: 'spring', stiffness: 420, damping: 28 },
+    y: -10,
+    scale: 1,
+    transition: { duration: 0.3, ease: [0, 0, 0.2, 1] },
   },
-  tap: { scale: 0.985 },
+  tap: { scale: 0.985, transition: { duration: 0.15, ease: [0, 0, 0.2, 1] } },
 };
 
 export const learnFlipEnter = {

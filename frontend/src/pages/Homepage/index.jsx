@@ -225,7 +225,7 @@ export default function Homepage() {
                 </Link>
               )}
               {isAuthenticated ? (
-                <Link to={isStaffUser(user) ? ROUTES.CHAT : ROUTES.DASHBOARD} className="btn btn--outline btn--lg sn-btn--soft">
+                <Link to={isStaffUser(user) ? ROUTES.CHAT : ROUTES.LEARN} className="btn btn--outline btn--lg sn-btn--soft">
                   <Vi>{hero.secondaryCta}</Vi>
                 </Link>
               ) : (
