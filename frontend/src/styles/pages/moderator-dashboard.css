@@ -4465,10 +4465,11 @@ html[data-theme='dark'] .mod-dash__k-head {
 
 .mod-dash__k-page-title {
   margin: 0;
+  font-family: inherit;
   font-size: clamp(1.45rem, 2.2vw, 1.85rem);
-  font-weight: 700;
+  font-weight: 800;
   color: var(--mod-kurenai-deep);
-  letter-spacing: normal;
+  letter-spacing: -0.02em;
 }
 
 html[data-theme='dark'] .mod-dash__k-page-title {
@@ -4729,4 +4730,286 @@ html[data-theme='dark'] .mod-dash--kurenai .mod-dash__panel {
   max-width: 200px;
   overflow: hidden;
   transition: max-width 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.2s ease;
+}
+
+/* —— Toolbar tìm kiếm + lọc (học viên, bài học…) —— */
+.mod-dash__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem 0.75rem;
+  margin-bottom: 1.1rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 14px;
+  border: 1px solid var(--mod-border);
+  background: color-mix(in srgb, var(--mod-bg) 88%, var(--mod-surface));
+}
+
+.mod-dash--kurenai .mod-dash__toolbar {
+  border-color: rgba(142, 3, 29, 0.12);
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 2px 12px rgba(26, 21, 22, 0.04);
+}
+
+html[data-theme='dark'] .mod-dash--kurenai .mod-dash__toolbar {
+  background: rgba(22, 24, 28, 0.85);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.mod-dash__toolbar-search {
+  position: relative;
+  flex: 1 1 220px;
+  min-width: min(100%, 200px);
+  max-width: 420px;
+  display: flex;
+  align-items: center;
+}
+
+.mod-dash__toolbar-search-ico {
+  position: absolute;
+  left: 0.75rem;
+  color: var(--mod-muted);
+  pointer-events: none;
+}
+
+.mod-dash__toolbar-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.55rem 2.1rem 0.55rem 2.35rem;
+  border-radius: 11px;
+  border: 1px solid var(--mod-border);
+  background: var(--mod-surface);
+  color: var(--mod-text);
+  font: inherit;
+  font-size: 0.86rem;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.mod-dash__toolbar-input::placeholder {
+  color: var(--mod-muted);
+  opacity: 0.85;
+}
+
+.mod-dash__toolbar-input:focus {
+  outline: none;
+  border-color: rgba(142, 3, 29, 0.35);
+  box-shadow: 0 0 0 3px rgba(142, 3, 29, 0.1);
+}
+
+.mod-dash--kurenai .mod-dash__toolbar-input:focus {
+  border-color: rgba(142, 3, 29, 0.45);
+  box-shadow: 0 0 0 3px rgba(142, 3, 29, 0.12);
+}
+
+.mod-dash__toolbar-clear {
+  position: absolute;
+  right: 0.45rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.65rem;
+  height: 1.65rem;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--mod-muted);
+  cursor: pointer;
+}
+
+.mod-dash__toolbar-clear:hover {
+  background: var(--mod-bg);
+  color: var(--mod-text);
+}
+
+.mod-dash__toolbar-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.mod-dash__toolbar-select-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.mod-dash__toolbar-select-ico {
+  position: absolute;
+  left: 0.65rem;
+  color: var(--mod-muted);
+  pointer-events: none;
+}
+
+.mod-dash__toolbar-select {
+  appearance: none;
+  padding: 0.55rem 2rem 0.55rem 2.1rem;
+  border-radius: 11px;
+  border: 1px solid var(--mod-border);
+  background: var(--mod-surface);
+  color: var(--mod-text);
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  min-width: 11.5rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.65rem center;
+}
+
+.mod-dash__toolbar-select:focus {
+  outline: none;
+  border-color: rgba(142, 3, 29, 0.35);
+  box-shadow: 0 0 0 3px rgba(142, 3, 29, 0.1);
+}
+
+.mod-dash__toolbar-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.4rem 0.65rem;
+  border-radius: 999px;
+  border: 1px dashed rgba(142, 3, 29, 0.35);
+  background: rgba(142, 3, 29, 0.06);
+  color: var(--mod-kurenai, #8e031d);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.mod-dash__toolbar-chip:hover {
+  background: rgba(142, 3, 29, 0.1);
+}
+
+.mod-dash__toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem 0.75rem;
+  margin-left: auto;
+}
+
+.mod-dash__toolbar-meta {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--mod-muted);
+  white-space: nowrap;
+}
+
+.mod-dash__btn--toolbar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid rgba(142, 3, 29, 0.2);
+  border-radius: 11px;
+  background: var(--mod-surface);
+  color: var(--mod-text);
+  font-size: 0.82rem;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.mod-dash__btn--toolbar:hover:not(:disabled) {
+  border-color: rgba(142, 3, 29, 0.45);
+  background: rgba(142, 3, 29, 0.04);
+}
+
+.mod-dash__btn--toolbar:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.mod-dash__spin {
+  animation: mod-dash-spin 0.85s linear infinite;
+}
+
+@keyframes mod-dash-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Bảng học viên */
+.mod-dash__panel--students .mod-dash__panel-head {
+  margin-bottom: 0.85rem;
+}
+
+.mod-dash__table-wrap--students {
+  border-radius: 14px;
+  border: 1px solid var(--mod-border);
+  overflow: auto;
+  max-height: min(58vh, 520px);
+  scrollbar-gutter: stable;
+}
+
+.mod-dash--kurenai .mod-dash__table-wrap--students {
+  border-color: rgba(142, 3, 29, 0.1);
+}
+
+.mod-dash__table--students thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: color-mix(in srgb, var(--mod-surface) 94%, var(--mod-bg));
+  backdrop-filter: blur(6px);
+}
+
+.mod-dash--kurenai .mod-dash__table--students thead th {
+  background: rgba(255, 255, 255, 0.96);
+}
+
+html[data-theme='dark'] .mod-dash--kurenai .mod-dash__table--students thead th {
+  background: rgba(22, 24, 28, 0.96);
+}
+
+.mod-dash__table--students tbody tr {
+  transition: background 0.12s ease;
+}
+
+.mod-dash__table--students tbody tr:hover {
+  background: rgba(142, 3, 29, 0.03);
+}
+
+html[data-theme='dark'] .mod-dash__table--students tbody tr:hover {
+  background: rgba(254, 205, 211, 0.04);
+}
+
+.mod-dash__table-empty {
+  padding: 2rem 1rem !important;
+  text-align: center;
+  color: var(--mod-muted);
+  font-size: 0.88rem;
+}
+
+.mod-dash__level-id-hint {
+  display: block;
+  margin-top: 0.2rem;
+  font-family: ui-monospace, monospace;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--mod-muted);
+  opacity: 0.75;
+}
+
+.mod-dash--kurenai .mod-dash__avatar {
+  background: linear-gradient(135deg, var(--mod-kurenai), #c4707e);
+}
+
+.mod-dash--kurenai .mod-dash__level--n3 {
+  background: rgba(142, 3, 29, 0.12);
+  color: var(--mod-kurenai);
+}
+
+@media (max-width: 720px) {
+  .mod-dash__toolbar-actions {
+    width: 100%;
+    margin-left: 0;
+    justify-content: space-between;
+  }
+
+  .mod-dash__toolbar-search {
+    max-width: none;
+  }
 }

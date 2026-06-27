@@ -52,12 +52,73 @@
 
 .learn-shell-cats__btn .vi-ja-hover,
 .learn-nav__tab .vi-ja-hover,
+.moji-chat__inbox-tab .vi-ja-hover,
 .learn-visual-chip.vi-ja-hover,
 .learner-top-nav .vi-ja-hover,
 .layout-header .vi-ja-hover,
 .layout-footer .vi-ja-hover,
 .btn .vi-ja-hover {
   border-bottom: none;
+}
+
+/* Tab nền đỏ — hover đổi VI→JP, chữ Nhật màu trắng (không đỏ trên đỏ) */
+.learn-nav__tab--active .vi-ja-hover__vi,
+.learn-nav__tab--active .vi-ja-hover__jp {
+  color: #fff;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .learn-nav__tab--active:hover .vi-ja-hover__vi,
+  .learn-nav__tab--active:focus-visible .vi-ja-hover__vi {
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  .learn-nav__tab--active:hover .vi-ja-hover__jp,
+  .learn-nav__tab--active:focus-visible .vi-ja-hover__jp {
+    opacity: 1;
+    visibility: visible;
+    color: #fff;
+  }
+
+  .learn-nav__tab--active .vi-ja-hover:hover .vi-ja-hover__jp,
+  .learn-nav__tab--active .vi-ja-hover:focus-visible .vi-ja-hover__jp {
+    color: #fff;
+  }
+}
+
+html[data-theme='dark'] .learn-nav__tab--active .vi-ja-hover__jp {
+  color: #fff;
+}
+
+/* Chat inbox tab nền tối — chữ trắng, hover VI→JP giữ trắng */
+.moji-chat__inbox-tab--active .vi-ja-hover__vi,
+.moji-chat__inbox-tab--active .vi-ja-hover__jp {
+  color: inherit;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .moji-chat__inbox-tab--active:hover .vi-ja-hover__vi,
+  .moji-chat__inbox-tab--active:focus-visible .vi-ja-hover__vi {
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  .moji-chat__inbox-tab--active:hover .vi-ja-hover__jp,
+  .moji-chat__inbox-tab--active:focus-visible .vi-ja-hover__jp {
+    opacity: 1;
+    visibility: visible;
+    color: inherit;
+  }
+
+  .moji-chat__inbox-tab--active .vi-ja-hover:hover .vi-ja-hover__jp,
+  .moji-chat__inbox-tab--active .vi-ja-hover:focus-visible .vi-ja-hover__jp {
+    color: inherit;
+  }
+}
+
+html[data-theme='dark'] .moji-chat__inbox-tab--active .vi-ja-hover__jp {
+  color: inherit;
 }
 
 .learn-visual-chip.vi-ja-hover:hover,

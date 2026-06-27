@@ -12,7 +12,7 @@ import {
   lockedLevelMessage,
 } from '../../utils/learnLevelAccess';
 import { LearnLevelLocked } from './components/LearnLevelLocked';
-import { categoryTypeToSection, sectionLabelFor, sectionMatchesFilter } from '../../utils/learnDbLessonNav';
+import { categoryTypeToSection, sectionLabelFor, sectionMatchesFilter, withLessonDisplayNumbers } from '../../utils/learnDbLessonNav';
 import { learnCardHover } from '../../utils/learnMotion';
 import { LearnProgressRing } from './components/LearnProgressRing';
 import { LearnImageCarousel } from './components/LearnImageCarousel';
@@ -21,7 +21,9 @@ import { resolveLearnLessonThumb, resolveLearnLevelHero } from '../../utils/lear
 import { hasCompletedPlacementResult } from '../../utils/onboardingFlow';
 import { lessonRequiresPremiumAccess } from '../../utils/learnFreeTier';
 import { userIsPremium } from '../../utils/userPremium';
+import { BookOpen, BookUp, Languages, SpellCheck } from 'lucide-react';
 import { LearnTrackThumb } from './components/LearnTrackThumb';
+import { LearnLessonTitle } from './components/LearnLessonTitle';
 import { ViJaHoverText } from '../../components/learn/ViJaHoverText';
 import { SECTION_JA, sectionJaLabelFor } from '../../data/learnUiJapanese';
 
@@ -111,12 +113,13 @@ function categoryAccent(section) {
   return 'default';
 }
 
-const SECTION_CARD_ICON = {
-  vocab: '🌸',
-  grammar: '✏️',
-  kanji: '🈳',
-  default: '📖',
-};
+function SectionCatIcon({ section }) {
+  const iconProps = { size: 14, strokeWidth: 2.25, className: 'learn-track-card__cat-svg', 'aria-hidden': true };
+  if (section === 'vocab') return <BookUp {...iconProps} />;
+  if (section === 'grammar') return <SpellCheck {...iconProps} />;
+  if (section === 'kanji') return <Languages {...iconProps} />;
+  return <BookOpen {...iconProps} />;
+}
 
 function normalizeLesson(row) {
   const categoryType = row.categoryType ?? row.CategoryType ?? '';
@@ -127,7 +130,8 @@ function normalizeLesson(row) {
     categoryName: row.categoryName ?? row.CategoryName ?? '',
     categoryType,
     section: categoryTypeToSection(categoryType),
-    sortOrder: row.sortOrder ?? row.SortOrder ?? 0,
+    categoryId: row.categoryId ?? row.CategoryId ?? 0,
+    sortOrder: Number(row.sortOrder ?? row.SortOrder ?? 0) || 0,
     levelId: row.levelId ?? row.LevelId ?? 0,
     isPremium: !!(row.isPremium ?? row.IsPremium),
   };
@@ -188,8 +192,9 @@ function TrackCard({ lesson, state, to, progressPercent, levelCode }) {
         : 'learn-track-card__btn learn-track-card__btn--primary';
   const label = state === 'completed' ? 'Ôn tập' : state === 'locked' ? 'Nâng cấp' : 'Học ngay';
   const labelJa = state === 'completed' ? '復習' : state === 'locked' ? 'アップグレード' : '今すぐ学ぶ';
-  const lessonNoPadded = lesson.sortOrder ? String(lesson.sortOrder).padStart(2, '0') : '';
-  const sectionIcon = SECTION_CARD_ICON[lesson.section] ?? SECTION_CARD_ICON.default;
+  const lessonNoPadded = (lesson.displayNumber ?? lesson.sortOrder)
+    ? String(lesson.displayNumber ?? lesson.sortOrder).padStart(2, '0')
+    : '';
 
   return (
     <Motion.div
@@ -212,23 +217,22 @@ function TrackCard({ lesson, state, to, progressPercent, levelCode }) {
             </ViJaHoverText>
           </span>
           {lessonNoPadded ? (
-            <span className="learn-track-card__lesson-no">
-              <span className="learn-track-card__lesson-no-icon" aria-hidden>
-                📖
+            <span className="learn-track-card__lesson-no" aria-label={`Bài ${lessonNoPadded}`}>
+              <span className="learn-track-card__lesson-no-label">
+                <ViJaHoverText ja="第">Bài</ViJaHoverText>
               </span>
-              <span className="learn-track-card__lesson-no-text">
-                <ViJaHoverText ja="第">Bài</ViJaHoverText> {lessonNoPadded}
-              </span>
+              <span className="learn-track-card__lesson-no-dot" aria-hidden />
+              <span className="learn-track-card__lesson-no-num">{lessonNoPadded}</span>
             </span>
           ) : (
             <span className="learn-track-card__lesson-no learn-track-card__lesson-no--empty" aria-hidden />
           )}
         </div>
         <div className="learn-track-card__middle">
-          <h4 className="learn-track-card__title">{lesson.title}</h4>
+          <LearnLessonTitle title={lesson.title} className="learn-track-card__title" />
           <p className={`learn-track-card__cat learn-track-card__cat--${accent}`}>
-            <span className="learn-track-card__cat-icon" aria-hidden>
-              {sectionIcon}
+            <span className="learn-track-card__cat-icon">
+              <SectionCatIcon section={lesson.section} />
             </span>
             <span className="learn-track-card__cat-label">
               <ViJaHoverText ja={SECTION_JA[lesson.section]}>{sectionLabelFor(lesson.section)}</ViJaHoverText>
@@ -319,7 +323,7 @@ export default function LearnIndex() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const lr = await http.get('/api/lessons', { params: { page: 1, pageSize: 200, levelId: activeLevelId } });
+      const lr = await http.get('/api/lessons', { params: { page: 1, pageSize: 100, levelId: activeLevelId } });
       const items = lr.data?.items ?? lr.data?.Items ?? [];
       setApiLessons((Array.isArray(items) ? items : []).map(normalizeLesson));
 
@@ -352,23 +356,18 @@ export default function LearnIndex() {
   }, [progressItems]);
 
   const sortedApi = useMemo(() => {
-    return [...apiLessons]
-      .filter((l) => l.levelId === activeLevelId)
-      .sort((a, b) => {
-        const sectionOrder = { vocab: 0, grammar: 1, kanji: 2 };
-        const sa = sectionOrder[a.section] ?? 9;
-        const sb = sectionOrder[b.section] ?? 9;
-        if (sa !== sb) return sa - sb;
-        if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
-        return a.id - b.id;
-      });
+    return withLessonDisplayNumbers(
+      apiLessons.filter((l) => l.levelId === activeLevelId),
+      { perSection: true },
+    );
   }, [apiLessons, activeLevelId]);
 
   const filteredLessons = useMemo(() => {
     if (filterKey === 'all' || filterKey === 'dialogue' || filterKey === 'reading' || filterKey === 'reference') {
       return sortedApi;
     }
-    return sortedApi.filter((l) => sectionMatchesFilter(l.categoryType, filterKey));
+    const subset = sortedApi.filter((l) => sectionMatchesFilter(l.categoryType, filterKey));
+    return withLessonDisplayNumbers(subset, { perSection: false });
   }, [sortedApi, filterKey]);
 
   const apiRows = useMemo(() => {

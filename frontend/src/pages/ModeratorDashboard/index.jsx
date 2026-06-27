@@ -57,7 +57,7 @@ export default function ModeratorDashboard() {
         id: 'students',
         label: 'Học viên',
         icon: <GraduationCap />,
-        badge: learnerCount != null ? learnerCount : '—',
+        badge: learnerCount != null ? learnerCount : null,
       },
       { id: 'logs', label: 'Nhật ký và nội bộ', icon: <NotebookPen />, badge: null },
     ],
@@ -66,7 +66,7 @@ export default function ModeratorDashboard() {
 
   function tabBadge(t) {
     if (t.badge != null) return t.badge;
-    if (t.badgeKey === 'pending') return pendingCount != null ? pendingCount : '—';
+    if (t.badgeKey === 'pending') return pendingCount != null ? pendingCount : null;
     return null;
   }
 

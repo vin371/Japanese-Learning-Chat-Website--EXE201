@@ -29,6 +29,47 @@ export function sectionLabelFor(section) {
   return SECTION_LABELS[section] ?? section;
 }
 
+const SECTION_SORT = {
+  alphabet: 0,
+  vocab: 1,
+  grammar: 2,
+  kanji: 3,
+  dialogue: 4,
+  reading: 5,
+  reference: 6,
+};
+
+/** Sắp xếp bài: phần → danh mục → thứ tự → id. */
+export function sortLearnLessons(lessons) {
+  return [...lessons].sort((a, b) => {
+    const sa = SECTION_SORT[a.section] ?? 9;
+    const sb = SECTION_SORT[b.section] ?? 9;
+    if (sa !== sb) return sa - sb;
+    const ca = Number(a.categoryId) || 0;
+    const cb = Number(b.categoryId) || 0;
+    if (ca !== cb) return ca - cb;
+    const oa = Number(a.sortOrder) || 0;
+    const ob = Number(b.sortOrder) || 0;
+    if (oa !== ob) return oa - ob;
+    return (Number(a.id) || 0) - (Number(b.id) || 0);
+  });
+}
+
+/**
+ * Gán số hiển thị "Bài 01…" theo thứ tự đã sort (mỗi phần đếm lại từ 1).
+ * sortOrder DB vẫn giữ để map ảnh / paywall.
+ */
+export function withLessonDisplayNumbers(lessons, { perSection = true } = {}) {
+  const sorted = sortLearnLessons(lessons);
+  const counters = {};
+  return sorted.map((lesson, index) => {
+    const key = perSection ? lesson.section || 'other' : '__all__';
+    counters[key] = (counters[key] ?? 0) + 1;
+    const displayNumber = perSection ? counters[key] : index + 1;
+    return { ...lesson, displayNumber };
+  });
+}
+
 /** Chuyển bài từ API thành item sidebar. */
 export function dbLessonToNavItem(row) {
   const section = categoryTypeToSection(row.categoryType ?? row.CategoryType);
@@ -54,7 +95,7 @@ export function buildLessonGroupsFromDb(lessons, sectionOrder) {
     map.get(item.section).items.push(item);
   }
   for (const g of map.values()) {
-    g.items.sort((a, b) => a.sortOrder - b.sortOrder || String(a.navTitle).localeCompare(String(b.navTitle), 'vi'));
+    g.items = sortLearnLessons(g.items);
   }
   return sectionOrder.filter((key) => map.has(key)).map((key) => map.get(key));
 }

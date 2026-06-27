@@ -132,12 +132,12 @@ html[data-theme='dark'] .upgrade-page__eyebrow {
 }
 
 .upgrade-page__title {
-  font-family: 'Hirosaki', sans-serif;
-  font-weight: normal;
-  letter-spacing: 0.05em;
+  font-family: inherit;
+  font-weight: 800;
+  letter-spacing: -0.02em;
   margin: 0;
-  font-size: clamp(1.85rem, 3vw, 2.5rem);
-  line-height: 1.2;
+  font-size: clamp(1.45rem, 2.6vw, 1.85rem);
+  line-height: 1.25;
   color: #1e293b;
 }
 

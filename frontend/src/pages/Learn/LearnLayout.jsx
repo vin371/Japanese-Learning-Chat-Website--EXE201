@@ -12,6 +12,7 @@ import { SakuraRainLayer } from '../../components/effects/SakuraRainLayer';
 import {
   buildLessonGroupsFromDb,
   dbLessonToNavItem,
+  sortLearnLessons,
 } from '../../utils/learnDbLessonNav';
 import {
   jlptCodeToLevelId,
@@ -32,7 +33,7 @@ const SECTION_ORDER = ['vocab', 'grammar', 'kanji', 'dialogue', 'reading', 'refe
 /** Chỉ gọi API — không setState (tránh cảnh báo React Compiler trong useEffect). */
 async function fetchLearnLayoutSnapshot(isAuthenticated, levelId) {
   try {
-    const lr = await http.get('/api/lessons', { params: { page: 1, pageSize: 200, levelId } });
+    const lr = await http.get('/api/lessons', { params: { page: 1, pageSize: 100, levelId } });
     const items = lr.data?.items ?? lr.data?.Items ?? [];
     const list = Array.isArray(items) ? items : [];
 
@@ -170,10 +171,14 @@ export default function LearnLayout() {
 
   const lessonNavList = useMemo(
     () =>
-      [...levelLessons]
-        .map(dbLessonToNavItem)
-        .filter((x) => x.slug)
-        .sort((a, b) => a.sortOrder - b.sortOrder || a.id - b.id),
+      sortLearnLessons(
+        levelLessons
+          .map((row) => ({
+            ...dbLessonToNavItem(row),
+            categoryId: row.categoryId ?? row.CategoryId ?? 0,
+          }))
+          .filter((x) => x.slug),
+      ),
     [levelLessons],
   );
 
