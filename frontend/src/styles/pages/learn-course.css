@@ -4589,10 +4589,9 @@ html[data-theme='dark'] .learn-lesson--from-api .learn-doc-grammar-card {
 }
 
 .learn-alpha-board {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1.12fr;
+  display: flex;
+  flex-direction: column;
   gap: 0.65rem;
-  align-items: stretch;
   min-height: 0;
 }
 
@@ -4613,40 +4612,51 @@ html[data-theme='dark'] .learn-alpha-col {
 
 .learn-alpha-col__head {
   flex-shrink: 0;
-  padding: 0.75rem 0.85rem 0.65rem;
-  border-bottom: 1px solid color-mix(in srgb, var(--color-border) 70%, transparent);
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .learn-alpha-col--hira .learn-alpha-col__head {
-  background: linear-gradient(135deg, color-mix(in srgb, #e11d48 14%, transparent), transparent 70%);
+  background: #ffe4e6;
 }
 
 .learn-alpha-col--kata .learn-alpha-col__head {
-  background: linear-gradient(135deg, color-mix(in srgb, #0284c7 14%, transparent), transparent 70%);
+  background: #e0f2fe;
 }
 
 .learn-alpha-col--kanji .learn-alpha-col__head {
-  background: linear-gradient(135deg, color-mix(in srgb, #d97706 14%, transparent), transparent 70%);
+  background: #ffedd5;
+}
+
+html[data-theme='dark'] .learn-alpha-col--hira .learn-alpha-col__head {
+  background: color-mix(in srgb, #e11d48 15%, var(--color-surface));
+}
+
+html[data-theme='dark'] .learn-alpha-col--kata .learn-alpha-col__head {
+  background: color-mix(in srgb, #0284c7 15%, var(--color-surface));
+}
+
+html[data-theme='dark'] .learn-alpha-col--kanji .learn-alpha-col__head {
+  background: color-mix(in srgb, #d97706 15%, var(--color-surface));
 }
 
 .learn-alpha-col__title {
   margin: 0;
-  font-size: 0.95rem;
+  font-size: 1.15rem;
   font-weight: 800;
   color: var(--text-h);
 }
 
 .learn-alpha-col__sub {
   margin: 0.2rem 0 0;
-  font-size: 0.72rem;
-  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
 }
 
 .learn-alpha-col__body {
   flex: 1;
   overflow-y: auto;
   padding: 0.65rem 0.55rem 0.85rem;
-  max-height: min(72vh, 42rem);
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
@@ -4696,7 +4706,6 @@ html[data-theme='dark'] .learn-alpha-col {
 
 @media (max-width: 960px) {
   .learn-alpha-board {
-    grid-template-columns: 1fr;
     gap: 0.75rem;
   }
 
@@ -4797,40 +4806,72 @@ html[data-theme='dark'] .learn-view-toggle__btn--on {
 }
 
 .learn-alpha-section__title {
-  margin: 0 0 0.55rem;
-  font-size: 0.72rem;
+  margin: 0 0 0.75rem;
+  font-size: 0.78rem;
   font-weight: 800;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--color-text-muted);
+  color: var(--text-h);
 }
 
 .learn-alpha-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr));
-  gap: 0.55rem;
+  grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+  gap: 1.25rem;
 }
 
 .learn-alpha-grid--kanji {
-  grid-template-columns: repeat(auto-fill, minmax(6.75rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
 }
 
 .learn-alpha-cell {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.2rem;
-  padding: 0.8rem 0.5rem 0.7rem;
+  justify-content: center;
+  aspect-ratio: 1 / 1;
+  gap: 0.4rem;
+  padding: 0.5rem;
   border-radius: 12px;
-  background: color-mix(in srgb, var(--color-surface) 96%, var(--color-surface-alt));
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
-  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
   transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.learn-alpha-cell--clickable {
+  cursor: pointer;
+}
+
+.learn-alpha-cell__speaker-ico {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  color: var(--color-text-muted);
+  opacity: 0.5;
+  transition: opacity 0.2s ease, color 0.2s ease;
+}
+
+.learn-alpha-cell:hover .learn-alpha-cell__speaker-ico {
+  opacity: 1;
+}
+
+.learn-alpha-cell--hira:hover .learn-alpha-cell__speaker-ico {
+  color: #e11d48;
+}
+
+.learn-alpha-cell--kata:hover .learn-alpha-cell__speaker-ico {
+  color: #0284c7;
+}
+
+.learn-alpha-cell--kanji:hover .learn-alpha-cell__speaker-ico {
+  color: #d97706;
 }
 
 .learn-alpha-cell:hover {
   transform: translateY(-2px);
-  border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-border));
+  border-color: var(--color-primary);
   box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
 }
 
@@ -4840,28 +4881,56 @@ html[data-theme='dark'] .learn-alpha-cell {
 
 .learn-alpha-cell__top {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
-  gap: 0.15rem;
+  gap: 0.5rem;
   width: 100%;
 }
 
 .learn-alpha-cell__kana {
-  font-size: 1.85rem;
+  font-size: 2.5rem;
   font-weight: 800;
   line-height: 1;
   color: var(--text-h);
 }
 
 .learn-alpha-cell__kanji {
-  font-size: 2rem;
+  font-size: 2.5rem;
 }
 
 .learn-alpha-cell__romaji {
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
   text-transform: lowercase;
+}
+
+/* Button colors */
+.learn-speak-btn--hira {
+  background: #ffe4e6;
+  color: #e11d48;
+}
+
+.learn-speak-btn--kata {
+  background: #e0f2fe;
+  color: #0284c7;
+}
+
+.learn-speak-btn--kanji {
+  background: #ffedd5;
+  color: #d97706;
+}
+
+html[data-theme='dark'] .learn-speak-btn--hira {
+  background: color-mix(in srgb, #e11d48 20%, var(--color-surface));
+}
+
+html[data-theme='dark'] .learn-speak-btn--kata {
+  background: color-mix(in srgb, #0284c7 20%, var(--color-surface));
+}
+
+html[data-theme='dark'] .learn-speak-btn--kanji {
+  background: color-mix(in srgb, #d97706 20%, var(--color-surface));
 }
 
 .learn-alpha-cell__vi {
