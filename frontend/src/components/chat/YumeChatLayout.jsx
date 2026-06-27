@@ -202,7 +202,10 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
   const [rooms, setRooms] = useState(() => getCachedMyRoomsSnapshot());
   const [friends, setFriends] = useState([]);
   const [joinablePublicRooms, setJoinablePublicRooms] = useState([]);
-  const [roomsLoading, setRoomsLoading] = useState(true);
+  const [roomsLoading, setRoomsLoading] = useState(() => {
+    const cached = getCachedMyRoomsSnapshot();
+    return !cached || cached.length === 0;
+  });
   const [friendsLoading, setFriendsLoading] = useState(false);
 
   const [inboxTab, setInboxTab] = useState('all');
@@ -277,7 +280,7 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
     } catch {
       if (!silent) setRooms([]);
     } finally {
-      if (!silent) setRoomsLoading(false);
+      setRoomsLoading(false);
     }
   }, []);
 
@@ -304,7 +307,7 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
     } catch {
       if (!silent) setFriends([]);
     } finally {
-      if (!silent) setFriendsLoading(false);
+      setFriendsLoading(false);
     }
   }, []);
 

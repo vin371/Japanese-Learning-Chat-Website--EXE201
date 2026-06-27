@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import {
   ChevronLeft,
   ChevronRight,
+  CornerDownRight,
   FlipHorizontal2,
   LayoutGrid,
   Layers,
@@ -13,6 +14,7 @@ import {
   Square,
   Star,
   Table2,
+  Volume2,
 } from 'lucide-react';
 import SpeakJaButton from '../../../components/learn/SpeakJaButton';
 import { japaneseSpeechSupported, speakJapanese, stopJapaneseSpeech } from '../../../utils/japaneseSpeech';
@@ -312,52 +314,63 @@ export default function VocabFlashcardPlayer({
           animate="show"
         >
           <div className="learn-flashdeck__stage learn-flashdeck__stage--flip">
-            <div className="learn-flashdeck__card-wrap">
-              <button
-                type="button"
-                className={`learn-flashdeck__star learn-flashdeck__star--float${isStarred ? ' learn-flashdeck__star--on' : ''}`}
-                onClick={() => {
-                  const next = new Set(starred);
-                  if (next.has(starKey)) next.delete(starKey);
-                  else next.add(starKey);
-                  persistStars(next);
-                }}
-                aria-pressed={isStarred}
-              >
-                <Star size={18} fill={isStarred ? 'currentColor' : 'none'} />
+            <div className="learn-flashdeck__main-area">
+              <button type="button" className="learn-flashdeck__nav-side learn-flashdeck__nav-side--prev" onClick={() => go(-1)} disabled={index <= 0} aria-label="Trước">
+                <ChevronLeft size={36} />
               </button>
+              <div className="learn-flashdeck__card-wrap">
+                <button
+                  type="button"
+                  className={`learn-flashdeck__star learn-flashdeck__star--float${isStarred ? ' learn-flashdeck__star--on' : ''}`}
+                  onClick={() => {
+                    const next = new Set(starred);
+                    if (next.has(starKey)) next.delete(starKey);
+                    else next.add(starKey);
+                    persistStars(next);
+                  }}
+                  aria-pressed={isStarred}
+                >
+                  <Star size={18} fill={isStarred ? 'currentColor' : 'none'} />
+                </button>
 
-              <LessonFlipCard
-                key={currentIdx}
-                isFlipped={flipped}
-                onFlip={() => setFlipped((f) => !f)}
-                accent={accent}
-                front={
-                  <div className="learn-flip-face learn-flip-face--front">
-                    <span className="learn-flip-face__badge">{label}</span>
-                    <p className={`learn-flip-face__jp${isKanji ? ' learn-flip-face__jp--kanji' : ''}`} lang="ja">
-                      {w}
-                    </p>
-                  </div>
-                }
-                back={
-                  <div className="learn-flip-face learn-flip-face--back">
-                    <VisualCue item={current} />
-                    <p className="learn-flip-face__jp learn-flip-face__jp--sm" lang="ja">
-                      {w}
-                    </p>
-                    {reading ? (
-                      <p className="learn-flip-face__reading" lang="ja">
-                        {reading}
+                <LessonFlipCard
+                  key={currentIdx}
+                  isFlipped={flipped}
+                  onFlip={() => setFlipped((f) => !f)}
+                  accent={accent}
+                  front={
+                    <div className="learn-flip-face learn-flip-face--front">
+                      <span className="learn-flip-face__badge">{label}</span>
+                      <p className={`learn-flip-face__jp${isKanji ? ' learn-flip-face__jp--kanji' : ''}`} lang="ja">
+                        {w}
                       </p>
-                    ) : null}
-                    {meaning ? <p className="learn-flip-face__mean">{meaning}</p> : null}
-                    <div className="learn-flip-face__actions">
-                      {japaneseSpeechSupported() ? <SpeakJaButton text={reading || w} label="Nghe" /> : null}
+                      <span className="learn-flip-face__flip-ico" aria-hidden="true">
+                        <CornerDownRight size={18} />
+                      </span>
                     </div>
-                  </div>
-                }
-              />
+                  }
+                  back={
+                    <div className="learn-flip-face learn-flip-face--back">
+                      <VisualCue item={current} />
+                      <p className="learn-flip-face__jp learn-flip-face__jp--sm" lang="ja">
+                        {w}
+                      </p>
+                      {reading ? (
+                        <p className="learn-flip-face__reading" lang="ja">
+                          {reading}
+                        </p>
+                      ) : null}
+                      {meaning ? <p className="learn-flip-face__mean">{meaning}</p> : null}
+                      <div className="learn-flip-face__actions">
+                        {japaneseSpeechSupported() ? <SpeakJaButton text={reading || w} label="Nghe" /> : null}
+                      </div>
+                    </div>
+                  }
+                />
+              </div>
+              <button type="button" className="learn-flashdeck__nav-side learn-flashdeck__nav-side--next" onClick={() => go(1)} disabled={index >= count - 1} aria-label="Tiếp">
+                <ChevronRight size={36} />
+              </button>
             </div>
 
             <div className="learn-flashdeck__toolbar">
@@ -391,22 +404,14 @@ export default function VocabFlashcardPlayer({
                 </button>
               </div>
               <div className="learn-flashdeck__pager">
-                <button type="button" className="learn-flashdeck__pager-btn" onClick={() => go(-1)} disabled={index <= 0}>
-                  <ChevronLeft size={20} />
-                </button>
                 <span className="learn-flashdeck__counter">
                   {index + 1} / {count}
                 </span>
-                <button type="button" className="learn-flashdeck__pager-btn" onClick={() => go(1)} disabled={index >= count - 1}>
-                  <ChevronRight size={20} />
-                </button>
               </div>
               <div className="learn-flashdeck__toolbar-side learn-flashdeck__toolbar-side--end">
                 {japaneseSpeechSupported() ? (
                   <button type="button" className="learn-flashdeck__tool" onClick={speakCurrent} aria-label="Nghe">
-                    <span className="learn-flashdeck__speak-ico" aria-hidden>
-                      🔊
-                    </span>
+                    <Volume2 size={18} />
                   </button>
                 ) : null}
                 <button type="button" className="learn-flashdeck__tool" onClick={toggleFullscreen} aria-label="Toàn màn hình">
