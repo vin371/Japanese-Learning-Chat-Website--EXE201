@@ -256,7 +256,7 @@ export function PlayHubDashboard({
             <Motion.section className="mb-5" variants={vBlock}>
               <div className="flex items-center justify-between gap-3 mb-3">
                 <h2 className="m-0 text-[1.12rem] font-extrabold inline-flex items-center gap-1.5 text-slate-900 dark:text-slate-100">
-                  <span aria-hidden><Gamepad /></span> <Vi>Trò chơi</Vi>
+                  <span aria-hidden><Gamepad /></span> <span className='font-hirosaki'><Tooltip content="ゲーム">TRÒ CHƠI</Tooltip></span>
                 </h2>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                   <span className="text-[0.78rem] font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">{ordered.length} trò chơi</span>
@@ -289,7 +289,7 @@ export function PlayHubDashboard({
                     <p className="m-0 mb-3 text-[0.82rem] text-slate-600 dark:text-slate-300 flex-1 leading-relaxed">{g.description || '—'}</p>
                     <Tooltip content="今すぐプレイ" containerClassName="w-full mt-auto">
                       <Link
-                        className="block text-center py-2.5 rounded-xl font-bold text-[0.88rem] text-white bg-gradient-to-r from-rose-600 to-rose-500 shadow-[0_4px_14px_rgba(225,29,72,0.25)] hover:brightness-105 transition-all dark:from-rose-700 dark:to-rose-600"
+                        className="block text-center py-2.5 rounded-xl font-bold text-[0.88rem] text-white bg-gradient-to-r from-rose-600 to-rose-500 shadow-[0_4px_14px_rgba(225,29,72,0.25)] hover:brightness-105 transition-all dark:from-rose-700 dark:to-rose-600 font-noto-ja"
                         to={g.isPvp ? `${ROUTES.PLAY}/pvp?game=${encodeURIComponent(g.slug)}` : `${ROUTES.PLAY}/${g.slug}`}
                       >
                         Chơi ngay
@@ -303,7 +303,7 @@ export function PlayHubDashboard({
             <Motion.section className="mb-5" variants={vBlock}>
               <div className="flex items-center justify-between gap-3 mb-3">
                 <h2 className="m-0 text-[1.12rem] font-extrabold inline-flex items-center gap-1.5 text-slate-900 dark:text-slate-100">
-                  <span aria-hidden><Gem size={20} /></span><Tooltip content="報酬">Phần thưởng</Tooltip>
+                  <span aria-hidden><Gem size={20} /></span><Tooltip content="報酬"><span className="font-hirosaki">PHẦN THƯỞNG</span></Tooltip>
                 </h2>
               </div>
               <PhdRewardsMarquee pauseOnHover={false} speed={50} className="relative w-full overflow-hidden py-1 rounded-2xl [mask-image:linear-gradient(90deg,transparent_0%,#000_4%,#000_96%,transparent_100%)]">
@@ -343,7 +343,7 @@ export function PlayHubDashboard({
             <Motion.section className="mt-5 mb-5 py-4 px-4 rounded-2xl bg-white dark:bg-slate-800 border border-slate-900/10 dark:border-slate-400/20 shadow-sm" variants={vBlock} aria-labelledby="dash-powerups-main">
               <div className="flex items-center justify-between gap-2 mb-2 pb-2 border-b border-slate-900/10 dark:border-slate-400/20">
                 <h2 id="dash-powerups-main" className="m-0 text-[1.12rem] font-extrabold inline-flex items-center gap-1.5 text-slate-900 dark:text-slate-100">
-                  <span aria-hidden><PackageOpen /></span><Tooltip content="アイテム">Vật phẩm (Power-ups)</Tooltip>
+                  <span aria-hidden><PackageOpen /></span><Tooltip content="アイテム"><span className="font-hirosaki">VẬT PHẨM</span> (Power-ups)</Tooltip>
                 </h2>
                 <Link className="text-[0.82rem] font-bold text-rose-700 whitespace-nowrap hover:underline flex items-center gap-1" to={`${ROUTES.PLAY}/shop`}>
                   <Vi ja="コインショップ">Cửa hàng xu</Vi> <ArrowRight size={10} />
@@ -487,7 +487,7 @@ export function PlayHubDashboard({
               whileHover={hoverAsidePanel}
             >
               <h2 className="m-0 mb-3 text-[1.12rem] font-extrabold inline-flex items-center gap-1.5 text-slate-900 dark:text-slate-100">
-                <span aria-hidden><PackageOpen /></span><Tooltip content="アイテム">Vật phẩm</Tooltip>
+                <span aria-hidden><PackageOpen /></span><Tooltip content="アイテム"><span className="font-hirosaki">VẬT PHẨM</span></Tooltip>
               </h2>
               <ul className="flex flex-col gap-2 m-0 p-0 list-none">
                 {POWERUP_ROWS.map((p) => (
@@ -507,7 +507,7 @@ export function PlayHubDashboard({
 
             <Motion.div className="p-4 bg-white dark:bg-slate-800 rounded-2xl shadow-[0_4px_20px_rgba(15,23,42,0.06)] border border-slate-200 dark:border-slate-700" variants={vAsideItem} whileHover={hoverAsidePanel}>
               <div className="flex items-center justify-between gap-3 mb-2 pb-2 border-b border-slate-900/10 dark:border-slate-400/20">
-                <h3 className="m-0 text-[1.05rem] font-extrabold inline-flex items-center gap-1.5 text-slate-900 dark:text-slate-100"><Trophy size={20} /> {leaderboardHeading(lbBoardKind)}</h3>
+                <h3 className="m-0 text-[1.05rem] font-extrabold font-hirosaki inline-flex items-center gap-1.5 text-slate-900 dark:text-slate-100"><Trophy size={20} /><Tooltip content="EXPトップ">{leaderboardHeading(lbBoardKind)}</Tooltip></h3>
                 <Link to={`${ROUTES.PLAY}/leaderboard`} className="text-[0.82rem] font-bold text-rose-700 whitespace-nowrap hover:underline">
                   Xem tất cả →
                 </Link>
