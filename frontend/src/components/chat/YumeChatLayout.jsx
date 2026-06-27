@@ -1187,7 +1187,7 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
                       type="button"
                       role="tab"
                       aria-selected={inboxTab === 'all'}
-                      className={`px-4 py-1.5 rounded-full text-[0.8rem] font-bold tracking-wide transition-colors border ${inboxTab === 'all' ? 'bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-900 border-transparent' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
+                      className={`moji-chat__inbox-tab px-4 py-1.5 rounded-full text-[0.8rem] font-bold tracking-wide transition-colors border ${inboxTab === 'all' ? 'moji-chat__inbox-tab--active bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-900 border-transparent' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
                       onClick={() => setInboxTab('all')}
                     >
                       <Vi>Tất cả</Vi>
@@ -1196,7 +1196,7 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
                       type="button"
                       role="tab"
                       aria-selected={inboxTab === 'unread'}
-                      className={`px-4 py-1.5 rounded-full text-[0.8rem] font-bold tracking-wide transition-colors border ${inboxTab === 'unread' ? 'bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-900 border-transparent' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
+                      className={`moji-chat__inbox-tab px-4 py-1.5 rounded-full text-[0.8rem] font-bold tracking-wide transition-colors border ${inboxTab === 'unread' ? 'moji-chat__inbox-tab--active bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-900 border-transparent' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
                       onClick={() => setInboxTab('unread')}
                     >
                       <Vi>Chưa đọc</Vi>

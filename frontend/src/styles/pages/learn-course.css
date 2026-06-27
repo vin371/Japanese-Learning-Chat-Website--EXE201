@@ -235,6 +235,11 @@ html[data-theme='dark'] .app-main--learner:has(.learn-layout--shodo) {
   box-shadow: 0 2px 8px color-mix(in srgb, var(--color-primary) 35%, transparent);
 }
 
+.learn-nav__tab--active .vi-ja-hover,
+.learn-nav__tab--active .vi-ja-hover__vi {
+  color: #fff;
+}
+
 .learn-nav__section-label {
   padding: 0.55rem 1rem 0.25rem;
   margin-top: 0.15rem;
@@ -2308,6 +2313,11 @@ html[data-theme='dark'] .learn-sidebar__quick-link--active {
   box-shadow: 0 2px 10px rgba(183, 32, 37, 0.28);
 }
 
+.learn-layout--shodo .learn-sidebar .learn-nav__tab--active .vi-ja-hover,
+.learn-layout--shodo .learn-sidebar .learn-nav__tab--active .vi-ja-hover__vi {
+  color: #fff;
+}
+
 html[data-theme='dark'] .learn-layout--shodo .learn-sidebar .learn-nav__tab--active {
   color: #fff;
 }
@@ -2385,12 +2395,12 @@ html[data-theme='dark'] .learn-dashboard__hero-main {
 }
 
 .learn-dashboard__title {
-  font-family: 'Hirosaki', sans-serif;
-  font-weight: normal;
-  letter-spacing: 0.05em;
+  font-family: inherit;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
   margin: 0 0 0.45rem;
-  font-size: clamp(1.85rem, 3vw, 2.5rem);
-  /* Tăng nhẹ vì font Hirosaki nét nhỏ hơn */
+  font-size: clamp(1.35rem, 2.4vw, 1.75rem);
   color: var(--text-h);
 }
 
@@ -2701,13 +2711,12 @@ html[data-theme='dark'] .learn-track-card__cat {
 }
 
 .learn-track-card__title {
-  font-family: 'HanZi', sans-serif;
-  font-weight: normal;
-  letter-spacing: 0.05em;
+  font-family: inherit;
+  font-weight: 700;
+  letter-spacing: -0.01em;
   margin: 0;
-  font-size: 1.25rem;
-  /* Tăng nhẹ kích thước do font HanZi hiển thị nhỏ hơn */
-  line-height: 1.4;
+  font-size: 1rem;
+  line-height: 1.35;
   color: #0f172a;
   flex: 0 1 auto;
   min-height: 0;
@@ -3537,7 +3546,7 @@ html[data-theme='dark'] .learn-dashboard__hero.learn-dashboard__hero--compact {
 }
 
 .learn-dashboard__hero--compact .learn-dashboard__title {
-  font-size: clamp(1.1rem, 2.2vw, 1.35rem);
+  font-size: clamp(1.15rem, 2vw, 1.4rem);
   margin-bottom: 0.25rem;
 }
 
@@ -3669,20 +3678,20 @@ html[data-theme='dark'] .learn-hero-ring__level {
 }
 
 .learn-section-head__title--system {
-  font-family: 'HanZi', sans-serif;
-  font-weight: normal;
-  font-size: 1.35rem;
-  /* Tăng kích thước do font chữ hiển thị nhỏ */
-  letter-spacing: 0.09em;
+  font-family: inherit;
+  font-weight: 800;
+  font-size: 0.8125rem;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
 .learn-section-head__sub {
-  font-family: 'HanZi', sans-serif;
-  font-weight: normal;
+  font-family: inherit;
+  font-weight: 600;
   margin: 0.25rem 0 0;
-  font-size: 1.15rem;
-  /* Tăng kích thước do font chữ hiển thị nhỏ */
+  font-size: 0.8125rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   color: #64748b;
 }
 
@@ -3828,10 +3837,10 @@ html[data-theme='dark'] .learn-shell-user__bar {
 }
 
 .learn-shell-jlpt__code {
-  font-family: 'Hirosaki', sans-serif !important;
-  font-weight: normal !important;
-  font-size: 1.25rem !important;
-  letter-spacing: 0.05em;
+  font-family: inherit !important;
+  font-weight: 800 !important;
+  font-size: 0.9375rem !important;
+  letter-spacing: 0.02em;
 }
 
 .learn-shell-jlpt__item--current {
@@ -6270,7 +6279,7 @@ html[data-theme='dark'] .learn-layout--crimson-blossom .learn-visual-hero {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  font-family: 'Be Vietnam Pro', Inter, system-ui, -apple-system, sans-serif;
+  font-family: inherit;
   border: 1px solid rgba(192, 38, 38, 0.08);
   box-shadow:
     0 1px 2px rgba(15, 23, 42, 0.04),
@@ -6375,11 +6384,18 @@ html[data-theme='dark'] .learn-track-card--visual .learn-track-card__thumb {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 10px;
   flex-shrink: 0;
-  height: 40px;
+  min-height: 28px;
   margin: 0;
   padding: 0;
+}
+
+.learn-track-card--visual .learn-track-card__head .vi-ja-hover {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+  vertical-align: middle;
 }
 
 .learn-track-card--visual .learn-track-card__middle {
@@ -6390,13 +6406,13 @@ html[data-theme='dark'] .learn-track-card--visual .learn-track-card__thumb {
   min-height: 0;
   margin: 0;
   padding: 0;
-  gap: 0;
+  gap: 10px;
 }
 
 .learn-track-card--visual .learn-track-card__foot {
   flex-shrink: 0;
   margin-top: auto;
-  padding: 32px 0 0;
+  padding: 16px 0 0;
   border-top: none;
   width: 100%;
 }
@@ -6417,76 +6433,163 @@ html[data-theme='dark'] .learn-track-card--visual .learn-track-card__thumb {
   }
 }
 
-/* ── Lesson card typography (visual grid) — Be Vietnam Pro, 8px rhythm ── */
+/* ── Lesson card typography (visual grid) — đồng bộ font hệ thống ── */
 .learn-track-card--visual .learn-track-card__badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  height: 32px;
-  padding: 0 12px;
+  height: 26px;
+  padding: 0 10px;
   border-radius: 999px;
   font-family: inherit;
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 700;
   line-height: 1;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
+}
+
+.learn-track-card--visual .learn-track-card__badge--locked {
+  background: #f8fafc;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+}
+
+html[data-theme='dark'] .learn-track-card--visual .learn-track-card__badge--locked {
+  background: color-mix(in srgb, var(--color-surface-alt) 90%, transparent);
+  color: #94a3b8;
+  border-color: rgba(248, 250, 252, 0.12);
 }
 
 .learn-track-card--visual .learn-track-card__lesson-no {
   display: inline-flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-  flex-shrink: 0;
-  height: 40px;
-  margin: 0;
-  padding: 0;
-  font-family: inherit;
-  font-size: 18px;
-  font-weight: 700;
-  line-height: 1;
-  color: #64748b;
-}
-
-.learn-track-card--visual .learn-track-card__lesson-no--empty {
-  visibility: hidden;
-  width: 0;
-  overflow: hidden;
-}
-
-.learn-track-card--visual .learn-track-card__lesson-no-icon {
-  display: flex;
-  align-items: center;
   justify-content: center;
+  gap: 0;
   flex-shrink: 0;
-  width: 22px;
-  height: 22px;
-  font-size: 22px;
+  height: 26px;
+  margin: 0;
+  padding: 0 10px 0 9px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
   line-height: 1;
+  color: #475569;
 }
 
-.learn-track-card--visual .learn-track-card__lesson-no-text {
+html[data-theme='dark'] .learn-track-card--visual .learn-track-card__lesson-no {
+  background: color-mix(in srgb, var(--color-surface-alt) 88%, transparent);
+  border-color: rgba(248, 250, 252, 0.1);
+  color: #cbd5e1;
+}
+
+.learn-track-card--visual .learn-track-card__lesson-no-label {
   display: inline-flex;
   align-items: center;
-  line-height: 1;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #64748b;
+  text-transform: none;
+}
+
+.learn-track-card--visual .learn-track-card__lesson-no-dot {
+  flex-shrink: 0;
+  width: 3px;
+  height: 3px;
+  margin: 0 5px;
+  border-radius: 50%;
+  background: #cbd5e1;
+}
+
+.learn-track-card--visual .learn-track-card__lesson-no-num {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.8125rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  color: #334155;
+}
+
+html[data-theme='dark'] .learn-track-card--visual .learn-track-card__lesson-no-num {
+  color: #f1f5f9;
 }
 
 .learn-track-card--visual .learn-track-card__title {
-  margin: 24px 0 18px;
+  margin: 2px 0 0;
   padding: 0;
   font-family: inherit;
-  font-size: 32px;
-  font-weight: 800;
-  line-height: 1.18;
-  letter-spacing: -0.5px;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
   color: #1e293b;
   text-wrap: balance;
   overflow: hidden;
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+}
+
+/* Tiêu đề 2 tầng — thay dấu ・ bằng dòng phụ + vạch accent */
+.learn-track-card--visual .learn-lesson-title--split {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3rem;
+  overflow: visible;
+  -webkit-line-clamp: unset;
+  display: flex;
+}
+
+.learn-track-card--visual .learn-lesson-title__primary {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  color: inherit;
+}
+
+.learn-track-card--visual .learn-lesson-title__sub {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.learn-track-card--visual .learn-lesson-title__sub-accent {
+  flex-shrink: 0;
+  width: 3px;
+  height: 0.75rem;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #e11d48 0%, #fb7185 100%);
+  opacity: 0.88;
+}
+
+.learn-track-card--visual .learn-lesson-title__sub-text {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.35;
+  letter-spacing: 0.01em;
+  color: #64748b;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html[data-theme='dark'] .learn-track-card--visual .learn-lesson-title__sub-text {
+  color: #94a3b8;
+}
+
+.learn-track-card--visual .learn-lesson-title--single {
+  -webkit-line-clamp: 2;
+  display: -webkit-box;
 }
 
 html[data-theme='dark'] .learn-track-card--visual .learn-track-card__title {
@@ -6496,28 +6599,44 @@ html[data-theme='dark'] .learn-track-card--visual .learn-track-card__title {
 .learn-track-card--visual .learn-track-card__cat {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   align-self: flex-start;
   margin: 0;
-  padding: 8px 16px;
+  padding: 5px 12px;
   border-radius: 999px;
   font-family: inherit;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   line-height: 1;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
 .learn-track-card--visual .learn-track-card__cat-icon {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 16px;
-  height: 16px;
-  font-size: 14px;
-  line-height: 1;
+  width: 14px;
+  height: 14px;
+  line-height: 0;
+}
+
+.learn-track-card--visual .learn-track-card__cat-svg {
+  display: block;
+  flex-shrink: 0;
+}
+
+.learn-track-card--visual .learn-track-card__cat--vocab .learn-track-card__cat-svg {
+  color: #be123c;
+}
+
+.learn-track-card--visual .learn-track-card__cat--grammar .learn-track-card__cat-svg {
+  color: #1d4ed8;
+}
+
+.learn-track-card--visual .learn-track-card__cat--kanji .learn-track-card__cat-svg {
+  color: #c2410c;
 }
 
 .learn-track-card--visual .learn-track-card__cat-label {
@@ -6621,8 +6740,16 @@ html[data-theme='dark'] .learn-track-card--visual .learn-track-card__cat--kanji 
   transform: translateX(4px);
 }
 
+.learn-track-card--visual .learn-track-card__lesson-no--empty {
+  visibility: hidden;
+  width: 0;
+  padding: 0;
+  overflow: hidden;
+  border: none;
+}
+
 .learn-track-card--visual .learn-track-card__badge .vi-ja-hover,
-.learn-track-card--visual .learn-track-card__lesson-no-text .vi-ja-hover,
+.learn-track-card--visual .learn-track-card__lesson-no-label .vi-ja-hover,
 .learn-track-card--visual .learn-track-card__cat-label .vi-ja-hover,
 .learn-track-card--visual .learn-track-card__btn-label .vi-ja-hover {
   vertical-align: middle;
@@ -6641,18 +6768,22 @@ html[data-theme='dark'] .learn-track-card--visual .learn-track-card__cat--kanji 
     padding: 16px 16px 20px;
   }
 
-  .learn-track-card--visual .learn-track-card__title {
-    font-size: clamp(24px, 6vw, 32px);
+  .learn-track-card--visual .learn-track-card__title,
+  .learn-track-card--visual .learn-lesson-title__primary {
+    font-size: 1rem;
+  }
+
+  .learn-track-card--visual .learn-lesson-title__sub-text {
+    font-size: 0.78rem;
   }
 
   .learn-track-card--visual .learn-track-card__lesson-no {
-    font-size: 16px;
+    height: 24px;
+    padding: 0 8px 0 7px;
   }
 
-  .learn-track-card--visual .learn-track-card__lesson-no-icon {
-    width: 20px;
-    height: 20px;
-    font-size: 20px;
+  .learn-track-card--visual .learn-track-card__lesson-no-num {
+    font-size: 0.75rem;
   }
 
   .learn-track-card--visual .learn-track-card__btn {
