@@ -42,13 +42,12 @@ export default function OnboardingSurveyPage() {
       <div className="onboarding-card">
         {step === 0 ? (
           <>
-            <h1 className="onboarding-title"><Vi>Chào mừng bạn đến với YumeGo-ji</Vi></h1>
+            <h1 className="onboarding-title"><Vi>Chào mừng đến với YumeGo-ji</Vi></h1>
             <p className="onboarding-lead">
-              YumeGo-ji là hệ thống học tiếng Nhật dành cho người học JLPT N5–N3. Bạn sẽ học qua Từ vựng, Ngữ pháp,
-              Kanji và các bài luyện tập ngắn mỗi ngày.
+              YumeGo-ji là nơi học tiếng Nhật từ N5 → N3 với từ vựng, ngữ pháp, kanji và những bài luyện ngắn mỗi ngày.
             </p>
             <p className="onboarding-sub">
-              Trước khi bắt đầu, hãy trả lời vài câu hỏi nhanh để hệ thống hiểu mục tiêu học của bạn.
+              Hãy trả lời 3 câu hỏi nhanh để YumeGo-ji cá nhân hóa lộ trình học cho bạn nhé!
             </p>
           </>
         ) : null}
@@ -65,7 +64,7 @@ export default function OnboardingSurveyPage() {
 
         <div className="onboarding-actions">
           <button type="button" className="onboarding-btn onboarding-btn--primary" disabled={!currentValue} onClick={handleNext}>
-            {step < totalSteps - 1 ? <Vi>Tiếp tục</Vi> : <Vi>Hoàn thành khảo sát</Vi>}
+            {step < totalSteps - 1 ? <Vi>Tiếp theo</Vi> : <Vi>Hoàn thành khảo sát</Vi>}
             <ChevronRight size={18} />
           </button>
           {step > 0 ? (

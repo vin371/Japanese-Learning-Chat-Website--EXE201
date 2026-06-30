@@ -46,22 +46,23 @@ function fmtVnd(n) {
 
 /** Gói Miễn phí — chỉ tính năng học tập */
 const FREE_FEATURES = [
-  { icon: '📖', text: 'Lộ trình JLPT N5: từ vựng, ngữ pháp, kanji' },
-  { icon: '🎯', text: 'Bài test đầu vào & theo dõi tiến độ học' },
-  { icon: '🃏', text: 'Flashcard & bài tập trong phạm vi Free' },
-  { icon: '📝', text: '5 bài đầu mỗi phần ở N5 (từ vựng, ngữ pháp, kanji)' },
-  { icon: '🎮', text: 'Game ôn tập — giới hạn 8 lượt chơi/ngày' },
-  { icon: 'あ', text: 'Bảng chữ Hiragana & Katakana' },
+  { icon: '✓', text: 'Lộ trình JLPT N5: từ vựng, ngữ pháp, kanji' },
+  { icon: '✓', text: 'Bài test đầu vào & theo dõi tiến độ học' },
+  { icon: '✓', text: 'Flashcard & bài tập trong phạm vi Free' },
+  { icon: '✓', text: '5 bài đầu mỗi phần ở N5 (từ vựng, ngữ pháp, kanji)' },
+  { icon: '✓', text: 'Game ôn tập — giới hạn 8 lượt chơi/ngày' },
+  { icon: '✓', text: 'Bảng chữ Hiragana & Katakana' },
 ];
 
 /** Gói Premium — quyền lợi học tập */
 const PREMIUM_FEATURES = [
-  { icon: '🔓', text: 'Mở khóa toàn bộ bài học & nội dung đánh dấu Premium' },
-  { icon: '📚', text: 'Truy cập đầy đủ từ vựng, ngữ pháp & kanji Premium' },
-  { icon: '🃏', text: 'Ôn tập flashcard & quiz sau mỗi bài học' },
-  { icon: '🗺️', text: 'Lộ trình N5 → N3 theo cấp JLPT' },
-  { icon: '✨', text: 'Trải nghiệm học mượt mà, tập trung tuyệt đối' },
-  { icon: '🏅', text: 'Huy hiệu Premium trên hồ sơ học tập' },
+  { icon: '✓', text: 'Mở khóa toàn bộ bài học & nội dung đánh dấu Premium' },
+  { icon: '✓', text: 'Truy cập đầy đủ từ vựng, ngữ pháp & kanji Premium' },
+  { icon: '✓', text: 'Ôn tập flashcard & quiz sau mỗi bài học' },
+  { icon: '✓', text: 'Lộ trình N5 → N3 theo cấp JLPT' },
+  { icon: '✓', text: 'Trải nghiệm học mượt mà, tập trung tuyệt đối' },
+  { icon: '✓', text: 'Mở rộng quyền sử dụng AI' },
+  { icon: '✓', text: 'Huy hiệu Premium trên hồ sơ học tập' },
 ];
 
 export default function UpgradePage() {

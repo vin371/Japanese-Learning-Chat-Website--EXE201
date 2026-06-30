@@ -74,11 +74,9 @@
 }
 
 html[data-theme='dark'] .upgrade-page--sakura {
-  background: linear-gradient(
-    165deg,
-    color-mix(in srgb, var(--bg, #0f172a) 92%, #fce7f3 8%) 0%,
-    color-mix(in srgb, var(--bg, #0f172a) 96%, #e0f2fe 4%) 100%
-  );
+  background: linear-gradient(165deg,
+      color-mix(in srgb, var(--bg, #0f172a) 92%, #fce7f3 8%) 0%,
+      color-mix(in srgb, var(--bg, #0f172a) 96%, #e0f2fe 4%) 100%);
   border-color: color-mix(in srgb, var(--border, #334155) 85%, #fbcfe8 15%);
   box-shadow: none;
 }
@@ -132,7 +130,7 @@ html[data-theme='dark'] .upgrade-page__eyebrow {
 }
 
 .upgrade-page__title {
-  font-family: inherit;
+  font-family: var(--font-hanzi, inherit);
   font-weight: 800;
   letter-spacing: -0.02em;
   margin: 0;
@@ -450,13 +448,9 @@ html[data-theme='dark'] .upgrade-card__features li {
   width: 1.75rem;
   height: 1.75rem;
   font-size: 1rem;
+  font-weight: bold;
   line-height: 1;
   border-radius: 8px;
-  background: #f8fafc;
-}
-
-.upgrade-card__features--gold .upgrade-card__feature-icon {
-  background: #fffbeb;
 }
 
 .upgrade-card__btn {
