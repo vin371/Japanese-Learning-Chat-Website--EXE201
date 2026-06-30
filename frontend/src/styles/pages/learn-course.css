@@ -2395,7 +2395,7 @@ html[data-theme='dark'] .learn-dashboard__hero-main {
 }
 
 .learn-dashboard__title {
-  font-family: inherit;
+  font-family: var(--font-hirosaki, inherit);
   font-weight: 800;
   letter-spacing: -0.02em;
   line-height: 1.2;
@@ -2498,6 +2498,7 @@ html[data-theme='dark'] .learn-layout--shodo .learn-dashboard__stat-meta {
 }
 
 .learn-section-head__title {
+  font-family: var(--font-kashima, inherit);
   position: relative;
   margin: 0;
   padding-left: 0.85rem;
@@ -3678,7 +3679,7 @@ html[data-theme='dark'] .learn-hero-ring__level {
 }
 
 .learn-section-head__title--system {
-  font-family: inherit;
+  font-family: var(--font-hanzi, inherit);
   font-weight: 800;
   font-size: 0.8125rem;
   letter-spacing: 0.06em;
@@ -3686,7 +3687,7 @@ html[data-theme='dark'] .learn-hero-ring__level {
 }
 
 .learn-section-head__sub {
-  font-family: inherit;
+  font-family: var(--font-hanzi, inherit);
   font-weight: 600;
   margin: 0.25rem 0 0;
   font-size: 0.8125rem;
@@ -3834,6 +3835,7 @@ html[data-theme='dark'] .learn-shell-user__bar {
   border-radius: 12px;
   border: 1px solid #e8eaef;
   background: #fff;
+  font-family: var(--font-hanzi, inherit) !important;
 }
 
 .learn-shell-jlpt__code {
