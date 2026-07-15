@@ -101,7 +101,11 @@ public class AuthController : ControllerBase
         }
         catch (Exception ex) when (DbExceptionHelper.IsConnectionError(ex))
         {
-            return StatusCode(503, new { message = "Không kết nối được cơ sở dữ liệu. Kiểm tra Supabase trong appsettings.Secrets.json." });
+            return StatusCode(503, new
+            {
+                message = "Không kết nối được cơ sở dữ liệu. Kiểm tra DATABASE_URL / ConnectionStrings__DefaultConnection trên Railway.",
+                detail = ex.GetBaseException().Message,
+            });
         }
     }
 

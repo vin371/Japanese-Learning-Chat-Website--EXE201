@@ -23,7 +23,8 @@ public static class DbExceptionHelper
     {
         for (var e = ex; e != null; e = e.InnerException)
         {
-            if (e is PostgresException or System.Net.Sockets.SocketException or TimeoutException)
+            // PostgresException ⊂ NpgsqlException; bắt cả NpgsqlException (SSL/timeout/auth wrap).
+            if (e is NpgsqlException or System.Net.Sockets.SocketException or TimeoutException)
                 return true;
         }
         return false;
