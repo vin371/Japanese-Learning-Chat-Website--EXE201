@@ -563,7 +563,6 @@ namespace backend
                 Username = user,
                 Password = password,
                 SslMode = SslMode.Require,
-                TrustServerCertificate = true,
             };
             return csb.ConnectionString;
         }
