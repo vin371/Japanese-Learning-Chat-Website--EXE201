@@ -78,10 +78,19 @@ namespace backend
             if (!string.IsNullOrWhiteSpace(jwtEnv))
                 builder.Configuration["Jwt:Key"] = jwtEnv;
 
-            // Railway Variables phải thắng Secrets.json (nếu file vô tình có trong image)
-            var csEnv = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
-            if (!string.IsNullOrWhiteSpace(csEnv))
-                builder.Configuration["ConnectionStrings:DefaultConnection"] = csEnv.Trim();
+            // Railway / Docker: ưu tiên env (Secrets.json AddJsonFile có thể đè CreateBuilder nếu có file trong image)
+            var csEnvSource = ResolveConnectionStringFromEnvironment();
+            if (!string.IsNullOrWhiteSpace(csEnvSource.Value))
+            {
+                builder.Configuration["ConnectionStrings:DefaultConnection"] = csEnvSource.Value!;
+                Console.WriteLine($"[yumegoji] DB connection string từ env: {csEnvSource.Source}");
+            }
+            else
+            {
+                Console.WriteLine(
+                    "[yumegoji] CẢNH BÁO: không thấy ConnectionStrings__DefaultConnection / DATABASE_URL trên process. " +
+                    "Đang dùng appsettings.json (placeholder) — login sẽ fail. Thêm biến trên Railway rồi Redeploy.");
+            }
 
             // Upload multipart (PDF/DOCX/PPTX) — đồng bộ với [RequestSizeLimit] trên controller import
             builder.WebHost.ConfigureKestrel(o =>
@@ -321,13 +330,23 @@ namespace backend
                     try
                     {
                         var csb = new NpgsqlConnectionStringBuilder(cs ?? "");
+                        var usingPlaceholder = string.Equals(
+                            csb.Password,
+                            "YOUR_SUPABASE_DB_PASSWORD",
+                            StringComparison.Ordinal);
                         log.LogInformation(
-                            "DB config: Host={Host}; Port={Port}; Username={Username}; PasswordLen={PasswordLen}; HasEnvOverride={HasEnv}",
+                            "DB config: Host={Host}; Port={Port}; Username={Username}; PasswordLen={PasswordLen}; UsingPlaceholderPassword={UsingPlaceholder}",
                             csb.Host,
                             csb.Port,
                             csb.Username,
                             string.IsNullOrEmpty(csb.Password) ? 0 : csb.Password.Length,
-                            !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")));
+                            usingPlaceholder);
+                        if (usingPlaceholder)
+                        {
+                            log.LogError(
+                                "Password đang là YOUR_SUPABASE_DB_PASSWORD (appsettings.json). " +
+                                "Railway chưa inject connection string vào container — đặt biến DATABASE_URL hoặc ConnectionStrings__DefaultConnection rồi Redeploy.");
+                        }
                     }
                     catch (Exception parseEx)
                     {
@@ -477,6 +496,34 @@ namespace backend
                 : Path.GetFullPath(importDir);
 
             await N3DocxCourseImporter.RunAsync(db, dir, dryRun);
+        }
+
+        /// <summary>
+        /// Railway đôi khi không inject tên có __; hỗ trợ DATABASE_URL (URI) và vài alias.
+        /// </summary>
+        private static (string? Value, string Source) ResolveConnectionStringFromEnvironment()
+        {
+            string[] keys =
+            [
+                "ConnectionStrings__DefaultConnection",
+                "ConnectionStrings:DefaultConnection",
+                "DATABASE_URL",
+                "SUPABASE_CONNECTION_STRING",
+                "DefaultConnection",
+            ];
+
+            foreach (var key in keys)
+            {
+                var raw = Environment.GetEnvironmentVariable(key);
+                if (string.IsNullOrWhiteSpace(raw))
+                    continue;
+
+                var value = raw.Trim().Trim('"');
+                // URI postgres → Npgsql chấp nhận; giữ nguyên. Key=value giữ nguyên.
+                return (value, key);
+            }
+
+            return (null, "");
         }
 
         private static async Task ApplySqlEntry(string[] args)
