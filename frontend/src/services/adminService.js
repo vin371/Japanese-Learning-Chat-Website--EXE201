@@ -35,7 +35,7 @@ export const adminService = {
     return data ?? null;
   },
 
-  async listPremiumRequests(status = 'pending_review') {
+  async listPremiumRequests(status = 'needs_action') {
     const { data } = await adminApi.listPremiumRequests({ status });
     return Array.isArray(data) ? data : [];
   },

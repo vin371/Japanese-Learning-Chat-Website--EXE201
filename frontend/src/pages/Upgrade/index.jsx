@@ -108,13 +108,15 @@ export default function UpgradePage() {
   const canBuy = !!(config?.isActive ?? true) && !isPremium;
 
   const statusText = useMemo(() => {
-    const s = String(intent?.status || '').toLowerCase();
+    const s = String(intent?.status ?? intent?.Status ?? '').toLowerCase();
     if (s === 'approved') return 'Đã duyệt: tài khoản đã lên Premium.';
     if (s === 'pending_review') return 'Đã gửi yêu cầu, đang chờ admin duyệt.';
     if (s === 'rejected') return 'Yêu cầu đã bị từ chối. Tạo mã mới để thanh toán lại.';
-    if (s === 'created') return 'Đã tạo mã, vui lòng chuyển khoản đúng nội dung token.';
+    if (s === 'created') {
+      return 'Đã tạo mã QR. Chuyển khoản đúng nội dung token, sau đó bấm «Tôi đã thanh toán» để gửi yêu cầu cho admin.';
+    }
     return '';
-  }, [intent?.status]);
+  }, [intent?.status, intent?.Status]);
 
   async function onCreateIntent() {
     setCreating(true);
@@ -124,7 +126,7 @@ export default function UpgradePage() {
       const dto = await paymentService.createPremiumIntent();
       setIntent(dto);
       setShowPayment(true);
-      setMsg('Đã tạo mã QR thanh toán.');
+      setMsg('Đã tạo mã QR. Quét QR chỉ chuyển khoản — sau khi chuyển xong hãy bấm «Tôi đã thanh toán».');
     } catch (e) {
       setErr(getErrorMessageForUser(e, 'Không tạo được mã thanh toán.'));
     } finally {
@@ -133,14 +135,14 @@ export default function UpgradePage() {
   }
 
   async function onConfirmPaid() {
-    if (!intent?.token) return;
+    if (!intent?.token && !intent?.Token) return;
     setConfirming(true);
     setErr('');
     setMsg('');
     try {
-      const dto = await paymentService.confirmPremiumPayment(intent.token);
+      const dto = await paymentService.confirmPremiumPayment(intent.token ?? intent.Token);
       setIntent(dto);
-      setMsg('Đã gửi xác nhận. Vui lòng chờ admin duyệt.');
+      setMsg('Đã gửi yêu cầu cho admin. Vui lòng chờ duyệt để nhận Premium.');
     } catch (e) {
       setErr(getErrorMessageForUser(e, 'Không xác nhận được thanh toán.'));
     } finally {

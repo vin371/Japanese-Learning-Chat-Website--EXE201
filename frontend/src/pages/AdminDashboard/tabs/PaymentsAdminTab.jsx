@@ -25,7 +25,7 @@ function mapStatus(s) {
 export function PaymentsAdminTab() {
   const [config, setConfig] = useState(null);
   const [rows, setRows] = useState([]);
-  const [status, setStatus] = useState('pending_review');
+  const [status, setStatus] = useState('needs_action');
   const [loading, setLoading] = useState(false);
   const [savingCfg, setSavingCfg] = useState(false);
   const [busyId, setBusyId] = useState(0);
@@ -89,6 +89,14 @@ export function PaymentsAdminTab() {
     };
   }, [status]);
 
+  // Tự làm mới danh sách để thấy yêu cầu mới sau khi user bấm thanh toán
+  useEffect(() => {
+    const timer = setInterval(() => {
+      void loadRows(status).catch(() => {});
+    }, 12000);
+    return () => clearInterval(timer);
+  }, [status, loadRows]);
+
   async function onSaveConfig() {
     setSavingCfg(true);
     setErr('');
@@ -142,7 +150,11 @@ export function PaymentsAdminTab() {
   }
 
   const pendingCount = useMemo(
-    () => rows.filter((r) => String(r?.status || '').toLowerCase() === 'pending_review').length,
+    () =>
+      rows.filter((r) => {
+        const k = String(r?.status || r?.Status || '').toLowerCase();
+        return k === 'pending_review' || k === 'created';
+      }).length,
     [rows]
   );
 
@@ -215,16 +227,19 @@ export function PaymentsAdminTab() {
         <div className="admin-dash__toolbar">
           <div>
             <h3 className="admin-dash__subcard-title">Yêu cầu xác nhận thanh toán</h3>
-            <p className="admin-dash__card-sub">Chờ duyệt hiện tại: {pendingCount} yêu cầu.</p>
+            <p className="admin-dash__card-sub">
+              Cần xử lý: {pendingCount} yêu cầu (đã tạo mã / chờ duyệt). Đối chiếu nội dung chuyển khoản với cột Token.
+            </p>
           </div>
           <div className="admin-dash__toolbar-actions">
             <label>
               Trạng thái
               <select className="admin-dash__select" value={status} onChange={(e) => setStatus(e.target.value)}>
-                <option value="pending_review">Chờ duyệt</option>
+                <option value="needs_action">Cần xử lý</option>
+                <option value="pending_review">Chờ duyệt (đã bấm thanh toán)</option>
+                <option value="created">Đã tạo mã (chưa bấm)</option>
                 <option value="approved">Đã duyệt</option>
                 <option value="rejected">Đã từ chối</option>
-                <option value="created">Đã tạo mã</option>
                 <option value="all">Tất cả</option>
               </select>
             </label>
@@ -252,7 +267,8 @@ export function PaymentsAdminTab() {
               {rows.map((r) => {
                 const id = r.id ?? r.Id;
                 const st = r.status ?? r.Status;
-                const isPending = String(st || '').toLowerCase() === 'pending_review';
+                const stKey = String(st || '').toLowerCase();
+                const canResolve = stKey === 'pending_review' || stKey === 'created';
                 const busy = busyId === id;
                 return (
                   <tr key={id} className={busy ? 'admin-users__tr--busy' : ''}>
@@ -275,7 +291,7 @@ export function PaymentsAdminTab() {
                       />
                     </td>
                     <td>
-                      {isPending ? (
+                      {canResolve ? (
                         <div className="admin-users__actions">
                           <button type="button" className="admin-users__action" onClick={() => void onApprove(id)} disabled={busy}>
                             Duyệt

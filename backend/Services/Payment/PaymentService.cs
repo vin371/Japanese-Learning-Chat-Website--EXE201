@@ -158,11 +158,13 @@ public class PaymentService : IPaymentService
         return next;
     }
 
-    public async Task<IReadOnlyList<PremiumRequestDto>> AdminListPremiumRequestsAsync(string status = "pending_review")
+    public async Task<IReadOnlyList<PremiumRequestDto>> AdminListPremiumRequestsAsync(string status = "needs_action")
     {
-        var st = string.IsNullOrWhiteSpace(status) ? "pending_review" : status.Trim().ToLowerInvariant();
+        var st = string.IsNullOrWhiteSpace(status) ? "needs_action" : status.Trim().ToLowerInvariant();
         using var db = CreateConnection();
         await db.OpenAsync();
+
+        // needs_action = mã đã tạo hoặc user đã bấm «Tôi đã thanh toán» — admin cần xử lý
         var rows = await db.QueryAsync<PremiumRequestDto>(
             """
             SELECT r.id AS Id, r.user_id AS UserId, u.username AS Username, r.token AS Token,
@@ -170,8 +172,18 @@ public class PaymentService : IPaymentService
                    r.created_at AS CreatedAt, r.confirmed_at AS ConfirmedAt, r.approved_at AS ApprovedAt, r.note AS Note
             FROM premium_payment_requests r
             INNER JOIN users u ON u.id = r.user_id
-            WHERE (@status = 'all' OR r.status = @status)
-            ORDER BY r.id DESC
+            WHERE (
+                @status = 'all'
+                OR (@status = 'needs_action' AND r.status IN ('created', 'pending_review'))
+                OR r.status = @status
+            )
+            ORDER BY
+                CASE r.status
+                    WHEN 'pending_review' THEN 0
+                    WHEN 'created' THEN 1
+                    ELSE 2
+                END,
+                r.id DESC
             """,
             new { status = st });
         return rows.ToList();

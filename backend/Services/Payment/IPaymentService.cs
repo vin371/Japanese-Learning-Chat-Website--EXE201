@@ -11,7 +11,7 @@ public interface IPaymentService
     Task<PremiumConfigDto> GetPremiumConfigAsync();
 
     Task<PremiumConfigDto> AdminUpdatePremiumConfigAsync(UpdatePremiumConfigRequest request);
-    Task<IReadOnlyList<PremiumRequestDto>> AdminListPremiumRequestsAsync(string status = "pending_review");
+    Task<IReadOnlyList<PremiumRequestDto>> AdminListPremiumRequestsAsync(string status = "needs_action");
     Task<bool> AdminApprovePremiumRequestAsync(int requestId, int adminUserId, string? note);
     Task<bool> AdminRejectPremiumRequestAsync(int requestId, int adminUserId, string? note);
 }

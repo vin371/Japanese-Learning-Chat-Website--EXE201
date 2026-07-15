@@ -91,24 +91,24 @@ public class PaymentController : ControllerBase
 
     [HttpGet("admin/premium/requests")]
     [Authorize(Policy = AuthPolicies.AdminOnly)]
-    public async Task<ActionResult<IReadOnlyList<PremiumRequestDto>>> AdminListPremiumRequests([FromQuery] string status = "pending_review")
+    public async Task<ActionResult<IReadOnlyList<PremiumRequestDto>>> AdminListPremiumRequests([FromQuery] string status = "needs_action")
     {
         return Ok(await _payment.AdminListPremiumRequestsAsync(status));
     }
 
     [HttpPost("admin/premium/requests/{id:int}/approve")]
     [Authorize(Policy = AuthPolicies.AdminOnly)]
-    public async Task<IActionResult> AdminApproveRequest(int id, [FromBody] ResolvePremiumRequest body)
+    public async Task<IActionResult> AdminApproveRequest(int id, [FromBody] ResolvePremiumRequest? body)
     {
-        var ok = await _payment.AdminApprovePremiumRequestAsync(id, GetUserId(), body.Note);
+        var ok = await _payment.AdminApprovePremiumRequestAsync(id, GetUserId(), body?.Note);
         return ok ? Ok(new { ok = true }) : NotFound();
     }
 
     [HttpPost("admin/premium/requests/{id:int}/reject")]
     [Authorize(Policy = AuthPolicies.AdminOnly)]
-    public async Task<IActionResult> AdminRejectRequest(int id, [FromBody] ResolvePremiumRequest body)
+    public async Task<IActionResult> AdminRejectRequest(int id, [FromBody] ResolvePremiumRequest? body)
     {
-        var ok = await _payment.AdminRejectPremiumRequestAsync(id, GetUserId(), body.Note);
+        var ok = await _payment.AdminRejectPremiumRequestAsync(id, GetUserId(), body?.Note);
         return ok ? Ok(new { ok = true }) : NotFound();
     }
 }
