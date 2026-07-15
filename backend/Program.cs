@@ -69,6 +69,7 @@ namespace backend
             }
 
             // OpenAI ApiKey: đặt trong appsettings.Secrets.json (đã .gitignore) hoặc User Secrets — xem OPENAI-CAU-HINH.txt
+            // Lưu ý: AddJsonFile sau CreateBuilder có độ ưu tiên cao hơn env → phải ghi đè lại từ env bên dưới.
             builder.Configuration.AddJsonFile("appsettings.Secrets.json", optional: true, reloadOnChange: true);
 
             // Railway Variables: JWT_KEY hoặc Jwt__Key
@@ -76,6 +77,11 @@ namespace backend
                 ?? Environment.GetEnvironmentVariable("Jwt__Key");
             if (!string.IsNullOrWhiteSpace(jwtEnv))
                 builder.Configuration["Jwt:Key"] = jwtEnv;
+
+            // Railway Variables phải thắng Secrets.json (nếu file vô tình có trong image)
+            var csEnv = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
+            if (!string.IsNullOrWhiteSpace(csEnv))
+                builder.Configuration["ConnectionStrings:DefaultConnection"] = csEnv.Trim();
 
             // Upload multipart (PDF/DOCX/PPTX) — đồng bộ với [RequestSizeLimit] trên controller import
             builder.WebHost.ConfigureKestrel(o =>
@@ -311,21 +317,37 @@ namespace backend
                     using var scope = app.Services.CreateScope();
                     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
                     var log = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-                    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-                    if (await db.Database.CanConnectAsync(cts.Token))
+                    var cs = app.Configuration.GetConnectionString("DefaultConnection");
+                    try
                     {
-                        log.LogInformation("Đã kết nối PostgreSQL (Supabase) thành công.");
-                        var cs = app.Configuration.GetConnectionString("DefaultConnection");
-                        if (!string.IsNullOrWhiteSpace(cs))
-                            await StartupDbPatches.ApplyUserInventoryTimestampDefaultsAsync(cs, log, cts.Token);
+                        var csb = new NpgsqlConnectionStringBuilder(cs ?? "");
+                        log.LogInformation(
+                            "DB config: Host={Host}; Port={Port}; Username={Username}; PasswordLen={PasswordLen}; HasEnvOverride={HasEnv}",
+                            csb.Host,
+                            csb.Port,
+                            csb.Username,
+                            string.IsNullOrEmpty(csb.Password) ? 0 : csb.Password.Length,
+                            !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")));
                     }
-                    else
-                        log.LogWarning("Không kết nối được database — kiểm tra ConnectionStrings__DefaultConnection trên Railway.");
+                    catch (Exception parseEx)
+                    {
+                        log.LogWarning(parseEx, "Không parse được ConnectionStrings:DefaultConnection.");
+                    }
+
+                    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+                    await db.Database.OpenConnectionAsync(cts.Token);
+                    await db.Database.CloseConnectionAsync();
+                    log.LogInformation("Đã kết nối PostgreSQL (Supabase) thành công.");
+                    if (!string.IsNullOrWhiteSpace(cs))
+                        await StartupDbPatches.ApplyUserInventoryTimestampDefaultsAsync(cs, log, cts.Token);
                 }
                 catch (Exception ex)
                 {
                     var log = app.Services.GetRequiredService<ILogger<Program>>();
-                    log.LogError(ex, "Lỗi kết nối Supabase khi khởi động (pooler + Password trong dấu ngoặc kép nếu có @ !).");
+                    log.LogError(
+                        ex,
+                        "Lỗi kết nối Supabase khi khởi động. Kiểm tra Host=aws-1-... (không aws-0), Password đúng, và ConnectionStrings__DefaultConnection trên Railway. Chi tiết: {Message}",
+                        ex.GetBaseException().Message);
                 }
             });
 
