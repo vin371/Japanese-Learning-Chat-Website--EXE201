@@ -500,6 +500,7 @@ namespace backend
 
         /// <summary>
         /// Railway đôi khi không inject tên có __; hỗ trợ DATABASE_URL (URI) và vài alias.
+        /// URI được chuyển sang dạng Host=... vì Railway hay cắt giá trị tại dấu '=' trong query (?sslmode=require).
         /// </summary>
         private static (string? Value, string Source) ResolveConnectionStringFromEnvironment()
         {
@@ -518,12 +519,53 @@ namespace backend
                 if (string.IsNullOrWhiteSpace(raw))
                     continue;
 
-                var value = raw.Trim().Trim('"');
-                // URI postgres → Npgsql chấp nhận; giữ nguyên. Key=value giữ nguyên.
-                return (value, key);
+                try
+                {
+                    return (NormalizeNpgsqlConnectionString(raw), key);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[yumegoji] Bỏ qua {key}: {ex.Message}");
+                }
             }
 
             return (null, "");
+        }
+
+        /// <summary>Key=value giữ nguyên; postgres(ql):// → Npgsql keyword (+ SSL bắt buộc).</summary>
+        private static string NormalizeNpgsqlConnectionString(string raw)
+        {
+            var value = raw.Trim().Trim('"');
+            if (!value.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase) &&
+                !value.StartsWith("postgresql://", StringComparison.OrdinalIgnoreCase))
+                return value;
+
+            // Bỏ query string — Railway cắt "...?sslmode=require" thành "...?sslmode"
+            var q = value.IndexOf('?', StringComparison.Ordinal);
+            if (q >= 0)
+                value = value[..q];
+
+            if (!Uri.TryCreate(value, UriKind.Absolute, out var uri) || string.IsNullOrEmpty(uri.Host))
+                throw new InvalidOperationException("DATABASE_URL không phải URI postgres hợp lệ.");
+
+            var userInfo = uri.UserInfo.Split(':', 2);
+            var user = Uri.UnescapeDataString(userInfo[0]);
+            var password = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : "";
+            var database = uri.AbsolutePath.Trim('/');
+            if (string.IsNullOrEmpty(database))
+                database = "postgres";
+
+            var csb = new NpgsqlConnectionStringBuilder
+            {
+                Host = uri.Host,
+                Port = uri.IsDefaultPort ? 5432 : uri.Port,
+                Database = database,
+                Username = user,
+                Password = password,
+                SslMode = SslMode.Require,
+                TrustServerCertificate = true,
+            };
+            return csb.ConnectionString;
         }
 
         private static async Task ApplySqlEntry(string[] args)
