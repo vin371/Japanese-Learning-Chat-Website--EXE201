@@ -90,8 +90,14 @@ public class PaymentService : IPaymentService
         var row = await QueryLatestIntentRowAsync(db, "WHERE user_id = @uid AND token = @token", new { uid = userId, token = t });
         if (row is null) return null;
 
-        if (!string.Equals(row.Status, "approved", StringComparison.OrdinalIgnoreCase) &&
-            !string.Equals(row.Status, "pending_review", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(row.Status, "approved", StringComparison.OrdinalIgnoreCase))
+            return ToIntentDto(row);
+
+        if (string.Equals(row.Status, "rejected", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("Yêu cầu đã bị từ chối. Vui lòng tạo mã thanh toán mới.");
+
+        // Chờ admin duyệt — chưa cộng doanh thu / chưa bật Premium
+        if (!string.Equals(row.Status, "pending_review", StringComparison.OrdinalIgnoreCase))
         {
             await db.ExecuteAsync(
                 """
@@ -190,8 +196,27 @@ public class PaymentService : IPaymentService
             return true;
         }
 
+        await ApplyPremiumApprovalAsync(
+            db, tx, requestId, row.Value.UserId, row.Value.DurationDays, adminUserId, note);
+        tx.Commit();
+        return true;
+    }
+
+    /// <summary>
+    /// Duyệt thanh toán: set approved (doanh thu admin), bật is_premium, tạo subscription.
+    /// Caller mở/commit transaction.
+    /// </summary>
+    private static async Task ApplyPremiumApprovalAsync(
+        NpgsqlConnection db,
+        NpgsqlTransaction tx,
+        int requestId,
+        int targetUserId,
+        int durationDays,
+        int approvedByUserId,
+        string? note)
+    {
         var now = PgDateTime.ToUnspecifiedUtc(DateTime.UtcNow);
-        var expires = now.AddDays(Math.Max(1, row.Value.DurationDays));
+        var expires = now.AddDays(Math.Max(1, durationDays));
 
         await db.ExecuteAsync(
             """
@@ -199,25 +224,32 @@ public class PaymentService : IPaymentService
             SET is_premium = true, updated_at = @now
             WHERE id = @uid
             """,
-            new { now, uid = row.Value.UserId }, tx);
+            new { now, uid = targetUserId }, tx);
 
         await db.ExecuteAsync(
             """
             INSERT INTO premium_subscriptions (user_id, payment_request_id, started_at, expires_at, is_active)
             VALUES (@uid, @rid, @startAt, @endAt, true)
             """,
-            new { uid = row.Value.UserId, rid = requestId, startAt = now, endAt = expires }, tx);
+            new { uid = targetUserId, rid = requestId, startAt = now, endAt = expires }, tx);
 
         await db.ExecuteAsync(
             """
             UPDATE premium_payment_requests
-            SET status = 'approved', approved_at = @now, approved_by = @adminId, note = @note
+            SET status = 'approved',
+                confirmed_at = COALESCE(confirmed_at, @now),
+                approved_at = @now,
+                approved_by = @adminId,
+                note = @note
             WHERE id = @id
             """,
-            new { id = requestId, now, adminId = adminUserId, note = (note ?? "").Trim() }, tx);
-
-        tx.Commit();
-        return true;
+            new
+            {
+                id = requestId,
+                now,
+                adminId = approvedByUserId,
+                note = string.IsNullOrWhiteSpace(note) ? "" : note.Trim()
+            }, tx);
     }
 
     public async Task<bool> AdminRejectPremiumRequestAsync(int requestId, int adminUserId, string? note)
