@@ -79,17 +79,29 @@ namespace backend
                 builder.Configuration["Jwt:Key"] = jwtEnv;
 
             // Railway / Docker: ưu tiên env (Secrets.json AddJsonFile có thể đè CreateBuilder nếu có file trong image)
-            var csEnvSource = ResolveConnectionStringFromEnvironment();
-            if (!string.IsNullOrWhiteSpace(csEnvSource.Value))
+            var csEnv = PostgresConnectionString.TryResolveFromEnvironment();
+            if (csEnv != null)
             {
-                builder.Configuration["ConnectionStrings:DefaultConnection"] = csEnvSource.Value!;
-                Console.WriteLine($"[yumegoji] DB connection string từ env: {csEnvSource.Source}");
+                builder.Configuration["ConnectionStrings:DefaultConnection"] = csEnv.Value;
+                Console.WriteLine($"[yumegoji] DB connection string từ env: {csEnv.Source}");
             }
             else
             {
                 Console.WriteLine(
-                    "[yumegoji] CẢNH BÁO: không thấy ConnectionStrings__DefaultConnection / DATABASE_URL trên process. " +
+                    "[yumegoji] CẢNH BÁO: không thấy ConnectionStrings__DefaultConnection / DATABASE_URL / SUPABASE_DB_PASSWORD. " +
                     "Đang dùng appsettings.json (placeholder) — login sẽ fail. Thêm biến trên Railway rồi Redeploy.");
+            }
+
+            // Chuẩn hóa luôn (kể cả local Secrets) — SSL Supabase, bỏ Trust Server Certificate obsolete
+            try
+            {
+                var rawCs = builder.Configuration.GetConnectionString("DefaultConnection");
+                if (!string.IsNullOrWhiteSpace(rawCs))
+                    builder.Configuration["ConnectionStrings:DefaultConnection"] = PostgresConnectionString.Normalize(rawCs);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[yumegoji] Connection string không hợp lệ: {ex.Message}");
             }
 
             // Upload multipart (PDF/DOCX/PPTX) — đồng bộ với [RequestSizeLimit] trên controller import
@@ -329,24 +341,18 @@ namespace backend
                     var cs = app.Configuration.GetConnectionString("DefaultConnection");
                     try
                     {
-                        var csb = new NpgsqlConnectionStringBuilder(cs ?? "");
-                        var usingPlaceholder = string.Equals(
-                            csb.Password,
-                            "YOUR_SUPABASE_DB_PASSWORD",
-                            StringComparison.Ordinal);
+                        var d = PostgresConnectionString.Inspect(cs);
                         log.LogInformation(
-                            "DB config: Host={Host}; Port={Port}; Username={Username}; PasswordLen={PasswordLen}; UsingPlaceholderPassword={UsingPlaceholder}",
-                            csb.Host,
-                            csb.Port,
-                            csb.Username,
-                            string.IsNullOrEmpty(csb.Password) ? 0 : csb.Password.Length,
-                            usingPlaceholder);
-                        if (usingPlaceholder)
-                        {
-                            log.LogError(
-                                "Password đang là YOUR_SUPABASE_DB_PASSWORD (appsettings.json). " +
-                                "Railway chưa inject connection string vào container — đặt biến DATABASE_URL hoặc ConnectionStrings__DefaultConnection rồi Redeploy.");
-                        }
+                            "DB config: Host={Host}; Port={Port}; Username={Username}; Database={Database}; PasswordLen={PasswordLen}; Pooler={Pooler}; UsingPlaceholderPassword={UsingPlaceholder}",
+                            d.Host,
+                            d.Port,
+                            d.Username,
+                            d.Database,
+                            d.PasswordLength,
+                            d.LooksLikeSupabasePooler,
+                            d.UsingPlaceholderPassword);
+                        if (!string.IsNullOrEmpty(d.Hint))
+                            log.LogError("DB hint: {Hint}", d.Hint);
                     }
                     catch (Exception parseEx)
                     {
@@ -363,10 +369,24 @@ namespace backend
                 catch (Exception ex)
                 {
                     var log = app.Services.GetRequiredService<ILogger<Program>>();
-                    log.LogError(
-                        ex,
-                        "Lỗi kết nối Supabase khi khởi động. Kiểm tra Host=aws-1-... (không aws-0), Password đúng, và ConnectionStrings__DefaultConnection trên Railway. Chi tiết: {Message}",
-                        ex.GetBaseException().Message);
+                    if (PostgresConnectionString.IsAuthFailure(ex))
+                    {
+                        log.LogError(
+                            ex,
+                            "Supabase từ chối mật khẩu (28P01). PasswordLen hiện tại lấy từ env — " +
+                            "vào Railway Variables: xóa DATABASE_URL sai, đặt ConnectionStrings__DefaultConnection = " +
+                            "Host=aws-1-ap-southeast-2.pooler.supabase.com;Port=5432;Database=postgres;" +
+                            "Username=postgres.jvdghkjkgrdogpymnwpu;Password=<mật khẩu Database từ Supabase>;SSL Mode=Require " +
+                            "rồi Redeploy. Chi tiết: {Message}",
+                            ex.GetBaseException().Message);
+                    }
+                    else
+                    {
+                        log.LogError(
+                            ex,
+                            "Lỗi kết nối Supabase khi khởi động. Kiểm tra Host=aws-1-... (không aws-0) và connection string trên Railway. Chi tiết: {Message}",
+                            ex.GetBaseException().Message);
+                    }
                 }
             });
 
@@ -496,75 +516,6 @@ namespace backend
                 : Path.GetFullPath(importDir);
 
             await N3DocxCourseImporter.RunAsync(db, dir, dryRun);
-        }
-
-        /// <summary>
-        /// Railway đôi khi không inject tên có __; hỗ trợ DATABASE_URL (URI) và vài alias.
-        /// URI được chuyển sang dạng Host=... vì Railway hay cắt giá trị tại dấu '=' trong query (?sslmode=require).
-        /// </summary>
-        private static (string? Value, string Source) ResolveConnectionStringFromEnvironment()
-        {
-            string[] keys =
-            [
-                "ConnectionStrings__DefaultConnection",
-                "ConnectionStrings:DefaultConnection",
-                "DATABASE_URL",
-                "SUPABASE_CONNECTION_STRING",
-                "DefaultConnection",
-            ];
-
-            foreach (var key in keys)
-            {
-                var raw = Environment.GetEnvironmentVariable(key);
-                if (string.IsNullOrWhiteSpace(raw))
-                    continue;
-
-                try
-                {
-                    return (NormalizeNpgsqlConnectionString(raw), key);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"[yumegoji] Bỏ qua {key}: {ex.Message}");
-                }
-            }
-
-            return (null, "");
-        }
-
-        /// <summary>Key=value giữ nguyên; postgres(ql):// → Npgsql keyword (+ SSL bắt buộc).</summary>
-        private static string NormalizeNpgsqlConnectionString(string raw)
-        {
-            var value = raw.Trim().Trim('"');
-            if (!value.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase) &&
-                !value.StartsWith("postgresql://", StringComparison.OrdinalIgnoreCase))
-                return value;
-
-            // Bỏ query string — Railway cắt "...?sslmode=require" thành "...?sslmode"
-            var q = value.IndexOf('?', StringComparison.Ordinal);
-            if (q >= 0)
-                value = value[..q];
-
-            if (!Uri.TryCreate(value, UriKind.Absolute, out var uri) || string.IsNullOrEmpty(uri.Host))
-                throw new InvalidOperationException("DATABASE_URL không phải URI postgres hợp lệ.");
-
-            var userInfo = uri.UserInfo.Split(':', 2);
-            var user = Uri.UnescapeDataString(userInfo[0]);
-            var password = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : "";
-            var database = uri.AbsolutePath.Trim('/');
-            if (string.IsNullOrEmpty(database))
-                database = "postgres";
-
-            var csb = new NpgsqlConnectionStringBuilder
-            {
-                Host = uri.Host,
-                Port = uri.IsDefaultPort ? 5432 : uri.Port,
-                Database = database,
-                Username = user,
-                Password = password,
-                SslMode = SslMode.Require,
-            };
-            return csb.ConnectionString;
         }
 
         private static async Task ApplySqlEntry(string[] args)

@@ -101,9 +101,12 @@ public class AuthController : ControllerBase
         }
         catch (Exception ex) when (DbExceptionHelper.IsConnectionError(ex))
         {
+            var authFail = PostgresConnectionString.IsAuthFailure(ex);
             return StatusCode(503, new
             {
-                message = "Không kết nối được cơ sở dữ liệu. Kiểm tra DATABASE_URL / ConnectionStrings__DefaultConnection trên Railway.",
+                message = authFail
+                    ? "Supabase từ chối mật khẩu DB (28P01). Trên Railway đặt ConnectionStrings__DefaultConnection với Password đúng từ Supabase → Database settings, rồi Redeploy."
+                    : "Không kết nối được cơ sở dữ liệu. Kiểm tra DATABASE_URL / ConnectionStrings__DefaultConnection trên Railway.",
                 detail = ex.GetBaseException().Message,
             });
         }

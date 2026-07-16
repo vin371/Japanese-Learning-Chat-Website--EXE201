@@ -3,37 +3,44 @@ YUMEGO-JI — Kết nối Supabase (PostgreSQL)
 
 1) Lấy mật khẩu DB
    Supabase Dashboard → Project Settings → Database → Database password
+   (Nếu quên: Reset database password, rồi cập nhật lại trên Railway.)
 
-2) Connection string (Supabase Dashboard → Connect → Session pooler, IPv4)
-   Host thường là aws-1-<region>.pooler.supabase.com (KHÔNG đoán aws-0-ap-southeast-1).
-   Ví dụ project jvdghkjkgrdogpymnwpu (ap-southeast-2):
-   Host=aws-1-ap-southeast-2.pooler.supabase.com;Port=5432;Database=postgres;Username=postgres.jvdghkjkgrdogpymnwpu;Password=MAT_KHAU;SSL Mode=Require;Trust Server Certificate=true
+2) Connection string khuyến nghị (Session pooler, IPv4)
+   Host: aws-1-ap-southeast-2.pooler.supabase.com
+   Username: postgres.jvdghkjkgrdogpymnwpu   ← bắt buộc dạng postgres.<project-ref> trên pooler
+   Database: postgres
+   Port: 5432
 
-   Hoặc URI:
-   postgresql://postgres.jvdghkjkgrdogpymnwpu:MAT_KHAU@aws-1-ap-southeast-2.pooler.supabase.com:5432/postgres
+   Key=value (dán vào Railway — ƯU TIÊN, tránh lỗi cắt password URI):
 
-3) File đã tạo sẵn (đã .gitignore — KHÔNG commit):
-   backend/appsettings.Secrets.json
+   Host=aws-1-ap-southeast-2.pooler.supabase.com;Port=5432;Database=postgres;Username=postgres.jvdghkjkgrdogpymnwpu;Password=MAT_KHAU_THAT;SSL Mode=Require
 
-   → Mở file, thay YOUR_SUPABASE_DB_PASSWORD bằng mật khẩu Database thật, lưu lại.
+3) Railway Variables (bắt buộc để login production)
+   a) Xóa / sửa biến DATABASE_URL nếu mật khẩu sai (log 28P01 + PasswordLen sai).
+   b) Thêm biến:
 
-   Hoặc dùng URI:
-   "DefaultConnection": "postgresql://postgres:MAT_KHAU@db.jvdghkjkgrdogpymnwpu.supabase.co:5432/postgres;SSL Mode=Require;Trust Server Certificate=true"
+      Name:  ConnectionStrings__DefaultConnection
+      Value: (chuỗi Host=... ở bước 2, Password = mật khẩu Database thật)
 
-4) Thứ tự DB trên Supabase (đã làm):
-   yumegoji_supabase.sql → seed part01-13 → indexes → missing_fks.sql
+   Hoặc tách biến (BE ghép tự động):
+      SUPABASE_DB_HOST=aws-1-ap-southeast-2.pooler.supabase.com
+      SUPABASE_DB_USER=postgres.jvdghkjkgrdogpymnwpu
+      SUPABASE_DB_PASSWORD=<mật khẩu Database>
+      SUPABASE_DB_NAME=postgres
+      SUPABASE_DB_PORT=5432
 
-5) Chạy API:
-   cd backend
-   dotnet run
+   c) Redeploy service backend.
 
-6) Lỗi 500 / login Google không được — kiểm tra log dotnet:
-   SocketException (11004) hoặc "no data of the requested type was found"
-   → Máy không kết nối được Host db....supabase.co (thường chỉ có IPv6).
-   → Supabase Dashboard → Connect → dùng **Session pooler** (URI có pooler.supabase.com),
-     dán vào appsettings.Secrets.json → DefaultConnection, rồi chạy lại dotnet run.
+4) Local (không commit mật khẩu)
+   Copy appsettings.Secrets.example.json → appsettings.Secrets.json
+   Thay YOUR_SUPABASE_DB_PASSWORD bằng mật khẩu thật.
 
-   Password authentication failed
-   → Chưa thay YOUR_SUPABASE_DB_PASSWORD bằng mật khẩu Database thật trong Secrets.
+5) Log khởi động lành mạnh
+   DB config: Host=aws-1-...; Username=postgres.jvdghkjkgrdogpymnwpu; PasswordLen=N; UsingPlaceholderPassword=False
+   Đã kết nối PostgreSQL (Supabase) thành công.
 
-Lưu ý: Không ghi mật khẩu Supabase vào appsettings.json (file commit).
+   Nếu thấy 28P01 password authentication failed:
+   → Password trên Railway ≠ mật khẩu Database trên Supabase. Sửa ConnectionStrings__DefaultConnection rồi Redeploy.
+   → PasswordLen=11 thường là mật khẩu cũ/cắt cụt — đừng dùng URI nếu password có @ # % ; dùng key=value.
+
+6) Không ghi mật khẩu vào appsettings.json (file commit).
