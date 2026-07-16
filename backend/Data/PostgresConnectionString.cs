@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Text.RegularExpressions;
 using Npgsql;
 
@@ -5,7 +6,7 @@ namespace backend.Data;
 
 /// <summary>
 /// Chuẩn hóa connection string PostgreSQL / Supabase cho Railway + local.
-/// Ưu tiên key=value (Npgsql); URI postgres(ql):// được chuyển sang Host=... để tránh cắt query/password.
+/// Đọc env không phân biệt hoa thường (Linux case-sensitive dễ lệch tên biến).
 /// </summary>
 public static class PostgresConnectionString
 {
@@ -23,31 +24,28 @@ public static class PostgresConnectionString
         bool LooksLikeSupabasePooler,
         string? Hint);
 
-    /// <summary>Đọc env (Railway Variables) — null nếu chưa có.</summary>
+    /// <summary>Đọc env (Railway Variables) — null nếu chưa có mật khẩu thật.</summary>
     public static ResolveResult? TryResolveFromEnvironment()
     {
-        // Ưu tiên ConnectionStrings — bỏ qua DATABASE_URL nếu đã có (tránh mật khẩu cũ trong URI)
-        string[] preferred =
-        [
-            "ConnectionStrings__DefaultConnection",
-            "ConnectionStrings:DefaultConnection",
-        ];
-        foreach (var key in preferred)
+        LogRelevantEnvKeys();
+
+        // Ưu tiên ConnectionStrings (key=value) — bỏ DATABASE_URL nếu cả hai có
+        foreach (var key in FindEnvKeys(
+                     "ConnectionStrings__DefaultConnection",
+                     "ConnectionStrings:DefaultConnection",
+                     "CONNECTIONSTRINGS__DEFAULTCONNECTION"))
         {
-            var raw = Environment.GetEnvironmentVariable(key);
-            if (string.IsNullOrWhiteSpace(raw))
+            var raw = GetEnv(key);
+            if (string.IsNullOrWhiteSpace(raw) || IsPlaceholderConnection(raw))
                 continue;
             try
             {
-                var normalized = Normalize(raw);
-                var dbUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
-                if (!string.IsNullOrWhiteSpace(dbUrl))
+                if (HasEnv("DATABASE_URL") || HasEnv("database_url"))
                 {
                     Console.WriteLine(
-                        "[yumegoji] Có cả ConnectionStrings__DefaultConnection và DATABASE_URL — " +
-                        "đang dùng ConnectionStrings (bỏ DATABASE_URL). Nên xóa DATABASE_URL trên Railway nếu mật khẩu lệch.");
+                        "[yumegoji] Có ConnectionStrings + DATABASE_URL — dùng ConnectionStrings. Nên xóa DATABASE_URL trên Railway.");
                 }
-                return new ResolveResult(normalized, key);
+                return new ResolveResult(Normalize(raw), key);
             }
             catch (Exception ex)
             {
@@ -55,16 +53,14 @@ public static class PostgresConnectionString
             }
         }
 
-        string[] fallback =
-        [
-            "DATABASE_URL",
-            "SUPABASE_CONNECTION_STRING",
-            "DefaultConnection",
-        ];
-        foreach (var key in fallback)
+        foreach (var key in FindEnvKeys(
+                     "DATABASE_URL",
+                     "SUPABASE_CONNECTION_STRING",
+                     "DefaultConnection",
+                     "SUPABASE_DB_URL"))
         {
-            var raw = Environment.GetEnvironmentVariable(key);
-            if (string.IsNullOrWhiteSpace(raw))
+            var raw = GetEnv(key);
+            if (string.IsNullOrWhiteSpace(raw) || IsPlaceholderConnection(raw))
                 continue;
             try
             {
@@ -81,6 +77,27 @@ public static class PostgresConnectionString
             return composed;
 
         return null;
+    }
+
+    /// <summary>Ghi đè từ IConfiguration nếu env raw miss nhưng config đã có (hiếm).</summary>
+    public static ResolveResult? TryResolveFromConfiguration(string? configured)
+    {
+        if (string.IsNullOrWhiteSpace(configured) || IsPlaceholderConnection(configured))
+            return null;
+        try
+        {
+            return new ResolveResult(Normalize(configured), "IConfiguration");
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public static bool IsPlaceholderConnection(string raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return true;
+        return raw.Contains(PlaceholderPassword, StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>
@@ -109,7 +126,9 @@ public static class PostgresConnectionString
 
         if (string.Equals(pwd, PlaceholderPassword, StringComparison.Ordinal))
         {
-            hint = "Password đang là placeholder — đặt ConnectionStrings__DefaultConnection hoặc DATABASE_URL trên Railway (mật khẩu Database thật từ Supabase).";
+            hint =
+                "Password đang là placeholder appsettings.json — container KHÔNG nhận được biến Railway. " +
+                "Service Variables → thêm ConnectionStrings__DefaultConnection (Runtime) → Redeploy.";
         }
         else if (pwd.Length == 0)
         {
@@ -117,7 +136,7 @@ public static class PostgresConnectionString
         }
         else if (pooler && user.Equals("postgres", StringComparison.OrdinalIgnoreCase))
         {
-            hint = "Session pooler cần Username dạng postgres.<project-ref> (vd: postgres.jvdghkjkgrdogpymnwpu), không chỉ postgres.";
+            hint = "Session pooler cần Username dạng postgres.<project-ref>.";
         }
         else if (pooler && !user.StartsWith("postgres.", StringComparison.OrdinalIgnoreCase))
         {
@@ -139,9 +158,8 @@ public static class PostgresConnectionString
     {
         for (var e = ex; e != null; e = e.InnerException)
         {
-            if (e is PostgresException pe && pe.SqlState == PostgresErrorCodes.InvalidPassword)
-                return true;
-            if (e is PostgresException pe2 && pe2.SqlState == "28P01")
+            if (e is PostgresException pe &&
+                (pe.SqlState == PostgresErrorCodes.InvalidPassword || pe.SqlState == "28P01"))
                 return true;
         }
         return false;
@@ -149,17 +167,15 @@ public static class PostgresConnectionString
 
     private static ResolveResult? TryComposeFromParts()
     {
-        var password = Environment.GetEnvironmentVariable("SUPABASE_DB_PASSWORD");
-        if (string.IsNullOrWhiteSpace(password))
+        var password = GetEnv("SUPABASE_DB_PASSWORD") ?? GetEnv("POSTGRES_PASSWORD");
+        if (string.IsNullOrWhiteSpace(password) ||
+            password.Equals(PlaceholderPassword, StringComparison.OrdinalIgnoreCase))
             return null;
 
-        var host = Environment.GetEnvironmentVariable("SUPABASE_DB_HOST")
-            ?? "aws-1-ap-southeast-2.pooler.supabase.com";
-        var user = Environment.GetEnvironmentVariable("SUPABASE_DB_USER")
-            ?? "postgres.jvdghkjkgrdogpymnwpu";
-        var database = Environment.GetEnvironmentVariable("SUPABASE_DB_NAME")
-            ?? "postgres";
-        var portRaw = Environment.GetEnvironmentVariable("SUPABASE_DB_PORT") ?? "5432";
+        var host = GetEnv("SUPABASE_DB_HOST") ?? "aws-1-ap-southeast-2.pooler.supabase.com";
+        var user = GetEnv("SUPABASE_DB_USER") ?? "postgres.jvdghkjkgrdogpymnwpu";
+        var database = GetEnv("SUPABASE_DB_NAME") ?? "postgres";
+        var portRaw = GetEnv("SUPABASE_DB_PORT") ?? "5432";
         if (!int.TryParse(portRaw, out var port))
             port = 5432;
 
@@ -169,19 +185,68 @@ public static class PostgresConnectionString
             Port = port,
             Database = database.Trim(),
             Username = user.Trim(),
-            Password = password,
+            Password = password.Trim(),
             SslMode = SslMode.Require,
         };
         return new ResolveResult(EnsureSupabaseDefaults(csb.ConnectionString), "SUPABASE_DB_PASSWORD(+host/user)");
+    }
+
+    private static void LogRelevantEnvKeys()
+    {
+        var names = new List<string>();
+        foreach (DictionaryEntry entry in Environment.GetEnvironmentVariables())
+        {
+            var name = entry.Key?.ToString() ?? "";
+            if (name.Contains("Connection", StringComparison.OrdinalIgnoreCase) ||
+                name.Contains("DATABASE", StringComparison.OrdinalIgnoreCase) ||
+                name.Contains("SUPABASE", StringComparison.OrdinalIgnoreCase) ||
+                name.Equals("JWT_KEY", StringComparison.OrdinalIgnoreCase) ||
+                name.Contains("Jwt", StringComparison.OrdinalIgnoreCase))
+            {
+                names.Add(name);
+            }
+        }
+
+        names.Sort(StringComparer.OrdinalIgnoreCase);
+        Console.WriteLine(
+            names.Count == 0
+                ? "[yumegoji] Env DB/JWT: (không có key nào) — Variables Railway chưa inject vào container."
+                : "[yumegoji] Env DB/JWT keys: " + string.Join(", ", names));
+    }
+
+    private static IEnumerable<string> FindEnvKeys(params string[] candidates)
+    {
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var c in candidates)
+        {
+            foreach (DictionaryEntry entry in Environment.GetEnvironmentVariables())
+            {
+                var name = entry.Key?.ToString() ?? "";
+                if (!name.Equals(c, StringComparison.OrdinalIgnoreCase))
+                    continue;
+                if (seen.Add(name))
+                    yield return name;
+            }
+        }
+    }
+
+    private static bool HasEnv(string name) => !string.IsNullOrWhiteSpace(GetEnv(name));
+
+    private static string? GetEnv(string name)
+    {
+        foreach (DictionaryEntry entry in Environment.GetEnvironmentVariables())
+        {
+            var key = entry.Key?.ToString() ?? "";
+            if (key.Equals(name, StringComparison.OrdinalIgnoreCase))
+                return entry.Value?.ToString();
+        }
+        return null;
     }
 
     private static bool IsPostgresUri(string value) =>
         value.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase) ||
         value.StartsWith("postgresql://", StringComparison.OrdinalIgnoreCase);
 
-    /// <summary>
-    /// Parse URI thủ công (LastIndexOf '@') rồi Unescape — tránh cắt password khi có ký tự đặc biệt đã encode.
-    /// </summary>
     private static string UriToNpgsql(string uri)
     {
         var value = uri;
@@ -196,7 +261,7 @@ public static class PostgresConnectionString
         var rest = value[schemeMatch.Length..];
         var at = rest.LastIndexOf('@');
         if (at <= 0)
-            throw new InvalidOperationException("DATABASE_URL thiếu user/password hoặc host (dạng user:pass@host).");
+            throw new InvalidOperationException("DATABASE_URL thiếu user/password hoặc host.");
 
         var userInfo = rest[..at];
         var hostPart = rest[(at + 1)..];
@@ -215,7 +280,6 @@ public static class PostgresConnectionString
             password = Uri.UnescapeDataString(userInfo[(colon + 1)..]);
         }
 
-        // host:port/db
         var slash = hostPart.IndexOf('/');
         var hostPort = slash >= 0 ? hostPart[..slash] : hostPart;
         var database = slash >= 0 ? hostPart[(slash + 1)..].Trim('/') : "postgres";
@@ -223,7 +287,7 @@ public static class PostgresConnectionString
             database = "postgres";
 
         string host;
-        int port = 5432;
+        var port = 5432;
         var colonHost = hostPort.LastIndexOf(':');
         if (colonHost > 0 && int.TryParse(hostPort[(colonHost + 1)..], out var parsedPort))
         {
@@ -238,13 +302,11 @@ public static class PostgresConnectionString
         if (string.IsNullOrWhiteSpace(host))
             throw new InvalidOperationException("DATABASE_URL thiếu host.");
 
-        // Pooler: nếu user chỉ là postgres, thử suy ra project-ref từ host db.<ref>.supabase.co
         if (host.Contains("pooler.supabase.com", StringComparison.OrdinalIgnoreCase) &&
             user.Equals("postgres", StringComparison.OrdinalIgnoreCase))
         {
             Console.WriteLine(
-                "[yumegoji] CẢNH BÁO: Username=postgres trên pooler — nên dùng postgres.<project-ref>. " +
-                "Nếu auth fail, sửa Username hoặc dùng ConnectionStrings__DefaultConnection (key=value).");
+                "[yumegoji] CẢNH BÁO: Username=postgres trên pooler — nên dùng postgres.<project-ref>.");
         }
 
         var csb = new NpgsqlConnectionStringBuilder
@@ -270,7 +332,6 @@ public static class PostgresConnectionString
 
         if (isSupabase)
         {
-            // Supabase bắt buộc SSL; bỏ Trust Server Certificate (obsolete trên Npgsql mới)
             csb.SslMode = SslMode.Require;
             csb.Remove("Trust Server Certificate");
             csb.Remove("TrustServerCertificate");

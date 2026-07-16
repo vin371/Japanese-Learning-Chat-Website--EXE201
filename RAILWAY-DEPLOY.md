@@ -1,55 +1,53 @@
-# Deploy backend lên Railway (YumeGo-ji) — DB = Supabase
+# Deploy backend lên Railway — DB = Supabase
 
-## 1. Cấu hình service
-
-- **Root directory:** để **trống**
-- **Builder:** Dockerfile (chỉ đóng gói API; DB = Supabase)
-- Chờ Deployments → **Active** (không còn Building) rồi mới test login
-
-## 2. Biến môi trường — đúng tên (2 dấu `_`)
-
-| Đúng | Sai (không nhận) |
-|------|------------------|
-| `ConnectionStrings__DefaultConnection` | |
-| `Frontend__PublicBaseUrl` | `Frontend_PublicBaseUrl` |
-| `Gemini__ApiKey` | `Gemini_ApiKey` |
-| `GoogleAuth__ClientId` | `GoogleAuth_ClientId` |
-| `Jwt__Key` hoặc `JWT_KEY` | |
-| `ASPNETCORE_ENVIRONMENT` = `Production` | |
-
-### Connection string (copy đúng)
+## Log này nghĩa là gì?
 
 ```
-Host=aws-1-ap-southeast-2.pooler.supabase.com;Port=5432;Database=postgres;Username=postgres.jvdghkjkgrdogpymnwpu;Password=MAT_KHAU_SUPABASE;SSL Mode=Require
+không thấy ConnectionStrings__DefaultConnection / DATABASE_URL
+PasswordLen=25; UsingPlaceholderPassword=True
 ```
 
-- `MAT_KHAU_SUPABASE` = mật khẩu **Database** trong Supabase → Project Settings → Database (không phải mật khẩu đăng nhập dashboard).
-- **Xóa biến `DATABASE_URL`** nếu còn (dễ giữ mật khẩu cũ, gây 28P01).
-- Sau khi Save → bấm **Deploy** lại.
+`PasswordLen=25` = đang dùng chữ `YOUR_SUPABASE_DB_PASSWORD` trong `appsettings.json`.  
+→ **Container không nhận biến** (dù UI Variables có hiện). Không phải sai mật khẩu `Yumegoji899`.
 
-## 3. Kiểm tra sau deploy
+## Sửa nhanh (làm đúng từng bước)
 
-Mở: `https://<railway-url>/health`
+1. Railway → mở **đúng service** API đang Online (không nhầm project khác).
+2. **Variables** → **xóa** `DATABASE_URL` nếu có.
+3. Thêm / sửa biến **trên service** (Shared Variables phải được **Share** vào service này):
 
-JSON phải có:
-
-```json
-"db": { "host": "aws-1-ap-southeast-2.pooler.supabase.com", "username": "postgres.jvdghkjkgrdogpymnwpu", "passwordLen": ..., "placeholder": false }
-```
-
-Log Railway lúc start:
+| Name | Value |
+|------|--------|
+| `ConnectionStrings__DefaultConnection` | xem bên dưới |
+| hoặc chỉ `SUPABASE_DB_PASSWORD` | mật khẩu Database Supabase |
 
 ```
-[yumegoji] DB từ env=ConnectionStrings__DefaultConnection; Host=aws-1-...; User=postgres.jvdghkjkgrdogpymnwpu; PasswordLen=...
+Host=aws-1-ap-southeast-2.pooler.supabase.com;Port=5432;Database=postgres;Username=postgres.jvdghkjkgrdogpymnwpu;Password=MAT_KHAU;SSL Mode=Require
+```
+
+4. Biến phải bật **Runtime** (không chỉ Build).
+5. Save → **Deploy** / Redeploy → chờ **Active**.
+6. Xem log lúc start phải có:
+
+```
+[yumegoji] Env DB/JWT keys: ConnectionStrings__DefaultConnection, JWT_KEY, ...
+[yumegoji] DB từ env=ConnectionStrings__DefaultConnection; PasswordLen=11
 Đã kết nối PostgreSQL (Supabase) thành công.
 ```
 
-Nếu vẫn `28P01`: Reset Database password trên Supabase → dán mật khẩu mới vào `ConnectionStrings__DefaultConnection` → Redeploy.
+Nếu log vẫn `(không có key nào)` → biến chưa gắn service / chưa Redeploy.
 
-## 4. Vercel
+7. Kiểm tra: `https://<railway-url>/health` → `"placeholder": false`
 
-```
-VITE_API_URL=https://japanese-learning-chat-website-exe201-production-71ba.up.railway.app
-```
+## Tên biến đúng (2 dấu `_`)
 
-(URL đúng service đang Online — Redeploy frontend sau khi đổi.)
+| Đúng | Sai |
+|------|-----|
+| `ConnectionStrings__DefaultConnection` | `ConnectionStrings_DefaultConnection` |
+| `Frontend__PublicBaseUrl` | `Frontend_PublicBaseUrl` |
+| `Gemini__ApiKey` | `Gemini_ApiKey` |
+| `GoogleAuth__ClientId` | `GoogleAuth_ClientId` |
+
+## Vercel
+
+`VITE_API_URL` = URL Railway đúng service (có `-71ba` nếu đó là URL hiện tại).

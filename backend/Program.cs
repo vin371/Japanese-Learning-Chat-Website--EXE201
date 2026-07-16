@@ -81,9 +81,11 @@ namespace backend
             // Railway hay viết nhầm 1 dấu _ thay vì __ (nested config)
             ApplyRailwayConfigAliases(builder.Configuration);
 
-            // Railway: ưu tiên ConnectionStrings__DefaultConnection (bỏ DATABASE_URL nếu cả hai có)
-            var csEnv = PostgresConnectionString.TryResolveFromEnvironment();
-            if (csEnv != null)
+            // Railway: ưu tiên ConnectionStrings__DefaultConnection (phải inject vào container Runtime)
+            var csEnv = PostgresConnectionString.TryResolveFromEnvironment()
+                ?? PostgresConnectionString.TryResolveFromConfiguration(
+                    builder.Configuration.GetConnectionString("DefaultConnection"));
+            if (csEnv != null && !PostgresConnectionString.IsPlaceholderConnection(csEnv.Value))
             {
                 builder.Configuration["ConnectionStrings:DefaultConnection"] = csEnv.Value;
                 var d = PostgresConnectionString.Inspect(csEnv.Value);
@@ -93,8 +95,9 @@ namespace backend
             else
             {
                 Console.WriteLine(
-                    "[yumegoji] CẢNH BÁO: không thấy ConnectionStrings__DefaultConnection / DATABASE_URL / SUPABASE_DB_PASSWORD. " +
-                    "Đang dùng appsettings (placeholder) — login sẽ fail. Thêm biến Supabase trên Railway rồi Redeploy.");
+                    "[yumegoji] CẢNH BÁO: container không thấy ConnectionStrings__DefaultConnection / DATABASE_URL / SUPABASE_DB_PASSWORD. " +
+                    "Railway → service này → Variables → thêm biến (bật Runtime) → Redeploy. " +
+                    "Hoặc chỉ cần SUPABASE_DB_PASSWORD=<mật khẩu Database>.");
             }
 
             // Chuẩn hóa SSL Supabase (local Secrets + Railway)
@@ -107,6 +110,15 @@ namespace backend
             catch (Exception ex)
             {
                 Console.WriteLine($"[yumegoji] Connection string không hợp lệ: {ex.Message}");
+            }
+
+            var finalDiag = PostgresConnectionString.Inspect(
+                builder.Configuration.GetConnectionString("DefaultConnection"));
+            if (finalDiag.UsingPlaceholderPassword)
+            {
+                Console.WriteLine(
+                    "[yumegoji] FATAL DB: vẫn dùng YOUR_SUPABASE_DB_PASSWORD — login sẽ 503/28P01. " +
+                    "Biến trên UI Railway chưa vào process. Kiểm tra đúng service + Redeploy sau khi Save.");
             }
 
             // Upload multipart (PDF/DOCX/PPTX) — đồng bộ với [RequestSizeLimit] trên controller import
