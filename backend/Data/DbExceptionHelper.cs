@@ -4,7 +4,7 @@ namespace backend.Data;
 
 public static class DbExceptionHelper
 {
-    /// <summary>SQL Server 208 = invalid object name.</summary>
+    /// <summary>Undefined table / missing relation (PostgreSQL).</summary>
     public static bool IsMissingRelation(Exception ex) =>
         ex switch
         {

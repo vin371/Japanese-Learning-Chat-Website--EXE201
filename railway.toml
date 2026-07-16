@@ -1,8 +1,7 @@
-# Bắt buộc Docker build — tránh lỗi "Error creating build plan with Railpack"
+# Railway: đóng gói API bằng Dockerfile; database = Supabase (không dùng Postgres trong container)
 [build]
 builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
 
-# Healthcheck: bật sau khi deploy ổn — /health (xem RAILWAY-DEPLOY.md)
 [deploy]
 restartPolicyType = "ON_FAILURE"

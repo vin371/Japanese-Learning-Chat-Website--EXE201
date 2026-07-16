@@ -1,6 +1,6 @@
 # Yumegoji / EXE201
 
-Nền tảng học tiếng Nhật: backend **ASP.NET Core 8** (API + SignalR), frontend **React + Vite**, cơ sở dữ liệu **Supabase (PostgreSQL)**.
+Nền tảng học tiếng Nhật: backend **ASP.NET Core 8** (API + SignalR), frontend **React + Vite**, cơ sở dữ liệu **Supabase (PostgreSQL)** — không dùng Azure SQL / SQL Server / Docker Postgres local.
 
 ## Yêu cầu môi trường
 
@@ -8,122 +8,60 @@ Nền tảng học tiếng Nhật: backend **ASP.NET Core 8** (API + SignalR), f
 |------------|---------------------|
 | [.NET SDK](https://dotnet.microsoft.com/download/dotnet/8.0) | **8.0** |
 | [Node.js](https://nodejs.org/) | **18+** (khuyến nghị LTS) |
-| [Supabase](https://supabase.com/) | PostgreSQL cloud — **khuyến nghị cho dev/production** |
-| (Tuỳ chọn) [Ollama](https://ollama.com/) | Import bài học bằng AI khi không dùng OpenAI |
-| (Tuỳ chọn) [Docker Desktop](https://www.docker.com/products/docker-desktop/) | PostgreSQL local trong container — chi tiết **[DOCKER-DESKTOP.md](DOCKER-DESKTOP.md)** |
+| [Supabase](https://supabase.com/) | PostgreSQL cloud — **bắt buộc** cho dev & production |
+| (Tuỳ chọn) [Ollama](https://ollama.com/) | Import bài học bằng AI khi không dùng Gemini/OpenAI |
 
 ## Cấu trúc thư mục
 
 ```
 EXE201/
-├── backend/                 # API .NET (Swagger, JWT, upload PDF/DOCX/PPTX)
+├── backend/                 # API .NET (Swagger, JWT, upload)
 ├── frontend/                # React + Vite (dev: cổng 8080)
-├── docker-compose.yml       # PostgreSQL 16 + init seed + API (host 5433 / 5056)
-├── Dockerfile               # Image chạy API (không chứa DB)
-├── backend/doc/sql/         # Schema + seed Supabase — xem mục “Cơ sở dữ liệu”
-├── backend/doc/import/    # DOCX import khóa JLPT (n3/, n4/, …)
-├── DOCKER-DESKTOP.md        # Docker Desktop + pgAdmin + cổng 5433
+├── Dockerfile               # Chỉ đóng gói API cho Railway (DB = Supabase)
+├── railway.toml
+├── RAILWAY-DEPLOY.md
+├── backend/doc/sql/         # Schema + seed Supabase
+├── backend/SUPABASE-CAU-HINH.txt
 └── README.md
 ```
 
-## 1. Cơ sở dữ liệu (Supabase / PostgreSQL)
+## 1. Cơ sở dữ liệu — chỉ Supabase
 
-Backend dùng **Npgsql** (PostgreSQL). Không còn dùng SQL Server cho luồng chính.
+Backend dùng **Npgsql** → **Supabase Session pooler**. Chi tiết: **`backend/SUPABASE-CAU-HINH.txt`**.
 
-### Bạn đang dùng kiểu nào?
+### Chuỗi kết nối (local)
 
-| Kiểu | Khi nào cần chạy script SQL |
-|------|------------------------------|
-| **Supabase cloud** (khuyến nghị) | DB **mới / trống** hoặc sau khi đổi schema — xem thứ tự script bên dưới. |
-| **PostgreSQL trong Docker** (`localhost:5433`) | Sau **lần đầu** `docker compose up` (hoặc sau `docker compose down -v`) — service `db-init` tự chạy schema + seed. |
-
-**Lưu ý:** Supabase cloud và PostgreSQL Docker local là **hai máy chủ khác nhau** — connection string phải trỏ đúng cái bạn đang dùng.
-
-### Chuỗi kết nối backend
-
-**Supabase (dev trên máy):** tạo **`backend/appsettings.Secrets.json`** (đã `.gitignore`) — xem chi tiết **`backend/SUPABASE-CAU-HINH.txt`**.
-
-Trên Windows, dùng **Session pooler** (IPv4), không dùng host `db.*.supabase.co` trực tiếp:
+Tạo **`backend/appsettings.Secrets.json`** (đã `.gitignore`) từ `appsettings.Secrets.example.json`:
 
 ```json
 "ConnectionStrings": {
-  "DefaultConnection": "Host=aws-1-ap-southeast-2.pooler.supabase.com;Port=5432;Database=postgres;Username=postgres.<PROJECT_REF>;Password=MAT_KHAU;SSL Mode=Require;Trust Server Certificate=true"
+  "DefaultConnection": "Host=aws-1-ap-southeast-2.pooler.supabase.com;Port=5432;Database=postgres;Username=postgres.<PROJECT_REF>;Password=MAT_KHAU;SSL Mode=Require"
 }
 ```
 
-**Docker local** (profile `Docker` + **`appsettings.Docker.json`**):
+Trên Windows dùng **Session pooler** (IPv4), không dùng `db.*.supabase.co` trực tiếp.
 
-```json
-"ConnectionStrings": {
-  "DefaultConnection": "Host=localhost;Port=5433;Database=yumegoji;Username=yumegoji;Password=Yumegoji_Pg_2024!"
-}
-```
-
-**Lưu ý bảo mật:** Không commit mật khẩu Supabase lên Git. Dùng `appsettings.Secrets.json`, User Secrets, hoặc biến môi trường `ConnectionStrings__DefaultConnection` khi deploy (Railway, Vercel backend, …).
-
-### Khởi tạo schema + dữ liệu mẫu (Supabase SQL Editor hoặc `psql`)
+### Khởi tạo schema + seed (Supabase SQL Editor)
 
 Trong `backend/doc/sql/`:
 
-| Thứ tự | File | Nội dung |
-|--------|------|----------|
-| 1 | **`yumegoji_supabase.sql`** | Schema (100 bảng, extension, FK gốc). |
-| 2 | **`yumegoji_supabase_data_v2_parts/part01` → `part13`** | Dữ liệu mẫu (game, câu hỏi, lesson, admin bcrypt, …). |
-| 3 | **`yumegoji_supabase_indexes.sql`** | Index bổ sung (tuỳ chọn, khuyến nghị). |
-| 4 | **`yumegoji_supabase_missing_fks.sql`** | FK còn thiếu + sửa orphan (idempotent). |
-
-**Supabase Dashboard:** SQL Editor → mở từng file → **Run** (mỗi part = một lần Run).
-
-**psql** (Docker local, đổi mật khẩu cho khớp `.env`):
-
-```powershell
-cd backend\doc\sql
-$env:PGPASSWORD = "Yumegoji_Pg_2024!"
-psql -h localhost -p 5433 -U yumegoji -d yumegoji -f yumegoji_supabase.sql
-Get-ChildItem yumegoji_supabase_data_v2_parts\yumegoji_supabase_data_v2_part*.sql | Sort-Object Name | ForEach-Object {
-  psql -h localhost -p 5433 -U yumegoji -d yumegoji -f $_.FullName
-}
-psql -h localhost -p 5433 -U yumegoji -d yumegoji -f yumegoji_supabase_indexes.sql
-psql -h localhost -p 5433 -U yumegoji -d yumegoji -f yumegoji_supabase_missing_fks.sql
-```
-
-- **`yumegoji_supabase_data_v2_fixed.sql`:** bản gộp seed (thay cho part01–13 nếu tiện).
-- Script **`01_yumegoji_database_DDL.sql` / `02_yumegoji_database_seed.sql`:** luồng **SQL Server cũ**, chỉ tham khảo legacy.
-
-### PostgreSQL bằng Docker (tuỳ chọn)
-
-- **Container:** `yumegoji-postgres` — cổng host **`5433`**, DB **`yumegoji`**, user **`yumegoji`**.
-- Mật khẩu: `POSTGRES_PASSWORD` trong **`.env`** (mặc định `Yumegoji_Pg_2024!`).
-
-```bash
-docker compose up -d --build
-```
-
-Compose tự: khởi động Postgres → `db-init` chạy schema + seed → build/chạy API.
-
-- API Swagger: **http://localhost:5056/swagger**
-- Chạy API trên máy host (không container):
-
-  ```bash
-  cd backend
-  dotnet run --launch-profile Docker
-  ```
-
-**Lưu ý cổng 5056:** Container `yumegoji-api` và `dotnet run` mặc định cùng dùng **5056** — chỉ chạy **một** trong hai.
+| Thứ tự | File |
+|--------|------|
+| 1 | `yumegoji_supabase.sql` |
+| 2 | `yumegoji_supabase_data_v2_parts/part01` → `part13` |
+| 3 | `yumegoji_supabase_indexes.sql` (tuỳ chọn) |
+| 4 | `yumegoji_supabase_missing_fks.sql` |
 
 ## 2. Chạy backend (API)
 
 ```bash
 cd backend
 dotnet restore
-dotnet run
+dotnet run --launch-profile http
 ```
 
-- Profile mặc định (HTTP): **http://localhost:5056**
+- API: **http://localhost:5056**
 - Swagger: **http://localhost:5056/swagger**
-- Nếu cổng bận: `.\stop-backend.ps1` rồi chạy lại.
-
-Cổng có thể khác nếu bạn đổi trong `Properties/launchSettings.json`.
 
 ## 3. Chạy frontend (React)
 
@@ -133,72 +71,31 @@ npm install
 npm run dev
 ```
 
-- Mã nguồn trong **`frontend/src/`**: `api/`, `services/`, `layout/`, `ui/`, `components/`, `pages/`, `context/`, `hooks/`, `routes/`, …
-- Ứng dụng web: **http://localhost:8080**
-- Vite proxy chuyển `/api` và `/hubs` sang backend (mặc định `http://localhost:5056` — xem `vite.config.js`, biến `VITE_PROXY_TARGET`).
+- Web: **http://localhost:8080**
+- Dev: để trống `VITE_API_URL` để Vite proxy `/api` → backend `:5056`
 
-**Khuyến nghị:** Sao chép `.env.example` → `.env`. Để **trống** `VITE_API_URL` khi dev để mọi request đi qua proxy (tránh lỗi CORS / sai cổng).
+## 4. Deploy
 
-### Trang Học tập — chuyển cấp JLPT (N5 / N4 / N3)
+| Phần | Nơi | Cấu hình |
+|------|-----|----------|
+| Frontend | [Vercel](https://yumegoji.vercel.app) | `VITE_API_URL` = URL Railway |
+| Backend | Railway | `ConnectionStrings__DefaultConnection` (Supabase), `Jwt__Key` |
 
-- Sidebar: bấm **N5**, **N4**, **N3** để đổi nội dung (`/learn?jlpt=N4`).
-- **Đang học:** cấp trùng hồ sơ — cập nhật tiến độ.
-- **Ôn tập:** cấp dễ hơn — xem lại, không đánh dấu hoàn thành.
-- **Khóa:** cấp khó hơn — mở khi hoàn thành 100% bài cấp hiện tại.
+Xem **[RAILWAY-DEPLOY.md](RAILWAY-DEPLOY.md)** và **[frontend/VERCEL-DEPLOY.md](frontend/VERCEL-DEPLOY.md)**.
 
-## 4. Import khóa học JLPT từ DOCX (N5 / N4 / N3)
-
-Xóa bài cũ của cấp tương ứng rồi import từ 3 file Word (từ vựng, ngữ pháp, hán tự).
-
-| Cấp | Thư mục mặc định | Lệnh |
-|-----|------------------|------|
-| N5 | `backend/doc/import/` | `dotnet run --no-launch-profile -- import-n5-docx` |
-| N4 | `backend/doc/import/n4/` | `dotnet run --no-launch-profile -- import-n4-docx` |
-| N3 | `backend/doc/import/n3/` | `dotnet run --no-launch-profile -- import-n3-docx` |
-
-**Dry-run:** thêm `--dry-run` · **Docker Postgres:** N3 hỗ trợ `--docker`
+## 5. Import DOCX / AI
 
 ```powershell
 cd backend
-dotnet run --no-launch-profile -- import-n3-docx "doc\import\n3" --docker
+dotnet run --no-launch-profile -- import-n5-docx
+dotnet run --no-launch-profile -- import-n4-docx
+dotnet run --no-launch-profile -- import-n3-docx
 ```
 
-Importer: `backend/Services/Learning/N3DocxCourseImporter.cs`, `N4DocxCourseImporter.cs`, `N5DocxCourseImporter.cs`.
-
-## 5. AI import bài học (Moderator)
-
-- **OpenAI:** đặt `OpenAI:ApiKey` trong cấu hình (xem `backend/OPENAI-CAU-HINH.txt`).
-- **Ollama (local):** `ollama serve`, `ollama pull llama3.2`. Trong `appsettings.json`: `Ollama:BaseUrl`, `LessonImport:Provider` (`auto` / `openai` / `ollama`).
-
-Upload PDF/DOCX/PPTX có thể mất vài phút — frontend đã cấu hình timeout proxy dài cho import.
-
-## 6. Build production (tham khảo)
-
-```bash
-# Frontend
-cd frontend
-npm run build
-
-# Backend
-cd backend
-dotnet publish -c Release -o ./publish
-```
-
-Triển khai: **Frontend** [Vercel](https://yumegoji-exe-201.vercel.app) — set `VITE_API_URL`. **Backend** Railway hoặc tương đương — set `ConnectionStrings__DefaultConnection` (Supabase pooler), `Jwt__Key`, HTTPS.
-
-## 7. Script SQL (`backend/doc/sql/`)
-
-| Luồng | Mô tả |
-|-------|--------|
-| **Supabase (hiện tại)** | `yumegoji_supabase.sql` → part01–13 → indexes → `missing_fks.sql` |
-| **SQL Server (legacy)** | `01_yumegoji_database_DDL.sql` → `02_yumegoji_database_seed.sql` |
-
-Patch lẻ (`patch_*`, `seed_*`) dùng khi cần sửa từng phần trên DB đã có.
+Thêm `--dry-run` để thử. AI: `Gemini__ApiKey` hoặc Ollama local.
 
 ## Liên kết
 
-- Repository: [vin371/Japanese-Learning-Chat-Website--EXE201](https://github.com/vin371/Japanese-Learning-Chat-Website--EXE201)
-
----
-
-*Nếu lỗi kết nối API: kiểm tra backend đang chạy, Supabase pooler trong Secrets, `VITE_PROXY_TARGET` / `VITE_API_URL`. Lỗi IPv6 với `db.*.supabase.co` → dùng Session pooler (xem `SUPABASE-CAU-HINH.txt`).*
+- Supabase: `backend/SUPABASE-CAU-HINH.txt`
+- Railway: `RAILWAY-DEPLOY.md`
+- Vercel: `frontend/VERCEL-DEPLOY.md`

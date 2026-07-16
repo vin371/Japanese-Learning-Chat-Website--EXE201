@@ -26,4 +26,4 @@ Hoac dung yumegoji_supabase_data_v2_fixed.sql thay cho part01-13.
 Lu y: Moi part tu commit (khong dung BEGIN/COMMIT xuyen part).
 Neu part giua bi loi, xoa data da insert roi chay lai tu part loi.
 
-Docker: docker compose up tu dong chay tat ca (service db-init).
+Chay tren Supabase SQL Editor (khuyen nghi) — khong dung Docker Postgres local.

@@ -13,7 +13,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace backend.Data;
 
-/// <summary>DbContext cho YUMEGO-JI – SQL Server. Cấu hình EF: <c>Data/Cfg/</c>.</summary>
+/// <summary>DbContext YUMEGO-JI — PostgreSQL / Supabase. Cấu hình EF: <c>Data/Cfg/</c>.</summary>
 public class ApplicationDbContext : DbContext
 {
     private readonly IConfiguration _configuration;

@@ -1,4 +1,3 @@
----
-# Loại Dockerfile khỏi toàn bộ phân tích Codacy (Pylint/revive nhầm file → lỗi giả ở dòng # / FROM)
+# Codacy — loại file đóng gói Railway khỏi phân tích nhầm
 exclude_paths:
   - "Dockerfile"

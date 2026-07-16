@@ -125,23 +125,17 @@ public static class PostgresConnectionString
 
     private static ResolveResult? TryComposeFromParts()
     {
-        var password = Environment.GetEnvironmentVariable("SUPABASE_DB_PASSWORD")
-            ?? Environment.GetEnvironmentVariable("POSTGRES_PASSWORD");
+        var password = Environment.GetEnvironmentVariable("SUPABASE_DB_PASSWORD");
         if (string.IsNullOrWhiteSpace(password))
             return null;
 
         var host = Environment.GetEnvironmentVariable("SUPABASE_DB_HOST")
-            ?? Environment.GetEnvironmentVariable("POSTGRES_HOST")
             ?? "aws-1-ap-southeast-2.pooler.supabase.com";
         var user = Environment.GetEnvironmentVariable("SUPABASE_DB_USER")
-            ?? Environment.GetEnvironmentVariable("POSTGRES_USER")
             ?? "postgres.jvdghkjkgrdogpymnwpu";
         var database = Environment.GetEnvironmentVariable("SUPABASE_DB_NAME")
-            ?? Environment.GetEnvironmentVariable("POSTGRES_DB")
             ?? "postgres";
-        var portRaw = Environment.GetEnvironmentVariable("SUPABASE_DB_PORT")
-            ?? Environment.GetEnvironmentVariable("POSTGRES_PORT")
-            ?? "5432";
+        var portRaw = Environment.GetEnvironmentVariable("SUPABASE_DB_PORT") ?? "5432";
         if (!int.TryParse(portRaw, out var port))
             port = 5432;
 

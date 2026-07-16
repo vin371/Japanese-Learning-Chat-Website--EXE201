@@ -53,13 +53,13 @@ namespace backend
                 return;
             }
 
-            // Supabase/PostgreSQL: cột timestamp (không time zone) — tương thích DateTime UTC từ code SQL Server cũ
+            // Supabase (PostgreSQL): timestamp không time zone — tương thích DateTime UTC
             AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
             var builder = WebApplication.CreateBuilder(args);
 
-            // Railway / Docker: bắt buộc lắng nghe $PORT trên 0.0.0.0 (proxy không tới được localhost).
-            // Dev local: không ghi đè — dùng applicationUrl trong launchSettings (mặc định :5056, tránh trùng Vite :8080).
+            // Railway: lắng nghe $PORT trên 0.0.0.0
+            // Dev local: launchSettings (mặc định :5056)
             var portEnv = Environment.GetEnvironmentVariable("PORT");
             if (!string.IsNullOrWhiteSpace(portEnv))
             {
@@ -68,8 +68,8 @@ namespace backend
                 Console.WriteLine($"[yumegoji] Kestrel -> http://0.0.0.0:{listenPort} (PORT env={portEnv})");
             }
 
-            // OpenAI ApiKey: đặt trong appsettings.Secrets.json (đã .gitignore) hoặc User Secrets — xem OPENAI-CAU-HINH.txt
-            // Lưu ý: AddJsonFile sau CreateBuilder có độ ưu tiên cao hơn env → phải ghi đè lại từ env bên dưới.
+            // OpenAI ApiKey: appsettings.Secrets.json (gitignore) hoặc User Secrets
+            // AddJsonFile sau CreateBuilder có độ ưu tiên cao → ghi đè lại từ env bên dưới.
             builder.Configuration.AddJsonFile("appsettings.Secrets.json", optional: true, reloadOnChange: true);
 
             // Railway Variables: JWT_KEY hoặc Jwt__Key
@@ -78,7 +78,7 @@ namespace backend
             if (!string.IsNullOrWhiteSpace(jwtEnv))
                 builder.Configuration["Jwt:Key"] = jwtEnv;
 
-            // Railway / Docker: ưu tiên env (Secrets.json AddJsonFile có thể đè CreateBuilder nếu có file trong image)
+            // Railway: ưu tiên env Supabase (Secrets.json không có trong image production)
             var csEnv = PostgresConnectionString.TryResolveFromEnvironment();
             if (csEnv != null)
             {
@@ -89,10 +89,10 @@ namespace backend
             {
                 Console.WriteLine(
                     "[yumegoji] CẢNH BÁO: không thấy ConnectionStrings__DefaultConnection / DATABASE_URL / SUPABASE_DB_PASSWORD. " +
-                    "Đang dùng appsettings.json (placeholder) — login sẽ fail. Thêm biến trên Railway rồi Redeploy.");
+                    "Đang dùng appsettings (placeholder) — login sẽ fail. Thêm biến Supabase trên Railway rồi Redeploy.");
             }
 
-            // Chuẩn hóa luôn (kể cả local Secrets) — SSL Supabase, bỏ Trust Server Certificate obsolete
+            // Chuẩn hóa SSL Supabase (local Secrets + Railway)
             try
             {
                 var rawCs = builder.Configuration.GetConnectionString("DefaultConnection");
@@ -489,7 +489,6 @@ namespace backend
         {
             AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
             var dryRun = args.Contains("--dry-run", StringComparer.OrdinalIgnoreCase);
-            var useDocker = args.Contains("--docker", StringComparer.OrdinalIgnoreCase);
             var importDir = args.FirstOrDefault(a =>
                 !a.StartsWith("--", StringComparison.Ordinal) &&
                 !string.Equals(a, "import-n3-docx", StringComparison.OrdinalIgnoreCase));
@@ -498,8 +497,6 @@ namespace backend
             builder.Configuration.AddJsonFile("appsettings.json", optional: false);
             builder.Configuration.AddJsonFile("appsettings.Development.json", optional: true);
             builder.Configuration.AddJsonFile("appsettings.Secrets.json", optional: true, reloadOnChange: false);
-            if (useDocker)
-                builder.Configuration.AddJsonFile("appsettings.Docker.json", optional: false, reloadOnChange: false);
 
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
             {

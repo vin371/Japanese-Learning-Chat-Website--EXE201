@@ -439,7 +439,7 @@ public class AuthService : IAuthService
         var user = await _db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == id && u.DeletedAt == null);
         if (user == null) return false;
 
-        // EnableRetryOnFailure → không được BeginTransaction ngoài execution strategy (SqlServerRetryingExecutionStrategy).
+        // EnableRetryOnFailure → không BeginTransaction ngoài execution strategy.
         var strategy = _db.Database.CreateExecutionStrategy();
         return await strategy.ExecuteAsync(async () =>
         {
