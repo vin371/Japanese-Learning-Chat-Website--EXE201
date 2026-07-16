@@ -78,12 +78,17 @@ namespace backend
             if (!string.IsNullOrWhiteSpace(jwtEnv))
                 builder.Configuration["Jwt:Key"] = jwtEnv;
 
-            // Railway: ưu tiên env Supabase (Secrets.json không có trong image production)
+            // Railway hay viết nhầm 1 dấu _ thay vì __ (nested config)
+            ApplyRailwayConfigAliases(builder.Configuration);
+
+            // Railway: ưu tiên ConnectionStrings__DefaultConnection (bỏ DATABASE_URL nếu cả hai có)
             var csEnv = PostgresConnectionString.TryResolveFromEnvironment();
             if (csEnv != null)
             {
                 builder.Configuration["ConnectionStrings:DefaultConnection"] = csEnv.Value;
-                Console.WriteLine($"[yumegoji] DB connection string từ env: {csEnv.Source}");
+                var d = PostgresConnectionString.Inspect(csEnv.Value);
+                Console.WriteLine(
+                    $"[yumegoji] DB từ env={csEnv.Source}; Host={d.Host}; User={d.Username}; PasswordLen={d.PasswordLength}");
             }
             else
             {
@@ -417,12 +422,52 @@ namespace backend
                 api = "/api",
                 swagger = "/swagger"
             }));
-            app.MapGet("/health", () => Results.Ok(new { status = "ok", service = "yumegoji-api" }));
+            app.MapGet("/health", () =>
+            {
+                var cs = app.Configuration.GetConnectionString("DefaultConnection");
+                var d = PostgresConnectionString.Inspect(cs);
+                return Results.Ok(new
+                {
+                    status = "ok",
+                    service = "yumegoji-api",
+                    db = new
+                    {
+                        host = d.Host,
+                        port = d.Port,
+                        username = d.Username,
+                        database = d.Database,
+                        passwordLen = d.PasswordLength,
+                        pooler = d.LooksLikeSupabasePooler,
+                        placeholder = d.UsingPlaceholderPassword,
+                        hint = d.Hint,
+                    }
+                });
+            });
 
             app.MapControllers();
             app.MapHub<ChatHub>("/hubs/chat");
 
             app.Run();
+        }
+
+        /// <summary>
+        /// Railway UI thường đặt Frontend_PublicBaseUrl (1 dấu _) thay vì Frontend__PublicBaseUrl.
+        /// </summary>
+        private static void ApplyRailwayConfigAliases(ConfigurationManager config)
+        {
+            static void Map(ConfigurationManager c, string wrongKey, string rightKey)
+            {
+                var v = Environment.GetEnvironmentVariable(wrongKey);
+                if (string.IsNullOrWhiteSpace(v)) return;
+                if (!string.IsNullOrWhiteSpace(c[rightKey])) return;
+                c[rightKey] = v.Trim();
+                Console.WriteLine($"[yumegoji] Alias env {wrongKey} → {rightKey}");
+            }
+
+            Map(config, "Frontend_PublicBaseUrl", "Frontend:PublicBaseUrl");
+            Map(config, "Gemini_ApiKey", "Gemini:ApiKey");
+            Map(config, "GoogleAuth_ClientId", "GoogleAuth:ClientId");
+            Map(config, "OpenAI_ApiKey", "OpenAI:ApiKey");
         }
 
         private static async Task ImportN5DocxEntry(string[] args)

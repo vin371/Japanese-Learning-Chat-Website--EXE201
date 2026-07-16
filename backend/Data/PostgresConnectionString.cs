@@ -11,15 +11,6 @@ public static class PostgresConnectionString
 {
     public const string PlaceholderPassword = "YOUR_SUPABASE_DB_PASSWORD";
 
-    private static readonly string[] EnvKeys =
-    [
-        "ConnectionStrings__DefaultConnection",
-        "ConnectionStrings:DefaultConnection",
-        "DATABASE_URL",
-        "SUPABASE_CONNECTION_STRING",
-        "DefaultConnection",
-    ];
-
     public sealed record ResolveResult(string Value, string Source);
 
     public sealed record Diagnostics(
@@ -35,12 +26,46 @@ public static class PostgresConnectionString
     /// <summary>Đọc env (Railway Variables) — null nếu chưa có.</summary>
     public static ResolveResult? TryResolveFromEnvironment()
     {
-        foreach (var key in EnvKeys)
+        // Ưu tiên ConnectionStrings — bỏ qua DATABASE_URL nếu đã có (tránh mật khẩu cũ trong URI)
+        string[] preferred =
+        [
+            "ConnectionStrings__DefaultConnection",
+            "ConnectionStrings:DefaultConnection",
+        ];
+        foreach (var key in preferred)
         {
             var raw = Environment.GetEnvironmentVariable(key);
             if (string.IsNullOrWhiteSpace(raw))
                 continue;
+            try
+            {
+                var normalized = Normalize(raw);
+                var dbUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
+                if (!string.IsNullOrWhiteSpace(dbUrl))
+                {
+                    Console.WriteLine(
+                        "[yumegoji] Có cả ConnectionStrings__DefaultConnection và DATABASE_URL — " +
+                        "đang dùng ConnectionStrings (bỏ DATABASE_URL). Nên xóa DATABASE_URL trên Railway nếu mật khẩu lệch.");
+                }
+                return new ResolveResult(normalized, key);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[yumegoji] Bỏ qua {key}: {ex.Message}");
+            }
+        }
 
+        string[] fallback =
+        [
+            "DATABASE_URL",
+            "SUPABASE_CONNECTION_STRING",
+            "DefaultConnection",
+        ];
+        foreach (var key in fallback)
+        {
+            var raw = Environment.GetEnvironmentVariable(key);
+            if (string.IsNullOrWhiteSpace(raw))
+                continue;
             try
             {
                 return new ResolveResult(Normalize(raw), key);
@@ -51,7 +76,6 @@ public static class PostgresConnectionString
             }
         }
 
-        // Ghép từ biến rời (dễ paste mật khẩu trên Railway, tránh lỗi URI)
         var composed = TryComposeFromParts();
         if (composed != null)
             return composed;
@@ -251,6 +275,11 @@ public static class PostgresConnectionString
             csb.Remove("Trust Server Certificate");
             csb.Remove("TrustServerCertificate");
         }
+
+        if (!string.IsNullOrEmpty(csb.Password))
+            csb.Password = csb.Password.Trim();
+        if (!string.IsNullOrEmpty(csb.Username))
+            csb.Username = csb.Username.Trim();
 
         return csb.ConnectionString;
     }

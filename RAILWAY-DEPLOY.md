@@ -2,58 +2,54 @@
 
 ## 1. Cấu hình service
 
-- **GitHub repo** → branch `main`
-- **Root directory:** để **trống** (repo gốc có `Dockerfile` + `railway.toml`)
-- **Builder:** Dockerfile (chỉ đóng gói API; **không** chạy Postgres trong container)
-- Database: **Supabase** (Session pooler)
+- **Root directory:** để **trống**
+- **Builder:** Dockerfile (chỉ đóng gói API; DB = Supabase)
+- Chờ Deployments → **Active** (không còn Building) rồi mới test login
 
-## 2. Biến môi trường (Variables)
+## 2. Biến môi trường — đúng tên (2 dấu `_`)
 
-| Biến | Ghi chú |
-|------|---------|
-| `ASPNETCORE_ENVIRONMENT` | `Production` |
-| `ConnectionStrings__DefaultConnection` | Supabase pooler — xem `backend/SUPABASE-CAU-HINH.txt` |
-| `Jwt__Key` hoặc `JWT_KEY` | ≥ 32 ký tự |
-| `Frontend__PublicBaseUrl` | `https://yumegoji.vercel.app` |
-| `Gemini__ApiKey` | (tuỳ chọn) |
+| Đúng | Sai (không nhận) |
+|------|------------------|
+| `ConnectionStrings__DefaultConnection` | |
+| `Frontend__PublicBaseUrl` | `Frontend_PublicBaseUrl` |
+| `Gemini__ApiKey` | `Gemini_ApiKey` |
+| `GoogleAuth__ClientId` | `GoogleAuth_ClientId` |
+| `Jwt__Key` hoặc `JWT_KEY` | |
+| `ASPNETCORE_ENVIRONMENT` = `Production` | |
 
-**Không dùng:** Azure SQL, SQL Server, `MSSQL_*`, Docker Postgres local.
-
-### Connection string mẫu
+### Connection string (copy đúng)
 
 ```
-Host=aws-1-ap-southeast-2.pooler.supabase.com;Port=5432;Database=postgres;Username=postgres.jvdghkjkgrdogpymnwpu;Password=MAT_KHAU_THAT;SSL Mode=Require
+Host=aws-1-ap-southeast-2.pooler.supabase.com;Port=5432;Database=postgres;Username=postgres.jvdghkjkgrdogpymnwpu;Password=MAT_KHAU_SUPABASE;SSL Mode=Require
 ```
 
-Password có `@` / `!` → bọc `Password="..."`. Sau khi sửa biến → **Deploy** lại.
+- `MAT_KHAU_SUPABASE` = mật khẩu **Database** trong Supabase → Project Settings → Database (không phải mật khẩu đăng nhập dashboard).
+- **Xóa biến `DATABASE_URL`** nếu còn (dễ giữ mật khẩu cũ, gây 28P01).
+- Sau khi Save → bấm **Deploy** lại.
 
-## 3. Vercel (frontend)
+## 3. Kiểm tra sau deploy
 
-```
-VITE_API_URL=https://japanese-learning-chat-website-exe201-production.up.railway.app
-```
+Mở: `https://<railway-url>/health`
 
-Rồi **Redeploy** frontend.
+JSON phải có:
 
-## 4. Local
-
-```powershell
-cd backend
-# Tạo appsettings.Secrets.json từ example — mật khẩu Supabase thật
-dotnet run --launch-profile http
+```json
+"db": { "host": "aws-1-ap-southeast-2.pooler.supabase.com", "username": "postgres.jvdghkjkgrdogpymnwpu", "passwordLen": ..., "placeholder": false }
 ```
 
-API: http://localhost:5056/swagger
+Log Railway lúc start:
 
-## 5. Kiểm tra
+```
+[yumegoji] DB từ env=ConnectionStrings__DefaultConnection; Host=aws-1-...; User=postgres.jvdghkjkgrdogpymnwpu; PasswordLen=...
+Đã kết nối PostgreSQL (Supabase) thành công.
+```
 
-- `GET /health` → 200
-- Login admin trên Vercel không còn 503 / 28P01
+Nếu vẫn `28P01`: Reset Database password trên Supabase → dán mật khẩu mới vào `ConnectionStrings__DefaultConnection` → Redeploy.
 
-## 6. Lỗi thường gặp
+## 4. Vercel
 
-| Triệu chứng | Nguyên nhân |
-|-------------|-------------|
-| **28P01** password authentication failed | Sai mật khẩu trong `ConnectionStrings__DefaultConnection` / `DATABASE_URL` |
-| **502** | Crash lúc start — xem Deploy logs |
-| Login OK local, fail Vercel | Railway chưa Redeploy hoặc env sai |
+```
+VITE_API_URL=https://japanese-learning-chat-website-exe201-production-71ba.up.railway.app
+```
+
+(URL đúng service đang Online — Redeploy frontend sau khi đổi.)
